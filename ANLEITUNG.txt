@@ -1,0 +1,28 @@
+ToDo Organizer - App-Icon einbauen
+===================================
+
+Ziel: der Ordner "res" im Android-Projekt.
+Pfad: <IhrProjekt>\ToDo\android\app\src\main\res
+
+Vorgehen im Windows-Explorer:
+
+1. Dorthin navigieren. Es gibt bereits Ordner namens mipmap-hdpi,
+   mipmap-mdpi, mipmap-xhdpi, mipmap-xxhdpi, mipmap-xxxhdpi und
+   moeglicherweise mipmap-anydpi-v26.
+
+2. Aus diesem Paket ALLE mipmap-Ordner hineinkopieren und das
+   Ueberschreiben bestaetigen. Windows fragt einmal pro Ordner.
+
+3. Falls mipmap-anydpi-v26 im Projekt noch nicht existiert:
+   einfach mitkopieren.
+
+4. In Android Studio: Build -> Clean Project, danach den gruenen
+   Pfeil druecken. Das alte Icon kann im Launcher noch kurz
+   zwischengespeichert bleiben; notfalls App deinstallieren und
+   neu installieren.
+
+Die Datei playstore-icon-512.png wird NICHT ins Projekt kopiert.
+Sie laden sie spaeter in der Play Console als Store-Symbol hoch.
+
+Die Dateien vorschau-256.png und vorschau-rund-256.png dienen nur
+der Ansicht und werden nicht gebraucht.
