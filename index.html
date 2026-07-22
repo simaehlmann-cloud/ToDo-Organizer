@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ToDo">
+<title>ToDo Organizer</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#fff; --side:#111827; --text:#1f2937; --muted:#6b7280;
+  --primary:#2563eb; --primary-h:#1d4ed8; --danger:#dc2626; --ok:#059669; --warn:#d97706;
+  --border:#e5e7eb; --shadow:0 1px 3px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+body{display:flex;height:100dvh;background:var(--bg);color:var(--text);overflow:hidden}
+
+#sidebar{width:230px;background:var(--side);color:#f9fafb;display:flex;flex-direction:column;flex-shrink:0}
+#sidebar h2{padding:20px;font-size:1.05rem;border-bottom:1px solid rgba(255,255,255,.1)}
+.nav-btn{background:none;border:none;border-left:4px solid transparent;color:inherit;padding:13px 20px;text-align:left;cursor:pointer;font-size:.93rem;display:flex;gap:10px;align-items:center}
+.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.08);border-left-color:var(--primary)}
+.nav-btn[hidden]{display:none}
+#sidebar-foot{margin-top:auto;padding:16px 20px;font-size:.7rem;color:#9ca3af;line-height:1.5}
+#main{flex:1;padding:26px 28px 40px;overflow-y:auto}
+
+@media(max-width:760px){
+  body{flex-direction:column}
+  #sidebar{width:100%;order:2;flex-direction:row;overflow-x:auto;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid rgba(255,255,255,.08)}
+  #sidebar h2,#sidebar-foot{display:none}
+  .nav-btn{flex:1;flex-direction:column;gap:3px;text-align:center;padding:9px 6px 8px;font-size:.66rem;border-left:none;border-top:3px solid transparent;white-space:nowrap;min-width:62px}
+  .nav-btn:hover,.nav-btn.active{border-left-color:transparent;border-top-color:var(--primary)}
+  .nav-btn .ico{font-size:1.15rem}
+  #main{order:1;padding:16px 14px 26px}
+  h1{font-size:1.28rem!important}
+  .card{padding:15px}
+}
+@media(min-width:761px){.nav-btn .ico{font-size:1rem}}
+
+.view{display:none;animation:fade .18s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);padding:19px;border-radius:12px;box-shadow:var(--shadow);margin-bottom:18px}
+h1{margin-bottom:16px;font-size:1.55rem}
+h3{margin-bottom:11px;font-size:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px;margin-bottom:13px}
+input,select,textarea{padding:10px;border:1px solid var(--border);border-radius:7px;width:100%;font-size:16px;background:#fff;color:inherit;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:transparent}
+label.fld{display:block;font-size:.76rem;color:var(--muted);margin-bottom:4px;font-weight:600}
+.btn{background:var(--primary);color:#fff;border:none;padding:11px 17px;border-radius:7px;cursor:pointer;font-weight:600;font-size:.9rem}
+.btn:hover{background:var(--primary-h)}
+.btn:active{transform:scale(.98)}
+.btn-sm{padding:6px 11px;font-size:.79rem;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:500}
+.btn-sm:hover{background:var(--bg)}
+.btn-sm.danger{color:var(--danger);border-color:#fca5a5}
+
+.filters{display:flex;gap:7px;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
+.tab{background:none;border:none;cursor:pointer;padding:6px 11px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;font-size:.88rem}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab .cnt{font-size:.72rem;opacity:.7;margin-left:3px}
+
+.grp{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px}
+.grp:first-child{margin-top:0}
+.grp.warn{color:var(--danger)}
+
+.task{border:1px solid var(--border);border-left-width:4px;border-radius:9px;padding:13px;margin-bottom:9px;background:#fff}
+.task.done{opacity:.5}
+.task.done .title{text-decoration:line-through}
+.task-top{display:flex;align-items:flex-start;gap:10px}
+.title{font-size:1rem;font-weight:600;word-break:break-word;line-height:1.35;flex:1;cursor:pointer}
+.meta{display:flex;gap:7px;flex-wrap:wrap;font-size:.77rem;align-items:center;margin-top:8px;color:var(--muted)}
+.meta .over{color:var(--danger);font-weight:700}
+.meta .soon{color:var(--warn);font-weight:600}
+.actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px dashed var(--border)}
+.badge{padding:3px 9px;border-radius:11px;color:#fff;font-size:.7rem;font-weight:700;white-space:nowrap}
+.badge.pri{border:1px solid currentColor;background:transparent}
+.badge.pri-hoch{color:var(--danger)}.badge.pri-mittel{color:var(--warn)}.badge.pri-niedrig{color:var(--ok)}
+
+.tt{display:grid;grid-template-columns:56px repeat(var(--cols,5),minmax(84px,1fr));gap:4px;min-width:560px}
+.tt-h{font-weight:700;text-align:center;padding:7px;background:var(--bg);border-radius:5px;font-size:.85rem}
+.tt-h.today{background:var(--primary);color:#fff}
+.tt-t{text-align:right;padding-right:7px;font-size:.68rem;color:var(--muted);align-self:center;line-height:1.3}
+.tt-s{background:var(--bg);border:1px solid var(--border);border-radius:5px;min-height:52px;padding:6px;font-size:.78rem;cursor:pointer;overflow:hidden}
+.tt-s:hover{outline:2px solid var(--primary)}
+.tt-s.full{color:#fff}
+.tt-s .subj{font-weight:700;line-height:1.2}
+.tt-s .room{opacity:.85;font-size:.68rem;margin-top:2px}
+
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:10px}
+.cal-head .mo{font-size:1.05rem;font-weight:700}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-d{text-align:center;font-size:.7rem;font-weight:700;color:var(--muted);padding:5px 0}
+.cal-c{aspect-ratio:1;border:1px solid var(--border);border-radius:6px;padding:3px;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:#fff;overflow:hidden;min-height:40px}
+.cal-c.out{opacity:.32}
+.cal-c.today{border-color:var(--primary);border-width:2px}
+.cal-c.sel{background:#dbeafe;border-color:var(--primary)}
+.cal-c .n{font-size:.78rem;font-weight:600}
+.dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.dot{width:5px;height:5px;border-radius:50%}
+.cal-c .more{font-size:.55rem;color:var(--muted);line-height:1}
+.cal-c.holiday{background:#fef2f2}
+.cal-c.holiday.sel{background:#fecaca}
+.cal-c .hol{font-size:.5rem;line-height:1.05;color:var(--danger);text-align:center;overflow:hidden;max-height:1.6em;margin-top:1px}
+
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border);gap:10px}
+.row:last-child{border-bottom:none}
+.row label{display:flex;align-items:center;gap:11px;cursor:pointer;flex:1;word-break:break-word}
+.row.done label{text-decoration:line-through;color:var(--muted)}
+.empty{color:var(--muted);padding:18px 0;text-align:center;font-size:.9rem}
+.hint{color:var(--muted);font-size:.81rem;margin-bottom:11px;line-height:1.5}
+.banner{padding:12px 14px;border-radius:9px;background:#dbeafe;color:#1e40af;font-size:.84rem;margin-bottom:16px;line-height:1.5}
+input[type=checkbox]{width:21px;height:21px;flex-shrink:0;cursor:pointer;accent-color:var(--primary)}
+
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:16px;color:#fff;font-size:.82rem;font-weight:600;margin:0 6px 6px 0}
+.chip button{background:rgba(255,255,255,.28);border:none;color:#fff;width:19px;height:19px;border-radius:50%;cursor:pointer;font-size:.75rem;line-height:1;display:grid;place-items:center}
+.sw{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);gap:14px}
+.sw:last-child{border-bottom:none}
+.sw .lb{font-weight:600;font-size:.92rem}
+.sw .ds{font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.45}
+.tog{width:47px;height:27px;border-radius:14px;background:#cbd5e1;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background .18s}
+.tog.on{background:var(--primary)}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .18s}
+.tog.on::after{transform:translateX(20px)}
+
+dialog{border:none;border-radius:14px;padding:0;max-width:440px;width:calc(100% - 32px);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+dialog::backdrop{background:rgba(0,0,0,.42)}
+dialog .bd{padding:20px}
+dialog h3{margin-bottom:14px}
+dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;background:var(--bg);border-top:1px solid var(--border);flex-wrap:wrap}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--side);color:#fff;padding:11px 16px;border-radius:9px;font-size:.87rem;z-index:99;transition:transform .26s;pointer-events:none;max-width:88%;text-align:center;display:flex;align-items:center;gap:12px}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast .undo{background:none;border:none;color:#93c5fd;font-weight:700;font-size:.84rem;cursor:pointer;padding:2px 4px;white-space:nowrap;text-decoration:underline}
+@media(max-width:760px){#toast{bottom:78px}}
+.about-h{display:flex;align-items:center;gap:15px;margin-bottom:6px}
+.about-h .logo{width:52px;height:52px;border-radius:13px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:1.5rem;flex-shrink:0}
+.feat{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.feat:last-child{border-bottom:none}
+.feat .i{font-size:1.15rem;width:24px;text-align:center;flex-shrink:0}
+.feat .t{font-weight:600;font-size:.9rem}
+.feat .d{font-size:.81rem;color:var(--muted);margin-top:2px;line-height:1.5}
+.sub-edit{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:.88rem}
+.sub-edit span{flex:1;word-break:break-word}
+.sub-edit span.done{text-decoration:line-through;color:var(--muted)}
+.subs{margin-top:10px;padding-top:9px;border-top:1px dashed var(--border)}
+.corr{margin-top:10px;padding-top:9px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.83rem;color:var(--muted)}
+.corr .bar{flex:1;min-width:120px;height:6px;border-radius:3px;background:var(--border);overflow:hidden}
+.corr .fill{height:100%;background:var(--primary);transition:width .2s}
+.subs .bar{height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-bottom:9px}
+.subs .fill{height:100%;background:var(--ok);transition:width .2s}
+.sub{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:.87rem;cursor:pointer}
+.sub input[type=checkbox]{width:17px;height:17px}
+.sub.done{text-decoration:line-through;color:var(--muted)}
+.qa{display:flex;gap:9px}
+.qa input{font-size:16px}
+.qa-bar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+#t-details{margin-top:13px;padding-top:13px;border-top:1px solid var(--border);margin-bottom:0}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.brand-mark{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(135deg,#2563eb 0%,#4f46e5 55%,#7c3aed 100%);
+  box-shadow:0 4px 14px rgba(37,99,235,.32)}
+.brand-mark svg{width:25px;height:25px}
+.brand-txt{min-width:0}
+.brand h1{margin:0;font-size:1.85rem;line-height:1.05;letter-spacing:-.032em;font-weight:800}
+.brand .w1{background:linear-gradient(100deg,#2563eb,#7c3aed);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#2563eb}
+.brand .w2{font-weight:300;color:var(--text);letter-spacing:-.012em}
+.brand-sub{font-size:.79rem;color:var(--muted);margin-top:3px;letter-spacing:.055em;text-transform:uppercase;font-weight:600}
+@media(max-width:760px){
+  .brand{gap:11px;margin-bottom:16px}
+  .brand-mark{width:39px;height:39px;border-radius:11px}
+  .brand-mark svg{width:21px;height:21px}
+  .brand h1{font-size:1.42rem}
+  .brand-sub{font-size:.7rem}
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <h2>ToDo Organizer</h2>
+  <button class="nav-btn active" data-view="tasks"><span class="ico">📋</span><span>Aufgaben</span></button>
+  <button class="nav-btn" data-view="calendar"><span class="ico">🗓</span><span>Kalender</span></button>
+  <button class="nav-btn" data-view="timetable"><span class="ico">📅</span><span>Stundenplan</span></button>
+  <button class="nav-btn" data-view="shopping"><span class="ico">🛒</span><span>Einkauf</span></button>
+  <button class="nav-btn" data-view="settings"><span class="ico">⚙️</span><span>Einstell.</span></button>
+  <button class="nav-btn" data-view="about"><span class="ico">ℹ️</span><span>Info</span></button>
+  <div id="sidebar-foot">Alle Daten bleiben auf diesem Gerät.<br>© Simon Mählmann</div>
+</nav>
+
+<main id="main">
+
+  <!-- AUFGABEN -->
+  <section id="view-tasks" class="view active">
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12.5 9 17.5 20 6.5"/>
+        </svg>
+      </div>
+      <div class="brand-txt">
+        <h1><span class="w1">ToDo</span> <span class="w2">Organizer</span></h1>
+        <p class="brand-sub" id="brand-sub"></p>
+      </div>
+    </header>
+    <div class="card">
+      <div class="qa">
+        <input type="text" id="t-title" placeholder="Was ist zu tun?" autocomplete="off">
+        <button class="btn" id="btn-add-task">Hinzufügen</button>
+      </div>
+      <div class="qa-bar">
+        <button class="btn-sm" id="btn-quick-today">Heute</button>
+        <button class="btn-sm" id="btn-quick-tom">Morgen</button>
+        <button class="btn-sm" id="btn-more" aria-expanded="false">Mehr ▾</button>
+      </div>
+      <div class="grid" id="t-details" hidden>
+        <div><label class="fld" for="t-category">Kategorie</label><select id="t-category"></select></div>
+        <div><label class="fld" for="t-prio">Priorität</label><select id="t-prio">
+          <option value="niedrig">Niedrig</option><option value="mittel" selected>Mittel</option><option value="hoch">Hoch</option></select></div>
+        <div><label class="fld" for="t-date">Fällig am</label><input type="date" id="t-date"></div>
+        <div><label class="fld" for="t-recurrence">Wiederholung</label><select id="t-recurrence">
+          <option value="none">Keine</option><option value="daily">Täglich</option><option value="weekly">Wöchentlich</option>
+          <option value="biweekly">Alle 2 Wochen</option><option value="monthly">Monatlich</option><option value="yearly">Jährlich</option></select></div>
+        <div id="fld-subject"><label class="fld" for="t-subject">Fach</label><select id="t-subject"></select></div>
+        <div id="fld-assignee"><label class="fld" for="t-assignee">Zuweisen an (E-Mail)</label><input type="email" id="t-assignee" placeholder="optional"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <button class="tab active" data-filter="open">Offen <span class="cnt" id="c-open"></span></button>
+        <button class="tab" data-filter="done">Erledigt <span class="cnt" id="c-done"></span></button>
+        <button class="tab" data-filter="all">Alle <span class="cnt" id="c-all"></span></button>
+        <select id="f-cat" style="width:auto;margin-left:auto"><option value="all">Alle Kategorien</option></select>
+        <select id="f-range" style="width:auto"><option value="all">Alle Zeiträume</option><option value="overdue">Überfällig</option><option value="today">Heute</option><option value="week">Diese Woche</option><option value="month">Dieser Monat</option><option value="nodate">Ohne Datum</option></select>
+        <select id="f-sort" style="width:auto"><option value="due">Nach Datum</option><option value="prio">Nach Priorität</option><option value="created">Neueste zuerst</option></select>
+      </div>
+      <input type="search" id="f-search" placeholder="Suchen …" style="margin-bottom:14px">
+      <div id="task-list"></div>
+    </div>
+  </section>
+
+  <!-- KALENDER -->
+  <section id="view-calendar" class="view">
+    <h1>Kalender</h1>
+    <div class="card">
+      <div class="cal-head">
+        <button class="btn-sm" id="cal-prev" aria-label="Voriger Monat">‹</button>
+        <span class="mo" id="cal-month"></span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" id="cal-today">Heute</button>
+          <button class="btn-sm" id="cal-next" aria-label="Nächster Monat">›</button>
+        </div>
+      </div>
+      <div class="cal" id="cal-grid"></div>
+    </div>
+    <div class="card">
+      <h3 id="cal-day-title">Ausgewählter Tag</h3>
+      <div id="cal-day-list"></div>
+      <button class="btn-sm" id="cal-add" style="margin-top:12px">＋ Aufgabe für diesen Tag</button>
+    </div>
+  </section>
+
+  <!-- STUNDENPLAN -->
+  <section id="view-timetable" class="view">
+    <h1>Stundenplan</h1>
+    <div class="card">
+      <h3>Stunde eintragen</h3>
+      <div class="grid">
+        <div><label class="fld" for="tt-day">Tag</label><select id="tt-day"></select></div>
+        <div><label class="fld" for="tt-slot">Stunde</label><select id="tt-slot"></select></div>
+        <div><label class="fld" for="tt-subject">Fach</label><input type="text" id="tt-subject" placeholder="z. B. Mathematik"></div>
+        <div><label class="fld" for="tt-room">Raum / Lehrkraft</label><input type="text" id="tt-room" placeholder="optional"></div>
+      </div>
+      <button class="btn" id="btn-add-lesson">Speichern</button>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <div class="tt" id="tt-grid"></div>
+      <p class="hint" style="margin:13px 0 0">Belegte Zelle antippen zum Bearbeiten oder Löschen, leere Zelle legt einen neuen Eintrag an.</p>
+    </div>
+  </section>
+
+  <!-- EINKAUF -->
+  <section id="view-shopping" class="view">
+    <h1>Einkaufsliste</h1>
+    <div class="card">
+      <div style="display:flex;gap:9px;margin-bottom:14px">
+        <input type="text" id="s-item" placeholder="Neuer Artikel …">
+        <button class="btn" id="btn-add-item" style="flex-shrink:0">＋</button>
+      </div>
+      <div id="shop-list"></div>
+      <div style="display:flex;gap:8px;margin-top:13px;flex-wrap:wrap">
+        <button class="btn-sm" id="btn-clear-done">Erledigte entfernen</button>
+        <button class="btn-sm" id="btn-share-shop">Liste teilen</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Stammlisten</h3>
+      <p class="hint">Wiederkehrende Einkäufe — etwa den Wocheneinkauf — als Vorlage speichern und mit einem Tipp einfügen. Bereits offene Artikel werden dabei nicht doppelt angelegt.</p>
+      <div id="slists"></div>
+      <button class="btn-sm" id="btn-save-slist" style="margin-top:9px">Offene Artikel als Stammliste speichern</button>
+    </div>
+  </section>
+
+  <!-- EINSTELLUNGEN -->
+  <section id="view-settings" class="view">
+    <h1>Einstellungen</h1>
+
+    <div class="card">
+      <h3>Kategorien</h3>
+      <p class="hint">Eigene Bereiche mit freier Farbwahl. Beim Löschen einer Kategorie bleiben zugehörige Aufgaben erhalten und werden auf „Ohne Kategorie“ gesetzt.</p>
+      <div id="cat-chips" style="margin-bottom:13px"></div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:150px"><label class="fld" for="cat-name">Name</label><input type="text" id="cat-name" placeholder="z. B. Studium"></div>
+        <div><label class="fld" for="cat-color">Farbe</label><input type="color" id="cat-color" value="#2563eb" style="width:56px;height:44px;padding:3px"></div>
+        <button class="btn" id="btn-add-cat">Hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Funktionen</h3>
+      <p class="hint">Ausgeblendete Bereiche verschwinden aus der Navigation. Vorhandene Daten bleiben erhalten.</p>
+      <div id="feature-switches"></div>
+    </div>
+
+    <div class="card">
+      <h3>Freie Tage &amp; Feiertage</h3>
+      <p class="hint">Bundesweite gesetzliche Feiertage berechnet die App selbst. Zusätzlich eigene freie Zeiträume (z. B. Ferien oder Urlaub) eintragen — eine Zeile je Zeitraum, Format <code>Name;2026-10-12;2026-10-24</code>. Ein einzelner Tag genügt mit nur einem Datum.</p>
+      <textarea id="hol-editor" rows="6" style="font-family:ui-monospace,monospace;font-size:14px" placeholder="Herbstferien;2026-10-12;2026-10-24"></textarea>
+      <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;align-items:center">
+        <button class="btn" id="btn-save-hol">Freie Tage speichern</button>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.85rem"><input type="checkbox" id="hol-skip"> Wiederholungen überspringen freie Tage</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Stundenplan-Zeiten</h3>
+      <p class="hint">Eine Zeile pro Stunde, Format <code>08:00-08:45</code>. Leerzeilen werden ignoriert.</p>
+      <textarea id="slot-editor" rows="8" style="font-family:ui-monospace,monospace;font-size:14px"></textarea>
+      <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;align-items:center">
+        <button class="btn" id="btn-save-slots">Zeiten speichern</button>
+        <label style="display:flex;align-items:center;gap:8px;font-size:.85rem"><input type="checkbox" id="tt-sat"> Samstag anzeigen</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Erinnerungen</h3>
+      <p class="hint">In der installierten Android-App werden Erinnerungen beim Betriebssystem eingeplant und erscheinen auch bei geschlossener App. Im Browser ist das technisch nicht möglich — dort erscheinen sie nur, solange die Seite geöffnet ist.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end">
+        <div><label class="fld" for="rem-time">Tägliche Erinnerung um</label><input type="time" id="rem-time" style="width:auto"></div>
+        <button class="btn" id="btn-rem-allow">Benachrichtigungen erlauben</button>
+        <button class="btn-sm" id="btn-rem-test">Test</button>
+      </div>
+      <p class="hint" id="rem-status" style="margin:11px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h3>Sicherung</h3>
+      <p class="hint">Der Browserspeicher ist nicht dauerhaft: Cache leeren oder App deinstallieren löscht alles. Regelmäßig exportieren.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" id="btn-export">Exportieren</button>
+        <button class="btn-sm" id="btn-import">Importieren</button>
+        <button class="btn-sm" id="btn-ics">Als Kalenderdatei (.ics)</button>
+        <input type="file" id="file-import" accept="application/json,.json" class="sr">
+      </div>
+      <p class="hint" id="storage-info" style="margin:12px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h3>Aufräumen</h3>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn-sm" id="btn-purge">Erledigte Aufgaben löschen</button>
+        <button class="btn-sm danger" id="btn-reset">Alle Daten löschen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- INFO -->
+  <section id="view-about" class="view">
+    <h1>Über die App</h1>
+    <div class="card">
+      <div class="about-h">
+        <div class="logo">📋</div>
+        <div>
+          <div style="font-size:1.2rem;font-weight:700">ToDo Organizer</div>
+          <div style="color:var(--muted);font-size:.86rem">Version <span id="app-ver"></span></div>
+        </div>
+      </div>
+      <p class="hint" style="margin:12px 0 0">Entwicklung und Konzept: <strong>Simon Mählmann</strong></p>
+      <p class="hint" style="margin:8px 0 0">
+        Aufgaben, Termine, Stundenplan und Einkaufsliste in einer App — ohne Konto,
+        ohne Server, ohne Abo. Alle Daten bleiben auf diesem Gerät.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Kernfunktionen</h3>
+      <div class="feat"><div class="i">📋</div><div><div class="t">Aufgaben verwalten</div><div class="d">Anlegen, priorisieren, abhaken. Offene und erledigte Aufgaben getrennt oder gemeinsam anzeigen, nach Kategorie filtern und durchsuchen.</div></div></div>
+      <div class="feat"><div class="i">🔄</div><div><div class="t">Wiederholungen</div><div class="d">Täglich bis jährlich. Beim Abhaken entsteht automatisch der nächste Termin — berechnet ab dem Fälligkeitsdatum, nicht ab dem Abhakzeitpunkt.</div></div></div>
+      <div class="feat"><div class="i">⏭</div><div><div class="t">Verschieben</div><div class="d">Ein Tippen schiebt eine Aufgabe um einen Tag oder eine Woche nach hinten.</div></div></div>
+      <div class="feat"><div class="i">🏷</div><div><div class="t">Eigene Kategorien</div><div class="d">Beliebig viele Bereiche mit frei wählbaren Farben. Jede Aufgabe zeigt ihre Kategorie als farbigen Rand.</div></div></div>
+      <div class="feat"><div class="i">🗓</div><div><div class="t">Monatskalender</div><div class="d">Alle Aufgaben mit Datum im Monatsraster, farbig nach Kategorie. Tag antippen zeigt die Details.</div></div></div>
+      <div class="feat"><div class="i">📅</div><div><div class="t">Stundenplan</div><div class="d">Frei belegbares Raster mit eigenen Zeiten. Für alle nutzbar, die feste Wochentermine haben — abschaltbar für alle anderen.</div></div></div>
+      <div class="feat"><div class="i">🛒</div><div><div class="t">Einkaufsliste</div><div class="d">Schnelles Erfassen, Abhaken, gesammeltes Aufräumen und Teilen.</div></div></div>
+      <div class="feat"><div class="i">✉️</div><div><div class="t">Zuweisen und erinnern</div><div class="d">Aufgaben einer E-Mail-Adresse zuordnen und vorformulierte Erinnerungen oder Entwürfe im eigenen Mailprogramm öffnen.</div></div></div>
+      <div class="feat"><div class="i">☑</div><div><div class="t">Unterpunkte</div><div class="d">Größere Vorhaben in Einzelschritte zerlegen. Ein Fortschrittsbalken zeigt, wie weit die Aufgabe gediehen ist.</div></div></div>
+      <div class="feat"><div class="i">📚</div><div><div class="t">Verknüpfung mit dem Stundenplan</div><div class="d">Aufgaben lassen sich einem Fach zuordnen. Die Karte zeigt dann, wann die nächste Stunde dieses Fachs stattfindet.</div></div></div>
+      <div class="feat"><div class="i">🔔</div><div><div class="t">Erinnerungen</div><div class="d">Tägliche Benachrichtigung über fällige und überfällige Aufgaben zur selbst gewählten Uhrzeit, solange die App geöffnet ist.</div></div></div>
+      <div class="feat"><div class="i">↩</div><div><div class="t">Rückgängig</div><div class="d">Abhaken, Verschieben und Löschen lassen sich direkt aus der Einblendung heraus zurücknehmen.</div></div></div>
+      <div class="feat"><div class="i">🔢</div><div><div class="t">Mengenzähler</div><div class="d">Für Aufgaben mit einer Stückzahl — etwa Seiten, Vokabeln oder Bewerbungen. Fortschrittsbalken, „+1“-Knopf und Anzeige des nötigen Tagespensums bis zum Termin.</div></div></div>
+      <div class="feat"><div class="i">🎌</div><div><div class="t">Feiertage &amp; freie Tage</div><div class="d">Gesetzliche Feiertage erscheinen im Kalender. Eigene Zeiträume wie Ferien lassen sich ergänzen. Wiederholungen können freie Tage automatisch überspringen.</div></div></div>
+      <div class="feat"><div class="i">🧺</div><div><div class="t">Stammlisten</div><div class="d">Wiederkehrende Einkäufe als Vorlage speichern und mit einem Tipp einfügen, ohne bereits vorhandene Artikel zu verdoppeln.</div></div></div>
+      <div class="feat"><div class="i">🗓</div><div><div class="t">Übertrag in den Google Kalender</div><div class="d">Aufgaben mit Datum lassen sich per Tippen als vorausgefüllter Termin im Google Kalender öffnen. Die App greift dabei nicht auf das Konto zu und benötigt keine Anmeldung.</div></div></div>
+      <div class="feat"><div class="i">💾</div><div><div class="t">Export und Import</div><div class="d">Vollständige Sicherung als JSON-Datei — diese lässt sich auch wieder importieren. Termine zusätzlich als .ics für den Import in Google Kalender, Apple Kalender oder Outlook; .ics dient nur der Ausgabe und kann nicht zurückgelesen werden.</div></div></div>
+    </div>
+
+    <div class="card">
+      <h3>Datenschutz</h3>
+      <p class="hint" style="margin:0">
+        Die App speichert ausschließlich lokal im Browser dieses Geräts. Es werden keine Daten
+        übertragen, keine Konten angelegt und keine Zugriffe ausgewertet. Es bestehen keine
+        Verbindungen zu externen Diensten. Beim Versenden einer Erinnerung öffnet sich lediglich
+        das auf dem Gerät eingerichtete E-Mail-Programm — der Versand erfolgt dort.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="dlg-task">
+  <div class="bd">
+    <h3>Aufgabe bearbeiten</h3>
+    <div style="display:grid;gap:11px">
+      <div><label class="fld" for="e-title">Titel</label><input type="text" id="e-title"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fld" for="e-category">Kategorie</label><select id="e-category"></select></div>
+        <div><label class="fld" for="e-prio">Priorität</label><select id="e-prio">
+          <option value="niedrig">Niedrig</option><option value="mittel">Mittel</option><option value="hoch">Hoch</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fld" for="e-date">Fällig am</label><input type="date" id="e-date"></div>
+        <div><label class="fld" for="e-recurrence">Wiederholung</label><select id="e-recurrence">
+          <option value="none">Keine</option><option value="daily">Täglich</option><option value="weekly">Wöchentlich</option>
+          <option value="biweekly">Alle 2 Wochen</option><option value="monthly">Monatlich</option><option value="yearly">Jährlich</option></select></div>
+      </div>
+      <div id="e-fld-subject"><label class="fld" for="e-subject">Fach</label><select id="e-subject"></select></div>
+      <div id="e-fld-assignee"><label class="fld" for="e-assignee">Zuweisen an</label><input type="email" id="e-assignee"></div>
+      <div>
+        <label class="fld">Unterpunkte</label>
+        <div id="e-subs"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input type="text" id="e-sub-new" placeholder="Neuer Unterpunkt …">
+          <button class="btn-sm" id="e-sub-add" style="flex-shrink:0">＋</button>
+        </div>
+      </div>
+      <div id="e-fld-count" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fld" for="e-count-total">Mengenzähler (gesamt)</label><input type="number" id="e-count-total" min="0" step="1" placeholder="z. B. 30"></div>
+        <div><label class="fld" for="e-count-done">davon erledigt</label><input type="number" id="e-count-done" min="0" step="1" placeholder="0"></div>
+      </div>
+      <div><label class="fld" for="e-note">Notiz</label><textarea id="e-note" rows="3"></textarea></div>
+    </div>
+  </div>
+  <div class="ft">
+    <button class="btn-sm danger" id="e-del">Löschen</button>
+    <button class="btn-sm" id="e-cancel">Abbrechen</button>
+    <button class="btn" id="e-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-cat">
+  <div class="bd">
+    <h3>Kategorie bearbeiten</h3>
+    <div style="display:grid;gap:11px">
+      <div><label class="fld" for="k-name">Name</label><input type="text" id="k-name"></div>
+      <div><label class="fld" for="k-color">Farbe</label><input type="color" id="k-color" style="width:100%;height:42px;padding:3px"></div>
+      <p class="hint" id="k-count" style="margin:0"></p>
+    </div>
+  </div>
+  <div class="ft">
+    <button class="btn-sm danger" id="k-del">Löschen</button>
+    <button class="btn-sm" id="k-cancel">Abbrechen</button>
+    <button class="btn" id="k-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-lesson">
+  <div class="bd">
+    <h3 id="l-head">Stunde</h3>
+    <div style="display:grid;gap:11px">
+      <div><label class="fld" for="l-subject">Fach</label><input type="text" id="l-subject"></div>
+      <div><label class="fld" for="l-room">Raum / Lehrkraft</label><input type="text" id="l-room"></div>
+      <div><label class="fld" for="l-color">Farbe</label><input type="color" id="l-color" style="width:100%;height:42px;padding:3px"></div>
+    </div>
+  </div>
+  <div class="ft">
+    <button class="btn-sm danger" id="l-del">Löschen</button>
+    <button class="btn-sm" id="l-cancel">Abbrechen</button>
+    <button class="btn" id="l-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   ToDo Organizer — lokale Version
+   Entwickelt von Simon Mählmann.
+   Keine externen Dienste, keine Netzwerkaufrufe, keine Abhängigkeiten.
+   Speicherung ausschließlich in localStorage.
+   ================================================================ */
+
+const APP_VERSION = "2.0";
+const KEY = "studiez-pro-v2";
+const LEGACY_KEY = "studiez-pro-v1";
+
+const PRIO_RANK  = { hoch:0, mittel:1, niedrig:2 };
+const PRIO_LABEL = { hoch:"Hoch", mittel:"Mittel", niedrig:"Niedrig" };
+const REC_LABEL  = { daily:"täglich", weekly:"wöchentlich", biweekly:"14-tägig", monthly:"monatlich", yearly:"jährlich" };
+const DAY_NAMES  = ["", "Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const DAY_SHORT  = ["", "Mo","Di","Mi","Do","Fr","Sa"];
+
+const FEATURES = [
+  { key:"calendar",  label:"Kalender",             desc:"Monatsübersicht aller Aufgaben mit Datum." },
+  { key:"timetable", label:"Stundenplan",          desc:"Wochenraster für feste Termine. Ausblenden, wenn nicht in Schule oder Ausbildung." },
+  { key:"shopping",  label:"Einkaufsliste",        desc:"Separate Liste für Besorgungen." },
+  { key:"assignee",  label:"Zuweisen an Personen", desc:"E-Mail-Feld bei Aufgaben plus Erinnerungsfunktion." },
+  { key:"drafts",    label:"E-Mail-Entwürfe",      desc:"Vorformulierte Nachrichten über das Mailprogramm des Geräts." },
+  { key:"gcalLink",  label:"Google-Kalender-Link", desc:"Button bei Aufgaben mit Datum, der den Google Kalender mit vorausgefülltem Termin öffnet. Die App selbst greift dabei nicht auf das Konto zu." },
+  { key:"reminders", label:"Erinnerungen",         desc:"Benachrichtigung bei fälligen Aufgaben, solange die App geöffnet ist. Muss zusätzlich unten freigegeben werden." }
+];
+
+const DEFAULT_SLOTS = ["08:00-08:45","08:45-09:30","09:55-10:40","10:40-11:25","11:50-12:35","12:35-13:20","14:00-14:45","14:45-15:30"];
+
+const DEFAULT_STATE = () => ({
+  version: 2,
+  tasks: [], lessons: [], shopping: [], shoppingLists: [],
+  categories: [
+    { id:"c3", name:"Privat", color:"#059669" }
+  ],
+  settings: {
+    features: { calendar:true, timetable:true, shopping:true, assignee:true, drafts:true, gcalLink:true, reminders:true },
+    reminderTime: "08:00",
+    slots: [...DEFAULT_SLOTS],
+    saturday: false,
+    skipHolidays: false,   // Wiederholungen freie Tage überspringen lassen
+    holidays: []           // eigene freie Zeiträume: {name, from, to}
+  }
+});
+
+let state = DEFAULT_STATE();
+let filter = "open";
+let calCursor = new Date();
+let calSelected = null;
+let editingTaskId = null;
+let editingLesson = null;
+
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const isoOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const todayISO = () => isoOf(new Date());
+const parseISO = iso => new Date(iso + "T12:00:00");
+const deDate = iso => parseISO(iso).toLocaleDateString("de-DE", { day:"2-digit", month:"2-digit", year:"numeric" });
+
+/* ---------- Speicher ---------- */
+function load() {
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); }
+  catch { toast("Browserspeicher nicht verfügbar."); return; }
+
+  if (!raw) {
+    // Einmalige Übernahme aus der Vorversion.
+    try {
+      const old = localStorage.getItem(LEGACY_KEY);
+      if (old) { migrateV1(JSON.parse(old)); save(); }
+    } catch { /* Vorversion unlesbar – ignorieren */ }
+    return;
+  }
+
+  try {
+    const p = JSON.parse(raw);
+    const d = DEFAULT_STATE();
+    state = {
+      version: 2,
+      tasks:      Array.isArray(p.tasks)      ? p.tasks      : [],
+      lessons:    Array.isArray(p.lessons)    ? p.lessons    : [],
+      shopping:   Array.isArray(p.shopping)   ? p.shopping   : [],
+      shoppingLists: Array.isArray(p.shoppingLists) ? p.shoppingLists : [],
+      categories: Array.isArray(p.categories) && p.categories.length ? p.categories : d.categories,
+      settings: {
+        features: { ...d.settings.features, ...(p.settings && p.settings.features) },
+        slots:    (p.settings && Array.isArray(p.settings.slots) && p.settings.slots.length) ? p.settings.slots : d.settings.slots,
+        reminderTime: (p.settings && p.settings.reminderTime) || d.settings.reminderTime,
+        saturday: !!(p.settings && p.settings.saturday),
+        skipHolidays: !!(p.settings && p.settings.skipHolidays),
+        holidays: (p.settings && Array.isArray(p.settings.holidays)) ? p.settings.holidays : []
+      }
+    };
+  } catch (e) {
+    console.error(e);
+    alert("Die gespeicherten Daten konnten nicht gelesen werden. Die App startet mit leerem Bestand. Eine vorhandene Sicherung lässt sich unter Einstellungen importieren.");
+  }
+}
+
+function migrateV1(old) {
+  const d = DEFAULT_STATE();
+  const map = { schule:"c1", seminar:"c2", privat:"c3" };
+  // Die alten Kategorien nur dann wieder anlegen, wenn sie tatsächlich benutzt wurden.
+  const used = new Set((old.tasks || []).map(t => t.category));
+  const cats = [];
+  if (used.has("schule"))  cats.push({ id:"c1", name:"Schule",  color:"#dc2626" });
+  if (used.has("seminar")) cats.push({ id:"c2", name:"Seminar", color:"#d97706" });
+  cats.push({ id:"c3", name:"Privat", color:"#059669" });
+  state = {
+    ...d,
+    categories: cats,
+    tasks: (old.tasks || []).map(t => ({
+      id: t.id || uid(), title: t.title || "",
+      categoryId: map[t.category] || null,
+      prio: t.prio || "mittel",
+      dueDate: t.dueDate || null,
+      recurrence: t.recurrence || "none",
+      assignee: t.assignee || null,
+      note: "", completed: !!t.completed,
+      createdAt: t.createdAt || Date.now()
+    })),
+    lessons: (old.lessons || []).map(l => ({ ...l, id: l.id || uid(), color: "#2563eb" })),
+    shopping: old.shopping || []
+  };
+  toast("Daten aus der Vorversion übernommen.");
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) {
+    alert(e.name === "QuotaExceededError"
+      ? "Der Speicher ist voll. Bitte exportieren und erledigte Aufgaben löschen."
+      : "Speichern fehlgeschlagen. Läuft der Browser im privaten Modus? Änderungen gehen beim Schließen verloren.");
+  }
+  // Erinnerungen an den neuen Stand anpassen (gebündelt, nicht bei jedem Tastendruck).
+  if (typeof scheduleAllSoon === "function") scheduleAllSoon();
+}
+
+/* ---------- Hilfen ---------- */
+// textContent statt innerHTML: Eingaben mit Anführungszeichen oder < brechen nichts.
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+/* Toast mit optionalem Rückgängig-Button. Der Snapshot wird vor der Änderung
+   erstellt und beim Antippen komplett zurückgespielt. */
+function toast(msg, undoFn) {
+  const t = $("toast");
+  t.replaceChildren();
+  t.append(el("span", null, msg));
+  if (undoFn) {
+    const b = el("button","undo","Rückgängig");
+    b.onclick = () => { t.classList.remove("show"); clearTimeout(t._h); undoFn(); };
+    t.append(b);
+    t.style.pointerEvents = "auto";
+  } else {
+    t.style.pointerEvents = "none";
+  }
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.classList.remove("show"); t.style.pointerEvents = "none"; }, undoFn ? 6000 : 2600);
+}
+
+/* Vollständige Kopie des Datenstands für Rückgängig-Aktionen. */
+function snapshot() { return JSON.parse(JSON.stringify(state)); }
+function restore(snap) {
+  state = snap; save(); initUI(); renderAll(); toast("Wiederhergestellt.");
+}
+const catById  = id => state.categories.find(c => c.id === id) || null;
+const catName  = id => (catById(id) || {}).name  || "Ohne Kategorie";
+const catColor = id => (catById(id) || {}).color || "#94a3b8";
+
+function mailto(to, subject, body) {
+  location.href = `mailto:${to || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const feat = k => !!state.settings.features[k];
+const activeDays = () => state.settings.saturday ? [1,2,3,4,5,6] : [1,2,3,4,5];
+
+/* ---------- Navigation ---------- */
+function switchTo(view) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  $("view-" + view).classList.add("active");
+  const nav = document.querySelector('.nav-btn[data-view="' + view + '"]');
+  if (nav) nav.classList.add("active");
+  $("main").scrollTop = 0;
+}
+document.querySelectorAll(".nav-btn").forEach(b => b.onclick = () => switchTo(b.dataset.view));
+
+function applyFeatures() {
+  document.querySelector('.nav-btn[data-view="calendar"]').hidden  = !feat("calendar");
+  document.querySelector('.nav-btn[data-view="timetable"]').hidden = !feat("timetable");
+  document.querySelector('.nav-btn[data-view="shopping"]').hidden  = !feat("shopping");
+  $("fld-assignee").style.display   = feat("assignee") ? "" : "none";
+  $("e-fld-assignee").style.display = feat("assignee") ? "" : "none";
+  const active = document.querySelector(".view.active");
+  const cur = active ? active.id.replace("view-","") : null;
+  if (cur && ["calendar","timetable","shopping"].indexOf(cur) > -1 && !feat(cur)) switchTo("tasks");
+}
+
+/* ---------- Kategorien ---------- */
+function fillCategorySelects() {
+  ["t-category","e-category"].forEach(id => {
+    const sel = $(id), keep = sel.value;
+    sel.replaceChildren();
+    sel.append(new Option("Ohne Kategorie",""));
+    state.categories.forEach(c => sel.append(new Option(c.name, c.id)));
+    if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+  });
+  const f = $("f-cat"), keep = f.value;
+  f.replaceChildren();
+  f.append(new Option("Alle Kategorien","all"));
+  state.categories.forEach(c => f.append(new Option(c.name, c.id)));
+  f.append(new Option("Ohne Kategorie","none"));
+  if ([...f.options].some(o => o.value === keep)) f.value = keep;
+}
+
+function renderCategoryChips() {
+  const box = $("cat-chips"); box.replaceChildren();
+  if (!state.categories.length) { box.append(el("p","hint","Noch keine Kategorien angelegt.")); return; }
+  for (const c of state.categories) {
+    const chip = el("button","chip", c.name);
+    chip.style.background = c.color;
+    chip.style.border = "none";
+    chip.style.cursor = "pointer";
+    chip.title = "Zum Bearbeiten antippen";
+    chip.onclick = () => openCategoryDialog(c.id);
+    box.append(chip);
+  }
+  box.append(el("p","hint","Antippen zum Umbenennen, Umfärben oder Löschen."));
+}
+
+/* Kategorie-Dialog: Name und Farbe ändern oder Kategorie entfernen. */
+let editingCatId = null;
+function openCategoryDialog(id) {
+  const c = catById(id);
+  if (!c) return;
+  editingCatId = id;
+  $("k-name").value = c.name;
+  $("k-color").value = c.color;
+  const n = state.tasks.filter(t => t.categoryId === id).length;
+  $("k-count").textContent = n
+    ? `${n} Aufgabe(n) in dieser Kategorie. Beim Löschen bleiben sie erhalten und werden auf „Ohne Kategorie“ gesetzt.`
+    : "Aktuell keine Aufgaben in dieser Kategorie.";
+  $("dlg-cat").showModal();
+}
+$("k-save").onclick = () => {
+  const c = catById(editingCatId);
+  if (!c) { $("dlg-cat").close(); return; }
+  const name = $("k-name").value.trim();
+  if (!name) return toast("Name darf nicht leer sein.");
+  if (state.categories.some(x => x.id !== c.id && x.name.toLowerCase() === name.toLowerCase()))
+    return toast("Diese Kategorie gibt es bereits.");
+  c.name = name; c.color = $("k-color").value;
+  save(); $("dlg-cat").close();
+  fillCategorySelects(); renderCategoryChips(); renderAll();
+  toast("Kategorie aktualisiert.");
+};
+$("k-cancel").onclick = () => $("dlg-cat").close();
+$("k-del").onclick = () => {
+  const c = catById(editingCatId);
+  if (!c) return;
+  const n = state.tasks.filter(t => t.categoryId === c.id).length;
+  if (!confirm(`Kategorie "${c.name}" löschen?` + (n ? `\n\n${n} Aufgabe(n) werden auf „Ohne Kategorie“ gesetzt.` : ""))) return;
+  state.categories = state.categories.filter(y => y.id !== c.id);
+  state.tasks.forEach(t => { if (t.categoryId === c.id) t.categoryId = null; });
+  save(); $("dlg-cat").close();
+  fillCategorySelects(); renderCategoryChips(); renderAll();
+  toast("Kategorie gelöscht.");
+};
+
+$("btn-add-cat").onclick = () => {
+  const name = $("cat-name").value.trim();
+  if (!name) return toast("Bitte einen Namen eingeben.");
+  if (state.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) return toast("Diese Kategorie gibt es bereits.");
+  state.categories.push({ id: uid(), name, color: $("cat-color").value });
+  save(); $("cat-name").value = "";
+  fillCategorySelects(); renderCategoryChips(); renderTasks();
+  toast("Kategorie hinzugefügt.");
+};
+$("cat-name").onkeydown = e => { if (e.key === "Enter") $("btn-add-cat").click(); };
+
+/* ---------- Aufgaben ---------- */
+function addTask(dueOverride) {
+  const title = $("t-title").value.trim();
+  if (!title) { $("t-title").focus(); return toast("Bitte einen Titel eingeben."); }
+  state.tasks.push({
+    id: uid(), title,
+    categoryId: $("t-category").value || null,
+    prio: $("t-prio").value,
+    dueDate: dueOverride || $("t-date").value || null,
+    recurrence: $("t-recurrence").value,
+    assignee: feat("assignee") ? ($("t-assignee").value.trim() || null) : null,
+    subject: feat("timetable") ? ($("t-subject").value || null) : null,
+    countTotal: 0, countDone: 0,
+    subtasks: [],
+    note: "", completed: false, createdAt: Date.now()
+  });
+  save();
+  $("t-title").value = ""; $("t-assignee").value = ""; $("t-date").value = "";
+  $("t-recurrence").value = "none";
+  renderTasks(); renderCalendar(); updateStorageInfo();
+  $("t-title").focus();
+  toast("Aufgabe gespeichert.");
+}
+$("btn-add-task").onclick   = () => addTask();
+$("btn-quick-today").onclick = () => addTask(todayISO());
+$("btn-quick-tom").onclick   = () => { const d = new Date(); d.setDate(d.getDate()+1); addTask(isoOf(d)); };
+$("btn-more").onclick = () => {
+  const d = $("t-details"), open = d.hidden;
+  d.hidden = !open;
+  $("btn-more").setAttribute("aria-expanded", String(open));
+  $("btn-more").textContent = open ? "Weniger ▴" : "Mehr ▾";
+};
+$("t-title").onkeydown = e => { if (e.key === "Enter") addTask(); };
+
+// Zählt vom Fälligkeitsdatum aus vorwärts, bis das Ergebnis auf heute oder
+// später fällt. Bewusste Semantik: Wer verspätet abhakt und dessen nächster
+// Ketten-Termin heute wäre, bekommt ihn heute — nicht erst beim übernächsten.
+// Ist "Freie Tage überspringen" aktiv, wird ein Ergebnis, das auf Wochenende
+// oder Feiertag fällt, auf den nächsten Werktag vorgeschoben.
+function nextDue(fromISO, rule) {
+  if (!rule || rule === "none") return null;
+  const base = fromISO ? parseISO(fromISO) : new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Bei monatlich/jährlich den ursprünglichen Kalendertag merken, damit er nicht
+  // "wandert" (31.01. + 1 Monat darf nicht auf den 03.03. überrollen, sondern
+  // wird auf den letzten Tag des Zielmonats begrenzt: 28.02.).
+  const anchorDay = base.getDate();
+  const d = new Date(base);
+  let guard = 0;
+  do {
+    if (rule === "daily")         d.setDate(d.getDate() + 1);
+    else if (rule === "weekly")   d.setDate(d.getDate() + 7);
+    else if (rule === "biweekly") d.setDate(d.getDate() + 14);
+    else if (rule === "monthly")  addMonths(d, 1, anchorDay);
+    else if (rule === "yearly")   addMonths(d, 12, anchorDay);
+    else return null;
+  } while (d <= today && ++guard < 600);
+
+  if (state.settings.skipHolidays) {
+    let g2 = 0;
+    while (isFreeDay(isoOf(d)) && ++g2 < 30) d.setDate(d.getDate() + 1);
+  }
+  return isoOf(d);
+}
+
+// Addiert Monate und setzt den Tag auf den gewünschten Anker, höchstens aber
+// auf den letzten Tag des Zielmonats. Vermeidet das JS-Überrollen in den Folgemonat.
+function addMonths(d, months, anchorDay) {
+  const targetMonth = d.getMonth() + months;
+  d.setDate(1);
+  d.setMonth(targetMonth);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(anchorDay, lastDay));
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  const snap = snapshot();
+  t.completed = !t.completed;
+  let msg = t.completed ? "Erledigt." : "Wieder geöffnet.";
+  if (t.completed && t.recurrence && t.recurrence !== "none") {
+    const next = nextDue(t.dueDate, t.recurrence);
+    state.tasks.push({ ...t, id: uid(), dueDate: next, completed: false, createdAt: Date.now() });
+    msg = "Nächster Termin: " + (next ? deDate(next) : "ohne Datum");
+  }
+  save(); renderTasks(); renderCalendar();
+  toast(msg, () => restore(snap));
+}
+
+function postpone(id, days) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  const snap = snapshot();
+  const base = t.dueDate ? parseISO(t.dueDate) : new Date();
+  base.setDate(base.getDate() + days);
+  t.dueDate = isoOf(base);
+  save(); renderTasks(); renderCalendar();
+  toast("Verschoben auf " + deDate(t.dueDate), () => restore(snap));
+}
+
+function draftFor(t) {
+  const d = t.dueDate ? deDate(t.dueDate) : "offen";
+  const c = catName(t.categoryId);
+  return [`${c} – ${t.title}`,
+    `Guten Tag,\n\nes geht um "${t.title}" (Bereich ${c}, Termin ${d}).\n\n\n\nMit freundlichen Grüßen`];
+}
+
+/* Öffnet die Google-Kalender-Eingabemaske mit vorausgefülltem ganztägigem Termin.
+   Reiner Link, keine API, keine Anmeldung in der App, keine Datenübertragung durch die App.
+   Der Termin entsteht erst, wenn der Nutzer dort auf Speichern tippt. */
+function openInGoogleCalendar(t) {
+  if (!t.dueDate) return toast("Die Aufgabe hat kein Datum.");
+  const end = parseISO(t.dueDate); end.setDate(end.getDate() + 1);
+  const dates = t.dueDate.replace(/-/g,"") + "/" + isoOf(end).replace(/-/g,"");
+  const details = catName(t.categoryId) + " · Priorität " + (PRIO_LABEL[t.prio] || t.prio) + (t.note ? "\n\n" + t.note : "");
+  const url = "https://calendar.google.com/calendar/render?action=TEMPLATE"
+    + "&text=" + encodeURIComponent(t.title)
+    + "&dates=" + dates
+    + "&details=" + encodeURIComponent(details);
+  window.open(url, "_blank", "noopener");
+}
+
+/* Zeitraumfilter. "Woche" meint die laufende Kalenderwoche ab Montag,
+   "Monat" den laufenden Kalendermonat — jeweils einschließlich heute. */
+/* Unterzeile der Wortmarke: kurzer Lagebericht statt statischem Slogan. */
+function updateBrandSub() {
+  const today = todayISO();
+  const open = state.tasks.filter(t => !t.completed);
+  const over = open.filter(t => t.dueDate && t.dueDate < today).length;
+  const due  = open.filter(t => t.dueDate === today).length;
+  let s;
+  if (over) s = `${over} überfällig${due ? ` · ${due} heute fällig` : ""}`;
+  else if (due) s = `${due} Aufgabe${due > 1 ? "n" : ""} heute fällig`;
+  else if (open.length) s = `${open.length} offene Aufgabe${open.length > 1 ? "n" : ""}`;
+  else s = "Alles erledigt";
+  $("brand-sub").textContent = s;
+}
+
+/* Fächerliste aus dem Stundenplan, damit Aufgaben an ein Fach gehängt werden können. */
+function subjectList() {
+  return [...new Set(state.lessons.map(l => l.subject))].sort((a,b) => a.localeCompare(b,"de"));
+}
+function fillSubjectSelects() {
+  ["t-subject","e-subject"].forEach(id => {
+    const sel = $(id); if (!sel) return;
+    const keep = sel.value;
+    sel.replaceChildren();
+    sel.append(new Option("Kein Fach",""));
+    subjectList().forEach(s => sel.append(new Option(s, s)));
+    if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+  });
+  const show = feat("timetable") && subjectList().length > 0;
+  const a = $("fld-subject"), b = $("e-fld-subject");
+  if (a) a.style.display = show ? "" : "none";
+  if (b) b.style.display = show ? "" : "none";
+}
+
+/* Nächster Termin eines Fachs im Wochenraster, ausgehend von heute. */
+function nextLessonFor(subject) {
+  if (!subject) return null;
+  const rows = state.lessons.filter(l => l.subject === subject);
+  if (!rows.length) return null;
+  const now = new Date();
+  const dow = ((now.getDay() + 6) % 7) + 1;
+  let best = null;
+  for (const l of rows) {
+    let diff = l.day - dow;
+    if (diff < 0) diff += 7;
+    const start = (state.settings.slots[l.slot] || "").split("-")[0] || "00:00";
+    if (diff === 0) {
+      const [h,m] = start.split(":").map(Number);
+      if (now.getHours()*60 + now.getMinutes() > h*60 + m) diff = 7;
+    }
+    const cand = { diff, day: l.day, start };
+    if (!best || cand.diff < best.diff || (cand.diff === best.diff && cand.start < best.start)) best = cand;
+  }
+  if (!best) return null;
+  const label = best.diff === 0 ? "heute" : best.diff === 1 ? "morgen" : DAY_SHORT[best.day];
+  return `${label} ${best.start}`;
+}
+
+/* ---------- Erinnerungen ----------
+   Läuft die App als installierte Android-App (Capacitor), werden echte lokale
+   Benachrichtigungen beim Betriebssystem eingeplant. Diese kommen auch bei
+   geschlossener App. Im Browser gibt es diese Möglichkeit nicht; dort wird
+   ersatzweise die Notification-API benutzt, die nur bei geöffneter Seite wirkt.
+   In beiden Fällen ohne Server und ohne Konto. */
+const REM_KEY = "todo-organizer-lastReminder";
+const DAILY_ID = 1;             // feste Kennung der täglichen Übersicht
+const TASK_ID_BASE = 10000;     // Kennungen einzelner Aufgaben liegen darüber
+
+/* Das Plugin steht nur in der installierten App zur Verfügung. */
+function LN() {
+  const c = window.Capacitor;
+  return (c && c.Plugins && c.Plugins.LocalNotifications) || null;
+}
+const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+function remSupported() { return !!LN() || typeof Notification !== "undefined"; }
+
+async function remPermission() {
+  const ln = LN();
+  if (ln) {
+    try {
+      const s = await ln.checkPermissions();
+      if (s.display === "granted") return "granted";
+      const r = await ln.requestPermissions();
+      return r.display;
+    } catch { return "denied"; }
+  }
+  if (typeof Notification === "undefined") return "denied";
+  if (Notification.permission === "granted") return "granted";
+  try { return await Notification.requestPermission(); } catch { return "denied"; }
+}
+
+async function remStatus() {
+  const ln = LN();
+  if (ln) {
+    try { return (await ln.checkPermissions()).display; } catch { return "denied"; }
+  }
+  return typeof Notification === "undefined" ? "unsupported" : Notification.permission;
+}
+
+async function updateReminderStatus() {
+  const s = $("rem-status"); if (!s) return;
+  const p = await remStatus();
+  const mode = isNative()
+    ? "Installierte App: Erinnerungen kommen auch bei geschlossener App."
+    : "Browserbetrieb: Erinnerungen erscheinen nur, solange diese Seite geöffnet ist.";
+  s.textContent =
+    p === "unsupported" ? "Dieses Gerät unterstützt keine Benachrichtigungen."
+    : p === "granted" ? "Freigegeben. " + mode
+    : p === "denied" ? "Abgelehnt. Freigabe in den Systemeinstellungen für diese App ändern."
+    : "Noch nicht freigegeben. " + mode;
+}
+
+$("btn-rem-allow").onclick = async () => {
+  const p = await remPermission();
+  await updateReminderStatus();
+  if (p === "granted") { await scheduleAll(); toast("Erinnerungen aktiviert."); }
+  else toast("Keine Freigabe erteilt.");
+};
+
+$("btn-rem-test").onclick = async () => {
+  const p = await remStatus();
+  if (p !== "granted") return toast("Bitte zuerst freigeben.");
+  const ln = LN();
+  if (ln) {
+    // In 5 Sekunden, damit die Benachrichtigung auch bei offener App sichtbar wird.
+    try {
+      await ln.schedule({ notifications: [{
+        id: 999, title: "ToDo Organizer",
+        body: "So sieht eine Erinnerung aus.",
+        schedule: { at: new Date(Date.now() + 5000) }
+      }]});
+      toast("Testerinnerung kommt in 5 Sekunden.");
+    } catch (e) { toast("Test fehlgeschlagen: " + e.message); }
+  } else {
+    try { new Notification("ToDo Organizer", { body: "So sieht eine Erinnerung aus." }); } catch {}
+  }
+};
+
+$("rem-time").onchange = async e => {
+  state.settings.reminderTime = e.target.value || "08:00";
+  save(); await scheduleAll(); toast("Erinnerungszeit gespeichert.");
+};
+
+function dueSummary() {
+  const today = todayISO();
+  const open = state.tasks.filter(t => !t.completed && t.dueDate);
+  const over = open.filter(t => t.dueDate < today);
+  const now  = open.filter(t => t.dueDate === today);
+  if (!over.length && !now.length) return null;
+  const parts = [];
+  if (now.length)  parts.push(`${now.length} heute fällig`);
+  if (over.length) parts.push(`${over.length} überfällig`);
+  const first = (now[0] || over[0]).title;
+  return { title: parts.join(" · "), body: first + (now.length + over.length > 1 ? " und weitere" : "") };
+}
+
+/* Aus einer Aufgaben-Kennung eine stabile Zahl machen, damit sich geplante
+   Benachrichtigungen gezielt ersetzen und löschen lassen. */
+function notifIdFor(taskId) {
+  let h = 0;
+  for (let i = 0; i < taskId.length; i++) h = (h * 31 + taskId.charCodeAt(i)) % 2000000;
+  return TASK_ID_BASE + h;
+}
+
+/* Plant alle Benachrichtigungen neu: eine tägliche Übersicht zur eingestellten
+   Uhrzeit und je eine Erinnerung am Fälligkeitstag jeder offenen Aufgabe. */
+let scheduleTimer = null;
+function scheduleAllSoon() {
+  clearTimeout(scheduleTimer);
+  scheduleTimer = setTimeout(scheduleAll, 800);
+}
+
+async function scheduleAll() {
+  const ln = LN();
+  if (!ln) return;                       // im Browser nicht möglich
+  if ((await remStatus()) !== "granted") return;
+
+  try {
+    const pending = await ln.getPending();
+    if (pending.notifications && pending.notifications.length)
+      await ln.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+  } catch {}
+
+  if (!feat("reminders")) return;
+
+  const [h, m] = (state.settings.reminderTime || "08:00").split(":").map(Number);
+  const list = [];
+
+  // Tägliche Übersicht, wiederkehrend zur eingestellten Uhrzeit.
+  list.push({
+    id: DAILY_ID,
+    title: "ToDo Organizer",
+    body: "Tagesübersicht öffnen",
+    schedule: { on: { hour: h, minute: m }, allowWhileIdle: true }
+  });
+
+  // Einzelne Aufgaben am Fälligkeitstag.
+  const now = Date.now();
+  const open = state.tasks.filter(t => !t.completed && t.dueDate);
+  for (const t of open.slice(0, 60)) {          // Android begrenzt die Anzahl
+    const at = parseISO(t.dueDate);
+    at.setHours(h, m, 0, 0);
+    if (at.getTime() <= now) continue;          // Vergangenes nicht einplanen
+    list.push({
+      id: notifIdFor(t.id),
+      title: "Heute fällig: " + t.title,
+      body: catName(t.categoryId) + " · Priorität " + (PRIO_LABEL[t.prio] || t.prio),
+      schedule: { at, allowWhileIdle: true }
+    });
+  }
+
+  try { await ln.schedule({ notifications: list }); }
+  catch (e) { console.error("Erinnerungen konnten nicht geplant werden:", e); }
+}
+
+/* Ersatzlösung für den Browser: einmal täglich ab der eingestellten Uhrzeit,
+   solange die Seite offen ist. */
+function checkReminder() {
+  if (isNative()) return;                       // nativ übernimmt das System
+  if (!feat("reminders") || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  const now = new Date();
+  const [h,m] = (state.settings.reminderTime || "08:00").split(":").map(Number);
+  if (now.getHours()*60 + now.getMinutes() < h*60 + m) return;
+  let last = null;
+  try { last = localStorage.getItem(REM_KEY); } catch {}
+  if (last === todayISO()) return;
+  const s = dueSummary();
+  if (!s) return;
+  try { new Notification("ToDo Organizer — " + s.title, { body: s.body }); } catch {}
+  try { localStorage.setItem(REM_KEY, todayISO()); } catch {}
+}
+
+/* ---------- Feiertage & freie Tage ----------
+   Berechnet die bundesweit einheitlichen gesetzlichen Feiertage selbst
+   (bewegliche über die Osterformel nach Gauß). Regional unterschiedliche
+   Feiertage sind bewusst nicht enthalten — wer sie braucht, trägt sie als
+   eigene freie Zeiträume ein. */
+function easterSunday(year) {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+const _holidayCache = {};
+function nationalHolidays(year) {
+  if (_holidayCache[year]) return _holidayCache[year];
+  const map = {};
+  const set = (d, name) => { map[isoOf(d)] = name; };
+  const easter = easterSunday(year);
+  const rel = n => { const d = new Date(easter); d.setDate(easter.getDate() + n); return d; };
+  set(new Date(year, 0, 1),  "Neujahr");
+  set(rel(-2),               "Karfreitag");
+  set(rel(1),                "Ostermontag");
+  set(new Date(year, 4, 1),  "Tag der Arbeit");
+  set(rel(39),               "Christi Himmelfahrt");
+  set(rel(50),               "Pfingstmontag");
+  set(new Date(year, 9, 3),  "Tag der Deutschen Einheit");
+  set(new Date(year, 11, 25),"1. Weihnachtstag");
+  set(new Date(year, 11, 26),"2. Weihnachtstag");
+  _holidayCache[year] = map;
+  return map;
+}
+/* Name des freien Tages oder null. Berücksichtigt Feiertage und eigene Zeiträume. */
+function holidayName(iso) {
+  const y = +iso.slice(0, 4);
+  const nat = nationalHolidays(y)[iso];
+  if (nat) return nat;
+  for (const h of (state.settings.holidays || [])) {
+    if (h.from && h.to && iso >= h.from && iso <= h.to) return h.name || "Frei";
+    if (h.from && !h.to && iso === h.from) return h.name || "Frei";
+  }
+  return null;
+}
+function isFreeDay(iso) {
+  const dow = parseISO(iso).getDay();       // 0 = Sonntag, 6 = Samstag
+  if (dow === 0 || dow === 6) return true;
+  return !!holidayName(iso);
+}
+
+function inRange(t, range) {
+  if (range === "all") return true;
+  if (range === "nodate") return !t.dueDate;
+  if (!t.dueDate) return false;
+  const today = todayISO();
+  if (range === "overdue") return t.dueDate < today && !t.completed;
+  if (range === "today")   return t.dueDate === today;
+
+  const now = new Date(); now.setHours(12,0,0,0);
+  if (range === "week") {
+    const mo = new Date(now); mo.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const su = new Date(mo);  su.setDate(mo.getDate() + 6);
+    return t.dueDate >= isoOf(mo) && t.dueDate <= isoOf(su);
+  }
+  if (range === "month") {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return t.dueDate >= isoOf(first) && t.dueDate <= isoOf(last);
+  }
+  return true;
+}
+
+function daysUntil(iso) {
+  const a = parseISO(iso), b = new Date(); b.setHours(12,0,0,0);
+  return Math.round((a - b) / 864e5);
+}
+
+function renderTasks() {
+  const box = $("task-list"); box.replaceChildren();
+  const cat = $("f-cat").value, sort = $("f-sort").value;
+  const q = $("f-search").value.trim().toLowerCase();
+
+  $("c-open").textContent = state.tasks.filter(t => !t.completed).length || "";
+  $("c-done").textContent = state.tasks.filter(t => t.completed).length || "";
+  $("c-all").textContent  = state.tasks.length || "";
+  updateBrandSub();
+
+  const list = state.tasks.filter(t =>
+    (filter === "all" || (filter === "open" ? !t.completed : t.completed)) &&
+    (cat === "all" || (cat === "none" ? !t.categoryId : t.categoryId === cat)) &&
+    inRange(t, $("f-range").value) &&
+    (!q || t.title.toLowerCase().includes(q) || (t.note || "").toLowerCase().includes(q))
+  );
+
+  list.sort((a,b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    if (sort === "prio") {
+      const p = (PRIO_RANK[a.prio] != null ? PRIO_RANK[a.prio] : 9) - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9);
+      if (p) return p;
+    }
+    if (sort === "created") return b.createdAt - a.createdAt;
+    if (!a.dueDate && !b.dueDate) return b.createdAt - a.createdAt;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+
+  if (!list.length) {
+    const r = $("f-range").value;
+    box.append(el("p","empty",
+      q ? "Nichts gefunden."
+      : r !== "all" ? "Keine Aufgaben in diesem Zeitraum."
+      : "Keine Aufgaben in dieser Ansicht."));
+    return;
+  }
+
+  const today = todayISO();
+  let lastGroup = null;
+  for (const t of list) {
+    if (sort === "due" && !t.completed) {
+      const g = !t.dueDate ? "Ohne Datum"
+        : t.dueDate < today ? "Überfällig"
+        : t.dueDate === today ? "Heute"
+        : daysUntil(t.dueDate) === 1 ? "Morgen"
+        : daysUntil(t.dueDate) <= 7 ? "Diese Woche" : "Später";
+      if (g !== lastGroup) { box.append(el("div","grp" + (g === "Überfällig" ? " warn" : ""), g)); lastGroup = g; }
+    }
+    box.append(taskCard(t, today));
+  }
+}
+
+function taskCard(t, today) {
+  const overdue = !t.completed && t.dueDate && t.dueDate < today;
+  const soon = !t.completed && t.dueDate === today;
+  const card = el("div", "task" + (t.completed ? " done" : ""));
+  card.style.borderLeftColor = catColor(t.categoryId);
+
+  const top = el("div","task-top");
+  const cb = document.createElement("input");
+  cb.type = "checkbox"; cb.checked = !!t.completed;
+  cb.setAttribute("aria-label","Erledigt");
+  cb.onchange = () => toggleTask(t.id);
+  const title = el("span","title", t.title);
+  title.onclick = () => openTaskDialog(t.id);
+  top.append(cb, title);
+  card.append(top);
+
+  const meta = el("div","meta");
+  const cbadge = el("span","badge", catName(t.categoryId));
+  cbadge.style.background = catColor(t.categoryId);
+  meta.append(cbadge);
+  meta.append(el("span","badge pri pri-" + t.prio, PRIO_LABEL[t.prio] || t.prio));
+  if (t.dueDate) {
+    const lbl = overdue ? `📅 ${deDate(t.dueDate)} · überfällig` : soon ? "📅 heute" : `📅 ${deDate(t.dueDate)}`;
+    meta.append(el("span", overdue ? "over" : soon ? "soon" : null, lbl));
+  }
+  if (t.recurrence && t.recurrence !== "none") meta.append(el("span",null,"🔄 " + (REC_LABEL[t.recurrence] || t.recurrence)));
+  if (t.subject && feat("timetable")) {
+    const nx = nextLessonFor(t.subject);
+    meta.append(el("span",null,"📚 " + t.subject + (nx ? " · nächste Stunde " + nx : "")));
+  }
+  if (t.assignee && feat("assignee")) meta.append(el("span",null,"👤 " + t.assignee));
+  if (t.note) meta.append(el("span",null,"📝"));
+  const subs = t.subtasks || [];
+  if (subs.length) meta.append(el("span",null,`☑ ${subs.filter(s => s.done).length}/${subs.length}`));
+  if (t.countTotal > 0) meta.append(el("span",null,`🔢 ${Math.min(t.countDone||0,t.countTotal)}/${t.countTotal}`));
+  card.append(meta);
+
+  if (subs.length) {
+    const wrap = el("div","subs");
+    const total = subs.length, done = subs.filter(s => s.done).length;
+    const bar = el("div","bar");
+    const fill = el("div","fill");
+    fill.style.width = (total ? Math.round(done/total*100) : 0) + "%";
+    bar.append(fill); wrap.append(bar);
+    for (const s of subs) {
+      const r = el("label","sub" + (s.done ? " done" : ""));
+      const c = document.createElement("input");
+      c.type = "checkbox"; c.checked = !!s.done;
+      c.onchange = () => {
+        s.done = c.checked;
+        // Sind alle Unterpunkte erledigt, gilt die Aufgabe selbst noch nicht automatisch
+        // als fertig — das entscheidet der Nutzer bewusst.
+        save(); renderTasks(); renderCalendar();
+      };
+      r.append(c, el("span",null,s.text));
+      wrap.append(r);
+    }
+    card.append(wrap);
+  }
+
+  // Mengenzähler: Fortschrittsbalken, Restpensum pro Tag bis zum Fälligkeitsdatum.
+  if (t.countTotal > 0) {
+    const done = Math.min(t.countDone || 0, t.countTotal);
+    const wrap = el("div","corr");
+    const bar = el("div","bar"), fill = el("div","fill");
+    fill.style.width = Math.round(done / t.countTotal * 100) + "%";
+    bar.append(fill);
+    let info = `${done}/${t.countTotal} erledigt`;
+    if (!t.completed && done < t.countTotal && t.dueDate) {
+      const days = daysUntil(t.dueDate);
+      if (days >= 1) info += ` · ≈ ${Math.ceil((t.countTotal - done) / days)} pro Tag`;
+    }
+    wrap.append(bar, el("span", null, info));
+    if (!t.completed && done < t.countTotal) {
+      const plus = el("button","btn-sm","+1");
+      plus.onclick = () => {
+        t.countDone = Math.min(t.countTotal, done + 1);
+        if (t.countDone >= t.countTotal) toast("Alle " + t.countTotal + " erledigt.");
+        save(); renderTasks(); renderCalendar();
+      };
+      wrap.append(plus);
+    }
+    card.append(wrap);
+  }
+
+  const act = el("div","actions");
+  const add = (label, fn, cls) => { const b = el("button","btn-sm"+(cls?" "+cls:""),label); b.onclick = fn; act.append(b); };
+  if (!t.completed) {
+    add("+1 Tag",   () => postpone(t.id, 1));
+    add("+1 Woche", () => postpone(t.id, 7));
+  }
+  if (t.assignee && feat("assignee"))
+    add("🔔 Erinnern", () => mailto(t.assignee, "Erinnerung: " + t.title,
+      `Hallo,\n\nbitte denk an "${t.title}".\nFällig: ${t.dueDate ? deDate(t.dueDate) : "kein Datum"}\n\nViele Grüße`));
+  if (feat("drafts")) add("📧 Entwurf", () => { const d = draftFor(t); mailto(t.assignee, d[0], d[1]); });
+  if (feat("gcalLink") && t.dueDate) add("🗓 In Google Kalender", () => openInGoogleCalendar(t));
+  add("✎", () => openTaskDialog(t.id));
+  add("Löschen", () => {
+    const snap = snapshot();
+    state.tasks = state.tasks.filter(x => x.id !== t.id);
+    save(); renderTasks(); renderCalendar(); updateStorageInfo();
+    toast("Gelöscht.", () => restore(snap));
+  }, "danger");
+  card.append(act);
+  return card;
+}
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active"); filter = tab.dataset.filter; renderTasks();
+  };
+});
+$("f-cat").onchange = renderTasks;
+$("f-range").onchange = renderTasks;
+$("f-sort").onchange = renderTasks;
+$("f-search").oninput = renderTasks;
+
+/* ---------- Aufgaben-Dialog ---------- */
+let draftSubs = [];   // Arbeitskopie, wird erst beim Übernehmen geschrieben.
+
+function renderDraftSubs() {
+  const box = $("e-subs"); box.replaceChildren();
+  if (!draftSubs.length) { box.append(el("p","hint","Noch keine Unterpunkte.")); return; }
+  draftSubs.forEach((s, i) => {
+    const r = el("div","sub-edit");
+    const c = document.createElement("input");
+    c.type = "checkbox"; c.checked = !!s.done;
+    c.onchange = () => { s.done = c.checked; renderDraftSubs(); };
+    const txt = el("span", s.done ? "done" : null, s.text);
+    const del = el("button","btn-sm danger","✕");
+    del.onclick = () => { draftSubs.splice(i,1); renderDraftSubs(); };
+    r.append(c, txt, del);
+    box.append(r);
+  });
+}
+function addDraftSub() {
+  const i = $("e-sub-new"), v = i.value.trim();
+  if (!v) return;
+  draftSubs.push({ id: uid(), text: v, done: false });
+  i.value = ""; i.focus(); renderDraftSubs();
+}
+$("e-sub-add").onclick = addDraftSub;
+$("e-sub-new").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); addDraftSub(); } };
+
+function openTaskDialog(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  editingTaskId = id;
+  fillSubjectSelects();
+  $("e-title").value = t.title;
+  $("e-category").value = t.categoryId || "";
+  $("e-prio").value = t.prio;
+  $("e-date").value = t.dueDate || "";
+  $("e-recurrence").value = t.recurrence || "none";
+  $("e-assignee").value = t.assignee || "";
+  $("e-subject").value = t.subject || "";
+  $("e-count-total").value = t.countTotal || "";
+  $("e-count-done").value = t.countDone || "";
+  $("e-note").value = t.note || "";
+  draftSubs = JSON.parse(JSON.stringify(t.subtasks || []));
+  renderDraftSubs();
+  $("dlg-task").showModal();
+}
+$("e-save").onclick = () => {
+  const t = state.tasks.find(x => x.id === editingTaskId);
+  if (!t) { $("dlg-task").close(); return; }
+  const title = $("e-title").value.trim();
+  if (!title) return toast("Titel darf nicht leer sein.");
+  Object.assign(t, {
+    title, categoryId: $("e-category").value || null,
+    prio: $("e-prio").value, dueDate: $("e-date").value || null,
+    recurrence: $("e-recurrence").value,
+    assignee: $("e-assignee").value.trim() || null,
+    subject: $("e-subject").value || null,
+    countTotal: Math.max(0, parseInt($("e-count-total").value, 10) || 0),
+    countDone: Math.max(0, parseInt($("e-count-done").value, 10) || 0),
+    subtasks: draftSubs,
+    note: $("e-note").value.trim()
+  });
+  save(); $("dlg-task").close(); renderTasks(); renderCalendar(); toast("Gespeichert.");
+};
+$("e-cancel").onclick = () => $("dlg-task").close();
+$("e-del").onclick = () => {
+  const t = state.tasks.find(x => x.id === editingTaskId);
+  if (!t) return;
+  const snap = snapshot();
+  state.tasks = state.tasks.filter(x => x.id !== editingTaskId);
+  save(); $("dlg-task").close(); renderTasks(); renderCalendar(); updateStorageInfo();
+  toast("Gelöscht.", () => restore(snap));
+};
+
+/* ---------- Kalender ---------- */
+$("cal-prev").onclick  = () => { calCursor.setDate(1); calCursor.setMonth(calCursor.getMonth()-1); renderCalendar(); };
+$("cal-next").onclick  = () => { calCursor.setDate(1); calCursor.setMonth(calCursor.getMonth()+1); renderCalendar(); };
+$("cal-today").onclick = () => { calCursor = new Date(); calSelected = todayISO(); renderCalendar(); };
+$("cal-add").onclick   = () => { switchTo("tasks"); $("t-date").value = calSelected || todayISO(); $("t-title").focus(); };
+
+function renderCalendar() {
+  if (!feat("calendar")) return;
+  const grid = $("cal-grid"); grid.replaceChildren();
+  $("cal-month").textContent = calCursor.toLocaleDateString("de-DE", { month:"long", year:"numeric" });
+  ["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(d => grid.append(el("div","cal-d",d)));
+
+  const first = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+  const start = new Date(first);
+  start.setDate(1 - ((first.getDay() + 6) % 7));   // Woche beginnt Montag
+  const today = todayISO();
+
+  const byDate = {};
+  for (const t of state.tasks) {
+    if (t.dueDate && !t.completed) (byDate[t.dueDate] = byDate[t.dueDate] || []).push(t);
+  }
+
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const iso = isoOf(d);
+    const hol = holidayName(iso);
+    const cell = el("div","cal-c"
+      + (d.getMonth() !== calCursor.getMonth() ? " out" : "")
+      + (iso === today ? " today" : "")
+      + (hol ? " holiday" : "")
+      + (iso === calSelected ? " sel" : ""));
+    cell.append(el("div","n", String(d.getDate())));
+    if (hol) { const hn = el("div","hol", hol); hn.title = hol; cell.append(hn); }
+    const items = byDate[iso] || [];
+    if (items.length) {
+      const dots = el("div","dots");
+      items.slice(0,4).forEach(t => {
+        const dot = el("span","dot");
+        dot.style.background = catColor(t.categoryId);
+        dots.append(dot);
+      });
+      cell.append(dots);
+      if (items.length > 4) cell.append(el("div","more","+" + (items.length - 4)));
+    }
+    cell.onclick = () => { calSelected = iso; renderCalendar(); };
+    grid.append(cell);
+  }
+  renderCalendarDay();
+}
+
+function renderCalendarDay() {
+  const iso = calSelected || todayISO();
+  const hol = holidayName(iso);
+  $("cal-day-title").textContent = parseISO(iso).toLocaleDateString("de-DE",
+    { weekday:"long", day:"2-digit", month:"long", year:"numeric" }) + (hol ? " · " + hol : "");
+  const box = $("cal-day-list"); box.replaceChildren();
+  const items = state.tasks.filter(t => t.dueDate === iso)
+    .sort((a,b) => (a.completed - b.completed) ||
+      ((PRIO_RANK[a.prio] != null ? PRIO_RANK[a.prio] : 9) - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9)));
+  if (!items.length) { box.append(el("p","empty","Keine Aufgaben an diesem Tag.")); return; }
+  items.forEach(t => box.append(taskCard(t, todayISO())));
+}
+
+/* ---------- Stundenplan ---------- */
+function fillSlotSelects() {
+  const sel = $("tt-slot"); const keepSlot = sel.value; sel.replaceChildren();
+  state.settings.slots.forEach((s,i) => sel.append(new Option(`${i+1}. Stunde (${s})`, i)));
+  if ([...sel.options].some(o => o.value === keepSlot)) sel.value = keepSlot;
+
+  const day = $("tt-day"); const keepDay = day.value; day.replaceChildren();
+  activeDays().forEach(d => day.append(new Option(DAY_NAMES[d], d)));
+  if ([...day.options].some(o => o.value === keepDay)) day.value = keepDay;
+}
+
+$("btn-add-lesson").onclick = () => {
+  const subject = $("tt-subject").value.trim();
+  if (!subject) return toast("Bitte ein Fach eingeben.");
+  const day = +$("tt-day").value, slot = +$("tt-slot").value;
+  state.lessons = state.lessons.filter(l => !(l.day === day && l.slot === slot));
+  state.lessons.push({ id: uid(), day, slot, subject, room: $("tt-room").value.trim() || null, color: "#2563eb" });
+  save(); renderTimetable(); fillSubjectSelects(); updateStorageInfo();
+  $("tt-subject").value = ""; $("tt-room").value = "";
+  toast("Stunde eingetragen.");
+};
+
+function renderTimetable() {
+  if (!feat("timetable")) return;
+  const g = $("tt-grid"); g.replaceChildren();
+  const days = activeDays();
+  g.style.setProperty("--cols", days.length);
+  const todayDow = ((new Date().getDay() + 6) % 7) + 1;
+
+  g.append(el("div"));
+  days.forEach(d => g.append(el("div","tt-h" + (d === todayDow ? " today" : ""), DAY_SHORT[d])));
+
+  state.settings.slots.forEach((time, si) => {
+    const parts = time.split("-");
+    const t = el("div","tt-t");
+    t.append(el("div",null,parts[0] || time));
+    if (parts[1]) t.append(el("div",null,parts[1]));
+    g.append(t);
+
+    for (const d of days) {
+      const cell = el("div","tt-s");
+      const l = state.lessons.find(x => x.day === d && x.slot === si);
+      if (l) {
+        cell.classList.add("full");
+        cell.style.background = l.color || "#2563eb";
+        cell.style.borderColor = l.color || "#2563eb";
+        cell.append(el("div","subj", l.subject));
+        if (l.room) cell.append(el("div","room", l.room));
+        cell.onclick = () => openLessonDialog(l, d, si);
+      } else {
+        cell.onclick = () => openLessonDialog(null, d, si);
+      }
+      g.append(cell);
+    }
+  });
+}
+
+function openLessonDialog(lesson, day, slot) {
+  editingLesson = { lesson, day, slot };
+  $("l-head").textContent = `${DAY_NAMES[day]}, ${slot+1}. Stunde`;
+  $("l-subject").value = lesson ? lesson.subject : "";
+  $("l-room").value    = lesson && lesson.room ? lesson.room : "";
+  $("l-color").value   = lesson && lesson.color ? lesson.color : "#2563eb";
+  $("l-del").style.display = lesson ? "" : "none";
+  $("dlg-lesson").showModal();
+  setTimeout(() => $("l-subject").focus(), 60);
+}
+$("l-save").onclick = () => {
+  const subject = $("l-subject").value.trim();
+  if (!subject) return toast("Bitte ein Fach eingeben.");
+  const lesson = editingLesson.lesson, day = editingLesson.day, slot = editingLesson.slot;
+  const room = $("l-room").value.trim() || null, color = $("l-color").value;
+  if (lesson) Object.assign(lesson, { subject, room, color });
+  else state.lessons.push({ id: uid(), day, slot, subject, room, color });
+  save(); $("dlg-lesson").close(); renderTimetable(); fillSubjectSelects(); updateStorageInfo();
+};
+$("l-cancel").onclick = () => $("dlg-lesson").close();
+$("l-del").onclick = () => {
+  const lesson = editingLesson.lesson;
+  if (!lesson) { $("dlg-lesson").close(); return; }
+  state.lessons = state.lessons.filter(x => x.id !== lesson.id);
+  save(); $("dlg-lesson").close(); renderTimetable(); fillSubjectSelects(); updateStorageInfo(); toast("Gelöscht.");
+};
+
+/* ---------- Einkaufsliste ---------- */
+function addItem() {
+  const i = $("s-item"), text = i.value.trim();
+  if (!text) return;
+  state.shopping.push({ id: uid(), text, done: false, createdAt: Date.now() });
+  save(); renderShopping(); updateStorageInfo();
+  i.value = ""; i.focus();
+}
+$("btn-add-item").onclick = addItem;
+$("s-item").onkeydown = e => { if (e.key === "Enter") addItem(); };
+$("btn-clear-done").onclick = () => {
+  const n = state.shopping.filter(i => i.done).length;
+  if (!n) return toast("Nichts zu entfernen.");
+  state.shopping = state.shopping.filter(i => !i.done);
+  save(); renderShopping(); toast(n + " Artikel entfernt.");
+};
+$("btn-share-shop").onclick = async () => {
+  const open = state.shopping.filter(i => !i.done).map(i => "• " + i.text);
+  if (!open.length) return toast("Liste ist leer.");
+  const text = "Einkaufsliste\n" + open.join("\n");
+  // navigator.share und clipboard sind Browserfunktionen, keine externen Dienste.
+  if (navigator.share) { try { await navigator.share({ text }); return; } catch { /* abgebrochen */ } }
+  try { await navigator.clipboard.writeText(text); toast("In die Zwischenablage kopiert."); }
+  catch { mailto("", "Einkaufsliste", text); }
+};
+
+function renderShopping() {
+  if (!feat("shopping")) return;
+  renderShoppingLists();
+  const box = $("shop-list"); box.replaceChildren();
+  if (!state.shopping.length) { box.append(el("p","empty","Liste ist leer.")); return; }
+  const sorted = [...state.shopping].sort((a,b) => (a.done === b.done ? a.createdAt - b.createdAt : a.done ? 1 : -1));
+  for (const it of sorted) {
+    const row = el("div","row" + (it.done ? " done" : ""));
+    const lab = el("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = !!it.done;
+    cb.onchange = () => { it.done = cb.checked; save(); renderShopping(); };
+    lab.append(cb, el("span",null,it.text));
+    const del = el("button","btn-sm danger","✕");
+    del.setAttribute("aria-label","Artikel löschen");
+    del.onclick = () => { state.shopping = state.shopping.filter(x => x.id !== it.id); save(); renderShopping(); updateStorageInfo(); };
+    row.append(lab, del);
+    box.append(row);
+  }
+}
+
+/* ---------- Stammlisten ---------- */
+function renderShoppingLists() {
+  const box = $("slists"); if (!box) return;
+  box.replaceChildren();
+  const lists = state.shoppingLists || [];
+  if (!lists.length) { box.append(el("p","empty","Noch keine Stammliste gespeichert.")); return; }
+  for (const sl of lists) {
+    const row = el("div","row");
+    const info = el("div");
+    info.append(el("div",null,sl.name));
+    const sub = el("div",null,sl.items.length + " Artikel");
+    sub.style.cssText = "color:var(--muted);font-size:.78rem";
+    info.append(sub);
+    row.append(info);
+    const btns = el("div"); btns.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+    const use = el("button","btn-sm","Einfügen");
+    use.onclick = () => insertShoppingList(sl);
+    const del = el("button","btn-sm danger","✕");
+    del.setAttribute("aria-label","Stammliste löschen");
+    del.onclick = () => {
+      if (!confirm(`Stammliste "${sl.name}" löschen?`)) return;
+      state.shoppingLists = state.shoppingLists.filter(x => x.id !== sl.id);
+      save(); renderShoppingLists();
+    };
+    btns.append(use, del);
+    row.append(btns);
+    box.append(row);
+  }
+}
+
+function insertShoppingList(sl) {
+  // Bereits offene Artikel (Groß/Klein egal) nicht doppelt anlegen.
+  const openTexts = new Set(state.shopping.filter(i => !i.done).map(i => i.text.toLowerCase()));
+  let added = 0;
+  for (const text of sl.items) {
+    if (openTexts.has(text.toLowerCase())) continue;
+    state.shopping.push({ id: uid(), text, done: false, createdAt: Date.now() + added });
+    added++;
+  }
+  save(); renderShopping(); updateStorageInfo();
+  toast(added ? `${added} Artikel eingefügt.` : "Alle Artikel schon auf der Liste.");
+}
+
+$("btn-save-slist").onclick = () => {
+  const items = state.shopping.filter(i => !i.done).map(i => i.text);
+  if (!items.length) return toast("Keine offenen Artikel zum Speichern.");
+  const name = prompt("Name der Stammliste:", "Wocheneinkauf");
+  if (name === null) return;
+  const clean = name.trim() || "Stammliste";
+  const existing = state.shoppingLists.find(l => l.name.toLowerCase() === clean.toLowerCase());
+  if (existing) {
+    if (!confirm(`"${clean}" gibt es bereits. Überschreiben?`)) return;
+    existing.items = items;
+  } else {
+    state.shoppingLists.push({ id: uid(), name: clean, items });
+  }
+  save(); renderShoppingLists();
+  toast(`Stammliste "${clean}" gespeichert (${items.length} Artikel).`);
+};
+
+/* ---------- Einstellungen ---------- */
+function renderSwitches() {
+  const box = $("feature-switches"); box.replaceChildren();
+  for (const f of FEATURES) {
+    const row = el("div","sw");
+    const txt = el("div");
+    txt.append(el("div","lb", f.label), el("div","ds", f.desc));
+    const tg = el("button","tog" + (feat(f.key) ? " on" : ""));
+    tg.setAttribute("role","switch");
+    tg.setAttribute("aria-checked", String(feat(f.key)));
+    tg.setAttribute("aria-label", f.label);
+    tg.onclick = () => {
+      state.settings.features[f.key] = !feat(f.key);
+      save(); renderSwitches(); applyFeatures(); renderAll();
+    };
+    row.append(txt, tg); box.append(row);
+  }
+}
+
+$("btn-save-hol").onclick = () => {
+  const lines = $("hol-editor").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const out = [];
+  for (const line of lines) {
+    const parts = line.split(";").map(s => s.trim());
+    const name = parts[0] || "Frei";
+    const from = parts[1] || null;
+    const to = parts[2] || parts[1] || null;
+    if (!from || !/^\d{4}-\d{2}-\d{2}$/.test(from)) return toast('Ungültiges Datum in: "' + line + '"');
+    if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) return toast('Ungültiges Datum in: "' + line + '"');
+    out.push({ name, from, to: to && to >= from ? to : from });
+  }
+  state.settings.holidays = out;
+  save(); renderCalendar(); toast("Freie Tage gespeichert.");
+};
+$("hol-skip").onchange = e => { state.settings.skipHolidays = e.target.checked; save(); };
+
+$("btn-save-slots").onclick = () => {
+  const lines = $("slot-editor").value.split("\n").map(s => s.trim()).filter(Boolean);
+  if (!lines.length) return toast("Mindestens eine Zeile angeben.");
+  if (lines.length > 14) return toast("Höchstens 14 Stunden möglich.");
+  const removed = state.lessons.filter(l => l.slot >= lines.length).length;
+  if (removed && !confirm(`${removed} Eintrag/Einträge liegen außerhalb der neuen Zeiten und werden gelöscht. Fortfahren?`)) return;
+  state.lessons = state.lessons.filter(l => l.slot < lines.length);
+  state.settings.slots = lines;
+  save(); fillSlotSelects(); renderTimetable(); toast("Zeiten gespeichert.");
+};
+$("tt-sat").onchange = e => {
+  state.settings.saturday = e.target.checked;
+  if (!e.target.checked) state.lessons = state.lessons.filter(l => l.day !== 6);
+  save(); fillSlotSelects(); renderTimetable();
+};
+
+function updateStorageInfo() {
+  let bytes = 0;
+  try { bytes = new Blob([localStorage.getItem(KEY) || ""]).size; } catch {}
+  $("storage-info").textContent =
+    `${state.tasks.length} Aufgaben · ${state.lessons.length} Stunden · ${state.shopping.length} Artikel · ${(bytes/1024).toFixed(1)} KB belegt`;
+}
+
+/* ---------- Export / Import / ICS ---------- */
+$("btn-export").onclick = () => {
+  download(`todo-organizer-backup-${todayISO()}.json`, JSON.stringify(state, null, 2), "application/json");
+  toast("Sicherung erstellt.");
+};
+$("btn-import").onclick = () => $("file-import").click();
+$("file-import").onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d || typeof d !== "object" || !Array.isArray(d.tasks)) throw new Error("Keine gültige Sicherungsdatei.");
+      if (!confirm("Der aktuelle Bestand wird vollständig überschrieben. Fortfahren?")) return;
+      if (d.version === 2 || Array.isArray(d.categories)) {
+        const def = DEFAULT_STATE();
+        state = {
+          version: 2,
+          tasks: d.tasks || [], lessons: d.lessons || [], shopping: d.shopping || [],
+          shoppingLists: Array.isArray(d.shoppingLists) ? d.shoppingLists : [],
+          categories: (d.categories && d.categories.length) ? d.categories : def.categories,
+          settings: {
+            features: { ...def.settings.features, ...(d.settings && d.settings.features) },
+            slots: (d.settings && d.settings.slots && d.settings.slots.length) ? d.settings.slots : def.settings.slots,
+            saturday: !!(d.settings && d.settings.saturday),
+            skipHolidays: !!(d.settings && d.settings.skipHolidays),
+            holidays: (d.settings && Array.isArray(d.settings.holidays)) ? d.settings.holidays : []
+          }
+        };
+      } else migrateV1(d);
+      save(); initUI(); renderAll(); toast("Import erfolgreich.");
+    } catch (err) { alert("Import fehlgeschlagen: " + err.message); }
+  };
+  r.readAsText(file);
+  e.target.value = "";
+};
+
+// Ganztägige Termine als Standard-ICS. Importierbar in jeden gängigen Kalender.
+$("btn-ics").onclick = () => {
+  const list = state.tasks.filter(t => !t.completed && t.dueDate);
+  if (!list.length) return toast("Keine offenen Aufgaben mit Datum.");
+  const esc = s => String(s).replace(/([,;\\])/g, "\\$1").replace(/\r?\n/g, "\\n");
+  const stamp = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
+  const out = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ToDo Organizer//DE","CALSCALE:GREGORIAN"];
+  for (const t of list) {
+    const end = parseISO(t.dueDate); end.setDate(end.getDate() + 1);
+    out.push("BEGIN:VEVENT",
+      `UID:${t.id}@todo-organizer.local`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${t.dueDate.replace(/-/g,"")}`,
+      `DTEND;VALUE=DATE:${isoOf(end).replace(/-/g,"")}`,
+      `SUMMARY:${esc(t.title)}`,
+      `DESCRIPTION:${esc(catName(t.categoryId) + " · Priorität " + (PRIO_LABEL[t.prio] || t.prio) + (t.note ? "\n" + t.note : ""))}`,
+      "END:VEVENT");
+  }
+  out.push("END:VCALENDAR");
+  download(`todo-organizer-termine-${todayISO()}.ics`, out.join("\r\n"), "text/calendar");
+  toast("Kalenderdatei erstellt.");
+};
+
+$("btn-purge").onclick = () => {
+  const n = state.tasks.filter(t => t.completed).length;
+  if (!n) return toast("Keine erledigten Aufgaben.");
+  if (!confirm(`${n} erledigte Aufgabe(n) endgültig löschen?`)) return;
+  state.tasks = state.tasks.filter(t => !t.completed);
+  save(); renderAll(); toast(n + " gelöscht.");
+};
+$("btn-reset").onclick = () => {
+  if (!confirm("Wirklich alle Daten löschen? Das lässt sich nicht rückgängig machen.")) return;
+  if (!confirm("Letzte Sicherheitsabfrage: Alles unwiderruflich löschen?")) return;
+  try { localStorage.removeItem(KEY); localStorage.removeItem(LEGACY_KEY); } catch {}
+  state = DEFAULT_STATE();
+  initUI(); renderAll(); toast("Alle Daten gelöscht.");
+};
+
+/* ---------- Start ---------- */
+function initUI() {
+  $("app-ver").textContent = APP_VERSION;
+  fillCategorySelects();
+  fillSlotSelects();
+  fillSubjectSelects();
+  renderCategoryChips();
+  renderSwitches();
+  $("slot-editor").value = state.settings.slots.join("\n");
+  $("tt-sat").checked = !!state.settings.saturday;
+  $("hol-editor").value = (state.settings.holidays || [])
+    .map(h => `${h.name};${h.from}${h.to && h.to !== h.from ? ";" + h.to : ""}`).join("\n");
+  $("hol-skip").checked = !!state.settings.skipHolidays;
+  $("rem-time").value = state.settings.reminderTime || "08:00";
+  updateReminderStatus();
+  applyFeatures();
+}
+function renderAll() {
+  renderTasks(); renderCalendar(); renderTimetable(); renderShopping();
+  fillSubjectSelects(); updateStorageInfo();
+}
+
+load();
+calSelected = todayISO();
+initUI();
+renderAll();
+
+/* Service Worker registrieren, damit die App offline startet und sich
+   über „Zum Startbildschirm hinzufügen“ installieren lässt.
+   Läuft nur über https bzw. localhost, nicht bei einer lokalen Datei. */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW:", e));
+  });
+}
+
+/* ---------- Android-Zurück-Taste ----------
+   Ohne Behandlung schließt die Zurück-Taste die App sofort. Erwartet wird:
+   offener Dialog -> Dialog schließen; Unteransicht -> zurück zu den Aufgaben;
+   Aufgabenansicht -> Nachfrage vor dem Beenden. */
+(function backButton() {
+  const c = window.Capacitor;
+  const App = c && c.Plugins && c.Plugins.App;
+  if (!App || !App.addListener) return;
+
+  let armed = false;   // zweimal Zurück innerhalb kurzer Zeit beendet die App
+
+  App.addListener("backButton", () => {
+    const dlg = document.querySelector("dialog[open]");
+    if (dlg) { dlg.close(); return; }
+
+    const active = document.querySelector(".view.active");
+    const view = active ? active.id.replace("view-", "") : "tasks";
+    if (view !== "tasks") { switchTo("tasks"); return; }
+
+    if (armed) { App.exitApp(); return; }
+    armed = true;
+    toast("Zum Beenden erneut zurück drücken.");
+    setTimeout(() => { armed = false; }, 2200);
+  });
+})();
+
+// Erinnerungen prüfen: beim Start, alle 5 Minuten und beim Zurückkehren in den Tab.
+checkReminder();
+setInterval(checkReminder, 5 * 60 * 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { checkReminder(); renderTasks(); } });
+
+// In der installierten App die geplanten Benachrichtigungen aufsetzen.
+(async () => {
+  if (!LN()) return;
+  if ((await remStatus()) === "granted") await scheduleAll();
+  await updateReminderStatus();
+})();
+</script>
+</body>
+</html>
