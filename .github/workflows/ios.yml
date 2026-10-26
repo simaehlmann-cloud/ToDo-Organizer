@@ -1,0 +1,310 @@
+name: Build ToDo Organizer (iOS)
+
+# Aufbau wie bei Zirkelwerk: Prüfkette auf Linux, Bau auf macOS, Upload nur
+# beim manuellen Start. Unterschied: Der ToDo Organizer läuft auf Capacitor
+# statt Cordova (Erinnerungen, Kalender-Abruf und Teilen sind dort schon
+# eingebaut). Das Xcode-Projekt entsteht bei jedem Lauf frisch aus
+# capacitor.config.json – im Repository liegt nur der Web-Teil.
+#
+# Testphase und Vollversion laufen über StoreKit 2
+# (capacitor-plugin-cdv-purchase), ohne eigenen Server.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Zwei schnelle Pushes: der ältere Lauf wird abgebrochen, damit nicht zwei
+# Builds gleichzeitig signieren oder hochladen.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Die Prüfkette läuft auf Linux. macOS-Läufer werden je Minute zehnfach
+  # abgerechnet – ein Tippfehler soll nicht auf dem teuren Läufer auffallen.
+  pruefungen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Prüfungen
+        run: |
+          set -e
+          node validate.js
+          npm install --no-save --no-audit --no-fund "playwright@1.63.0"
+          npx playwright install --with-deps chromium
+          node smoketest.js
+
+  build:
+    needs: pruefungen
+    # Festgepinnt, nicht macos-latest (siehe Zirkelwerk): "latest" wechselt
+    # ohne Vorwarnung die Xcode-Fassung.
+    runs-on: macos-26
+
+    env:
+      APP_ID: de.maehlmann.todoorganizer
+      APP_NAME: ToDo Organizer
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Apple nimmt Uploads nur an, wenn sie mit einem hinreichend neuen SDK
+      # gebaut wurden. Diese Zeile ist der Ort, an dem das nachgezogen wird.
+      - name: Xcode auswählen
+        run: |
+          set -e
+          ls /Applications | grep -i '^Xcode' || true
+          APP=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$APP" ] || { echo "Kein Xcode 26 auf diesem Laeufer gefunden."; exit 1; }
+          sudo xcode-select -switch "$APP"
+          xcodebuild -version
+
+      - name: Version und Build-Nummer bestimmen
+        id: version
+        run: |
+          set -e
+          VER=$(grep -o 'const APP_VERSION = "[0-9.]*"' index.html | grep -o '[0-9][0-9.]*')
+          [ -n "$VER" ] || { echo "::error::APP_VERSION nicht gefunden."; exit 1; }
+          # Die Laufnummer steigt mit jedem Lauf dieses Workflows. Apple
+          # verlangt pro Version eine noch nie hochgeladene Build-Nummer.
+          BUILD=${{ github.run_number }}
+          echo "Version $VER, Build $BUILD"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+
+      # ---- Signierung (optional) ----
+      # Dieselben Secrets wie bei FairMix und Zirkelwerk:
+      #   IOS_CERTIFICATE_P12_BASE64, IOS_CERTIFICATE_PASSWORD,
+      #   IOS_PROVISIONING_PROFILE (neu, für de.maehlmann.todoorganizer),
+      #   IOS_TEAM_ID
+      # Ohne sie baut der Lauf nur unsigniert (Kompilierbarkeit).
+      - name: Signierschlüssel einrichten
+        id: signieren
+        env:
+          ZERT_B64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          ZERT_PW: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFIL_B64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: |
+          set -e
+          if [ -z "$ZERT_B64" ] || [ -z "$PROFIL_B64" ]; then
+            echo "vorhanden=false" >> "$GITHUB_OUTPUT"
+            echo "Kein Zertifikat hinterlegt – signierter Build wird übersprungen."
+            exit 0
+          fi
+
+          # Unsichtbare Zeichen entfernen, die beim Kopieren mitkommen können.
+          saeubern() {
+            printf '%s' "$1" | sed '1s/^\xEF\xBB\xBF//' | tr -d ' \t\r\n' | base64 -d
+          }
+          ZERT="$RUNNER_TEMP/dist.p12"
+          PROFIL="$RUNNER_TEMP/profil.mobileprovision"
+          saeubern "$ZERT_B64"   > "$ZERT"
+          saeubern "$PROFIL_B64" > "$PROFIL"
+          [ -s "$ZERT" ]   || { echo "::error::Das Zertifikat ließ sich nicht dekodieren."; exit 1; }
+          [ -s "$PROFIL" ] || { echo "::error::Das Profil ließ sich nicht dekodieren."; exit 1; }
+
+          BUND="$RUNNER_TEMP/signieren.keychain-db"
+          BUND_PW=$(uuidgen)
+          security create-keychain -p "$BUND_PW" "$BUND"
+          security set-keychain-settings -lut 21600 "$BUND"
+          security unlock-keychain -p "$BUND_PW" "$BUND"
+          security import "$ZERT" -P "$ZERT_PW" -A -t cert -f pkcs12 -k "$BUND"
+          security set-key-partition-list -S apple-tool:,apple: -k "$BUND_PW" "$BUND" > /dev/null
+          security list-keychain -d user -s "$BUND" login.keychain-db
+
+          INHALT="$RUNNER_TEMP/profil.plist"
+          security cms -D -i "$PROFIL" > "$INHALT"
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$INHALT")
+          NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$INHALT")
+          PROFIL_APP=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$INHALT")
+          echo "Profil: $NAME ($UUID) für $PROFIL_APP"
+          case "$PROFIL_APP" in
+            *".$APP_ID") ;;
+            *) echo "::error::Das Profil gehört zu '$PROFIL_APP', nicht zu $APP_ID. Bitte ein App-Store-Profil für $APP_ID anlegen und als IOS_PROVISIONING_PROFILE hinterlegen."; exit 1 ;;
+          esac
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFIL" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          rm -f "$ZERT" "$PROFIL" "$INHALT"
+          echo "profil_name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "vorhanden=true" >> "$GITHUB_OUTPUT"
+
+      - name: Pakete installieren
+        run: npm install --no-audit --no-fund
+
+      - name: Web-Teil zusammenstellen
+        run: |
+          set -e
+          rm -rf www && mkdir -p www
+          # Nur die tatsächlichen App-Dateien – was hier liegt, landet im Store.
+          cp index.html manifest.json sw.js datenschutz.html impressum.html www/
+          cp -R icons www/
+          node tools/make-purchase-js.js www/purchase.js
+          ls -la www
+
+      - name: iOS-Projekt erzeugen
+        run: |
+          set -e
+          npx cap add ios --packagemanager SPM
+          npx cap sync ios
+
+      - name: Projekt anpassen
+        env:
+          MARKETING_VERSION: ${{ steps.version.outputs.version }}
+          CURRENT_PROJECT_VERSION: ${{ steps.version.outputs.build }}
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          PROFILE_NAME: ${{ steps.signieren.outputs.profil_name }}
+        run: |
+          set -e
+          # Icon (randlos, ohne Alpha) und Privacy-Manifest
+          cp res/ios/icon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+          cp res/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
+          ruby tools/ios-setup.rb
+
+          P=ios/App/App/Info.plist
+          setze() { /usr/libexec/PlistBuddy -c "Delete :$1" "$P" 2>/dev/null || true
+                    /usr/libexec/PlistBuddy -c "Add :$1 $2 $3" "$P"; }
+          setze CFBundleDisplayName string "$APP_NAME"
+          setze CFBundleDevelopmentRegion string de
+          # Nur Standard-Verschlüsselung (AES-GCM des Systems für das Backup):
+          # ausgenommen, also false. Sonst fragt jeder Upload nach.
+          setze ITSAppUsesNonExemptEncryption bool false
+          # Die App hat keine dunkle Darstellung. Hell erzwingen, sonst wird
+          # die Statusleiste im Dunkelmodus weiß auf hellem Grund.
+          setze UIUserInterfaceStyle string Light
+          # Nur Hochformat, wie im Web-Manifest
+          /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" "$P" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$P"
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" "$P"
+          # Die Vorlage nennt noch armv7 – seit Langem arm64
+          /usr/libexec/PlistBuddy -c "Delete :UIRequiredDeviceCapabilities" "$P" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UIRequiredDeviceCapabilities array" "$P"
+          /usr/libexec/PlistBuddy -c "Add :UIRequiredDeviceCapabilities:0 string arm64" "$P"
+
+      # Was Xcode wirklich baut, steht im erzeugten Projekt. Alles, woran der
+      # Upload oder die Prüfung scheitern würde, wird hier geprüft.
+      - name: Erzeugtes Projekt bestätigen
+        run: |
+          set -e
+          P=ios/App/App/Info.plist
+          PBX=ios/App/App.xcodeproj/project.pbxproj
+          holen() { /usr/libexec/PlistBuddy -c "Print :$1" "$P" 2>/dev/null || echo FEHLT; }
+          FEHLER=0
+          BUNDLE=$(grep -m1 -o 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*;' "$PBX" | sed 's/.*= *//; s/;$//; s/"//g')
+          echo "Bundle-ID:        $BUNDLE"
+          echo "Name:             $(holen CFBundleDisplayName)"
+          echo "Export-Erklärung: $(holen ITSAppUsesNonExemptEncryption)"
+          [ "$BUNDLE" = "$APP_ID" ] || { echo "::error::Bundle-ID ist '$BUNDLE', erwartet '$APP_ID'."; FEHLER=1; }
+          [ "$(holen ITSAppUsesNonExemptEncryption)" = "false" ] || { echo "::error::ITSAppUsesNonExemptEncryption fehlt."; FEHLER=1; }
+          grep -q 'PrivacyInfo.xcprivacy in Resources' "$PBX" || { echo "::error::Privacy-Manifest nicht im Projekt."; FEHLER=1; }
+          grep -q 'TARGETED_DEVICE_FAMILY = 1;' "$PBX" || { echo "::error::Gerätefamilie ist nicht iPhone."; FEHLER=1; }
+          # Kauf: Plugin nativ eingebunden und purchase.js im App-Paket –
+          # sonst bleibt der Kaufknopf tot und die App-Prüfung lehnt ab.
+          SPM=ios/App/CapApp-SPM/Package.swift
+          if grep -Eq 'const IAP_ENABLED *= *true' www/index.html; then
+            grep -q 'capacitor-plugin-cdv-purchase' "$SPM" \
+              && echo "Kauf-Plugin (StoreKit 2) eingebunden." \
+              || { echo "::error::capacitor-plugin-cdv-purchase fehlt im Xcode-Projekt."; FEHLER=1; }
+            [ -s ios/App/App/public/purchase.js ] || { echo "::error::purchase.js fehlt im App-Paket."; FEHLER=1; }
+          fi
+          for p in local-notifications filesystem share app; do
+            grep -q "@capacitor/$p\"" "$SPM" || { echo "::error::Plugin @capacitor/$p fehlt im Xcode-Projekt."; FEHLER=1; }
+          done
+          echo "--- Package.swift ---"; cat "$SPM"
+          exit $FEHLER
+
+      # Ohne Zertifikat läuft trotzdem ein Build – er beweist, dass alles übersetzt.
+      - name: Unsigniert bauen (Kompilierbarkeit nachweisen)
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+
+      - name: Signiert bauen (IPA für den App Store)
+        if: steps.signieren.outputs.vorhanden == 'true'
+        env:
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          PROFIL_NAME: ${{ steps.signieren.outputs.profil_name }}
+        run: |
+          set -eo pipefail
+          ARCHIV="$RUNNER_TEMP/App.xcarchive"
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$ARCHIV" archive | tail -40
+
+          # Mit plutil statt Heredoc: Sonderzeichen im Profilnamen ergäben sonst ein ungültiges Plist.
+          OPT="$RUNNER_TEMP/ExportOptions.plist"
+          plutil -create xml1 "$OPT"
+          plutil -insert method -string app-store-connect "$OPT"
+          plutil -insert destination -string export "$OPT"
+          plutil -insert teamID -string "$TEAM_ID" "$OPT"
+          plutil -insert signingStyle -string manual "$OPT"
+          plutil -insert signingCertificate -string "Apple Distribution" "$OPT"
+          plutil -insert uploadSymbols -bool YES "$OPT"
+          plutil -insert provisioningProfiles -dictionary "$OPT"
+          plutil -insert "provisioningProfiles.$APP_ID" -string "$PROFIL_NAME" "$OPT"
+
+          xcodebuild -exportArchive -archivePath "$ARCHIV" -exportOptionsPlist "$OPT" \
+            -exportPath "$RUNNER_TEMP/ipa" | tail -20
+          ls -la "$RUNNER_TEMP/ipa"
+          mkdir -p ipa && cp "$RUNNER_TEMP"/ipa/*.ipa ipa/
+
+      - name: IPA aufbewahren
+        if: steps.signieren.outputs.vorhanden == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ToDoOrganizer-ios-ipa
+          path: ipa/*.ipa
+          if-no-files-found: error
+
+      # ---- Upload nach App Store Connect ----
+      # Dieselben drei Secrets wie bei Zirkelwerk: ASC_KEY_ID, ASC_ISSUER_ID,
+      # ASC_KEY_P8. Bewusst nur beim manuellen Start: Jede hochgeladene
+      # Build-Nummer ist dauerhaft belegt.
+      - name: In App Store Connect hochladen
+        if: steps.signieren.outputs.vorhanden == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -e
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8" ]; then
+            echo "Keine App-Store-Connect-Schlüssel hinterlegt – Upload übersprungen."
+            echo "Die IPA liegt trotzdem als Artefakt bereit."
+            exit 0
+          fi
+          mkdir -p "$HOME/private_keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          IPA=$(ls ipa/*.ipa | head -1)
+          echo "Lade hoch: $IPA"
+          # Erst prüfen, dann senden: Der Prüflauf findet Plist- und
+          # Icon-Probleme, bevor eine Build-Nummer verbraucht ist.
+          xcrun altool --validate-app -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          xcrun altool --upload-app   -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          rm -f "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "Hochgeladen. Die Verarbeitung in App Store Connect dauert 5–30 Minuten."
+
+      - name: Schlüsselbund entfernen
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signieren.keychain-db" || true
