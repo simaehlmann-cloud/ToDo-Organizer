@@ -268,8 +268,12 @@ jobs:
           plutil -insert signingStyle -string manual "$OPT"
           plutil -insert signingCertificate -string "Apple Distribution" "$OPT"
           plutil -insert uploadSymbols -bool YES "$OPT"
-          plutil -insert provisioningProfiles -dictionary "$OPT"
-          plutil -insert "provisioningProfiles.$APP_ID" -string "$PROFIL_NAME" "$OPT"
+          # Nicht "provisioningProfiles.$APP_ID": plutil liest die Punkte der
+          # Bundle-ID als Pfad und findet den Eintrag dann nicht. Deshalb das
+          # ganze Wörterbuch auf einmal als JSON (jq maskiert Sonderzeichen).
+          plutil -insert provisioningProfiles -json \
+            "$(jq -cn --arg id "$APP_ID" --arg name "$PROFIL_NAME" '{($id): $name}')" "$OPT"
+          echo "--- ExportOptions.plist ---"; plutil -p "$OPT"
 
           xcodebuild -exportArchive -archivePath "$ARCHIV" -exportOptionsPlist "$OPT" \
             -exportPath "$RUNNER_TEMP/ipa" | tail -20
