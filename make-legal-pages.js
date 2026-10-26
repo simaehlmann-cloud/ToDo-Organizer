@@ -49,8 +49,8 @@ const START = `<!DOCTYPE html>
 <body>
 <main>
   <h1>ToDo Organizer</h1>
-  <p>Aufgaben, Wochenübersicht, Kalender, Stundenplan und Einkaufsliste – ohne Konto,
-  ohne Server. Eine App von Wisdompeak Apps – Simon Mählmann.</p>
+  <p>Aufgaben mit Erinnerungen, Wochenübersicht mit Gerätekalender, Wochen- oder Stundenplan,
+  Gewohnheiten und Einkaufslisten – ohne Konto, ohne Server. Eine App von Wisdompeak Apps – Simon Mählmann.</p>
 
   <h2>Hilfe und Kontakt</h2>
   <p>Fragen, Fehler, Wünsche: <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a></p>
@@ -63,9 +63,17 @@ const START = `<!DOCTYPE html>
   Auf dem alten Gerät exportieren, die Datei (z. B. über iCloud Drive oder AirDrop)
   auf das neue bringen und dort unter Einstellungen → Sicherung → Importieren einlesen.</p>
   <p><strong>Was passiert nach der Testphase?</strong><br>
-  Die Aufgaben bleiben kostenlos. Kalender, Stundenplan, Einkaufsliste, Erinnerungen,
-  externer Kalender, verschlüsselte Sicherung und Statistik schaltet die Vollversion frei –
-  ein Einmalkauf ohne Abo. Deine Einträge bleiben in jedem Fall gespeichert.</p>
+  Aufgaben bleiben kostenlos – mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen,
+  Unterpunkten und Notizen. Kalender samt Gerätekalender, Bilder, Vorlagen, Wochen- bzw.
+  Stundenplan, Gewohnheiten, Einkaufslisten, verschlüsselte Sicherung und Statistik schaltet
+  die Vollversion frei – ein Einmalkauf ohne Abo. Deine Einträge bleiben in jedem Fall gespeichert.</p>
+  <p><strong>Wie funktioniert die Schnelleingabe?</strong><br>
+  Schreib einfach, was zu tun ist, z. B. „Zahnarzt morgen 15 Uhr #Privat !“ oder
+  „Müll rausbringen jeden Dienstag“. Datum, Uhrzeit, Kategorie, Priorität und Wiederholung
+  erkennt die App selbst.</p>
+  <p><strong>Meine Termine erscheinen nicht in der Wochenübersicht.</strong><br>
+  Einstellungen → Gerätekalender anzeigen einschalten. Wurde der Zugriff abgelehnt:
+  iPhone-Einstellungen → Datenschutz &amp; Sicherheit → Kalender → ToDo Organizer → Vollzugriff.</p>
   <p><strong>Ich habe die Vollversion schon gekauft.</strong><br>
   Einstellungen → Vollversion → „Käufe wiederherstellen“. Das gilt auch für die
   Familienfreigabe.</p>

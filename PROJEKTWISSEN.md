@@ -1,4 +1,26 @@
-# ToDo Organizer – Projektwissen, Stand 2.4 (TestFlight mit Testphase und Kauf)
+# ToDo Organizer – Projektwissen, Stand 3.0 (allgemeine To-do-App)
+
+## 3.0 im Überblick (November 2026)
+
+- Vom Schul-Organizer zur **allgemeinen To-do-App**. Beim ersten Start fragt die App
+  nach dem Profil (Alltag, Beruf, Schule/Studium, Lehrkraft) und blendet passend ein.
+- Neu: Uhrzeit und Vorab-Erinnerung je Aufgabe (`dueTime`, `remind`), flexible
+  Wiederholung (`custom` mit `recurEvery`/`recurUnit`, „ab Erledigung“), Schnelleingabe
+  in natürlicher Sprache (`parseQuick`), Bilder (IndexedDB), Vorlagen, Gewohnheiten
+  mit Wochenziel und Serie, mehrere Einkaufslisten mit Vorschlägen, Dunkelmodus,
+  Gerätekalender lesen und Aufgaben dort eintragen, Wochenplan (Uhrzeiten) oder
+  Stundenplan (Schulstunden).
+- Die reine Logik steht zwischen `==CORE-BEGIN==` und `==CORE-END==` in index.html
+  und wird von `tests/core.test.js` herausgelöst und geprüft (ohne Browser).
+  `tests/app.test.js` bedient die App in Chromium mit nachgebildeten iOS-Plugins.
+- Gerätekalender: `@ebarooni/capacitor-calendar` (EventKit). Termine werden nur zur
+  Anzeige gelesen, nicht gespeichert. Das Plugin enthält auch die Erinnerungen-API,
+  deshalb braucht die Info.plist die Reminders-Texte (sonst ITMS-90683), obwohl die
+  App sie nicht nutzt.
+- Statusleiste: `@capacitor/status-bar`, folgt der Darstellung der App.
+- Migration: alte Daten (2.x) bekommen Planmodus „Stundenplan“, wenn sie Stunden
+  hatten, sonst „Wochenplan“. Speicherschlüssel bleibt `studiez-pro-v2`.
+
 
 ## Entscheidungen
 
@@ -11,19 +33,20 @@
   Ab 761 px Breite zeigt die App das Layout mit Seitenleiste – auf dem iPad in beiden Lagen.
   Nicht mehr auf iPhone zurückstellbar, sobald hochgeladen.
   Store braucht iPhone 6,3" (1206×2622) und iPad 13" (2064×2752); Vorschauvideos
-  886×1920 bzw. 1200×1600. Alles in `store/`, erzeugt mit `store/make-store-assets.js`.
+  886×1920 bzw. 1200×1600. Alles in `store/`, erzeugt mit `store/make-screenshots.js` und `store/make-previews.js`.
 - **Preis:** kostenlos laden, 30 Tage alles frei, dann Einmalkauf „Vollversion“
   für 2,99 €, kein Abo, Familienfreigabe an.
 - **Testphase** als kostenloses, nicht verbrauchbares Produkt „30-Tage-Testphase“
   (Apples vorgesehener Weg für Apps ohne Abo, Richtlinie 3.1.1). Die 30 Tage zählen
   ab dessen Kaufdatum. StoreKit 2 liefert das ursprüngliche Datum bei jedem Start
   mit – eine Neuinstallation verlängert die Testphase nicht.
-- **Nach der Testphase frei:** nur die Aufgaben – Wochenansicht, Aufgabenliste,
-  Kategorien, Unterpunkte, Wiederholungen, Verschieben, E-Mail-Zuweisung,
-  Google-Kalender-Link, einfacher Export und Import (auch verschlüsselter Import).
-- **Vollversion:** Kalender, Stundenplan (samt Fach bei Aufgaben und Stunden in
-  der Wochenansicht), Einkaufsliste, Erinnerungen, externer Kalender (ICS),
-  verschlüsseltes Backup, Kalenderdatei-Export, Statistik.
+- **Nach der Testphase frei (seit 3.0):** die Aufgaben samt Schnelleingabe, Uhrzeit,
+  **Erinnerungen**, Wiederholungen, Unterpunkten, Notizen, Wochenansicht, Kategorien,
+  E-Mail-Zuweisung, Google-Kalender-Link, einfacher Export und Import.
+  Erinnerungen sind frei, weil eine To-do-App ohne sie nicht trägt (validate.js prüft das).
+- **Vollversion:** Kalender samt Gerätekalender und ICS, Bilder, Vorlagen, Wochen- bzw.
+  Stundenplan, Gewohnheiten, Einkaufslisten, verschlüsseltes Backup,
+  Kalenderdatei-Export, Statistik (`PRO_KEYS` plus `showProHint`-Stellen).
 - **Gesperrt wird nur die Anzeige.** Daten bleiben gespeichert, stecken im Export
   und sind nach dem Kauf sofort wieder da. Abgelaufene Erinnerungen werden beim
   nächsten Start abbestellt.
@@ -49,6 +72,9 @@
   daraus stammt das Startdatum der Testphase (`purchaseDate`, frühestes zählt).
 - **Testmodus:** Info-Seite, siebenmal auf die Versionszeile tippen → Testphase
   3 Minuten. Kann nur verkürzen, nie freischalten; bleibt deshalb im Store-Build.
+  Seit 3.0 zeigt die Vollversions-Karte im Testmodus eine Diagnose (Modul geladen,
+  Plugin da, Store bereit, Produkte gefunden, letzter Fehler) – für „App Store nicht
+  erreichbar“ in TestFlight.
 - **Export auf iOS:** `<a download>` tut im WKWebView nichts. `download()` schreibt
   die Datei mit `@capacitor/filesystem` in den Cache und öffnet das Teilen-Menü
   (`@capacitor/share`). Im Browser und in der Android-App wie bisher.
@@ -79,12 +105,13 @@
 - Das Xcode-Projekt liegt **nicht** im Repository. Jeder Lauf erzeugt es frisch:
   `npx cap add ios --packagemanager SPM`, `npx cap sync ios`, dann
   `tools/ios-setup.rb` (Ruby-Gem xcodeproj) und PlistBuddy.
-- `tools/ios-setup.rb`: Bundle-ID, nur iPhone, iOS 15, Version/Build,
+- `tools/ios-setup.rb`: Bundle-ID, iPhone und iPad, iOS 15, Version/Build,
   Privacy-Manifest als Ressource, manuelle Signierung nur für Release und nur das
   App-Ziel (Swift-Pakete vertragen keine Profile).
 - Info.plist: Anzeigename, Region `de`, `ITSAppUsesNonExemptEncryption = false`
-  (nur Standardverschlüsselung des Systems), `UIUserInterfaceStyle = Light`
-  (keine Dunkeldarstellung; sonst weiße Statusleistenschrift), iPhone Hochformat, iPad alle Lagen,
+  (nur Standardverschlüsselung des Systems), seit 3.0 **kein** `UIUserInterfaceStyle`
+  (Dunkelmodus), Erlaubnistexte für Kalender, Erinnerungen, Kamera und Fotos,
+  iPhone Hochformat, iPad alle Lagen,
   `arm64` statt `armv7`.
 - Version = `APP_VERSION` aus index.html, Build-Nummer = Laufnummer des Workflows.
 - Secrets wie bei Zirkelwerk, Profil neu für `de.maehlmann.todoorganizer`

@@ -1,7 +1,9 @@
 # ToDo Organizer
 
-Aufgaben, Wochenübersicht, Kalender, Stundenplan und Einkaufsliste – ohne
-Konto, ohne Server. Alle Daten bleiben auf dem Gerät.
+Allgemeine To-do-App (3.0): Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen,
+Wiederholungen, Notizen und Bildern; Wochenübersicht mit Gerätekalender;
+Wochen- oder Stundenplan (Schüler, Lehrkräfte); Gewohnheiten, Vorlagen,
+Einkaufslisten mit Vorschlägen; Dunkelmodus – ohne Konto, ohne Server. Alle Daten bleiben auf dem Gerät.
 Läuft als iOS-App für iPhone und iPad (Capacitor), als Android-App (Capacitor, lokal gebaut)
 und als installierbare Web-App (PWA).
 
@@ -23,12 +25,14 @@ tools/make-purchase-js.js     bündelt das Kauf-Plugin zu purchase.js
 make-icons.py                 zeichnet das iOS-Icon
 make-legal-pages.js           erzeugt docs/ aus den Rechtstexten
 validate.js                   statische Prüfung
-smoketest.js                  Ablauftest im Browser: Testphase, Kauf, Sperren
+tests/core.test.js            Kernlogik: Datumsrechnung, Wiederholung, Schnelleingabe, Erinnerungen
+tests/app.test.js             Ablauftest im Browser: Bedienung, Testphase, Kauf, Sperren, Kalender
 .github/workflows/ios.yml     iOS-Build, Signierung, Upload nach App Store Connect
 APPSTORE-CONNECT.md           einmalige Einrichtung bei Apple und GitHub
 store/STORE-TEXTE.md          Store-Texte, Kategorien, Prüfnotizen zum Hineinkopieren
 store/make-screenshots.js     Store-Bildschirmfotos iPhone 6,3" und iPad 13"
 store/make-previews.js        App-Vorschauvideos (braucht ffmpeg)
+store/make-iap-shots.js       Prüfbilder für die beiden In-App-Käufe
 store/demo-data.js, device.js Beispieldaten und Gerätenachbildung dafür
 PROJEKTWISSEN.md              Entscheidungen und Technik
 mipmap-*/, playstore-icon-512.png, ANLEITUNG.txt   Icons fürs Android-Projekt
@@ -39,7 +43,8 @@ mipmap-*/, playstore-icon-512.png, ANLEITUNG.txt   Icons fürs Android-Projekt
 ```bash
 node make-legal-pages.js   # nach jeder Änderung an einem Rechtstext
 node validate.js           # Version, Produkt-IDs, Rechtstexte, Icon, Workflow
-node smoketest.js          # Testphase, Kauf und Sperren mit simuliertem App Store
+node tests/core.test.js    # Kernlogik, ohne Browser
+node tests/app.test.js     # Bedienung, Testphase, Kauf, Sperren mit simuliertem iOS
 ```
 
 Für den Ablauftest einmalig: `npm install --no-save playwright@1.63.0 && npx playwright install chromium`.

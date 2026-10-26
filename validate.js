@@ -28,7 +28,7 @@ skripte.forEach((s, i) => {
 
 // ---- Version ---------------------------------------------------------------
 const ver = (html.match(/const APP_VERSION = "(\d+\.\d+(?:\.\d+)?)"/) || [])[1];
-if (!ver) E('APP_VERSION fehlt oder hat kein Format wie 2.4');
+if (!ver) E('APP_VERSION fehlt oder hat kein Format wie 3.0');
 
 // ---- Kauf und Testphase ----------------------------------------------------
 const konst = name => (html.match(new RegExp('const ' + name + ' *= *([^;\\n]+)')) || [])[1];
@@ -127,6 +127,18 @@ const wf = lies('.github/workflows/ios.yml');
 for (const s of ['IOS_CERTIFICATE_P12_BASE64', 'IOS_PROVISIONING_PROFILE', 'IOS_TEAM_ID', 'ASC_KEY_ID', 'ASC_ISSUER_ID', 'ASC_KEY_P8'])
   if (!wf.includes('secrets.' + s)) E('ios.yml: Secret ' + s + ' wird nicht verwendet');
 if (!wf.includes("github.event_name == 'workflow_dispatch'")) E('ios.yml: Upload darf nur beim manuellen Start laufen');
+for (const k of ['NSCalendarsFullAccessUsageDescription', 'NSCalendarsWriteOnlyAccessUsageDescription', 'NSCameraUsageDescription', 'NSPhotoLibraryUsageDescription', 'NSRemindersFullAccessUsageDescription'])
+  if (!wf.includes(k)) E('ios.yml: Erlaubnistext ' + k + ' fehlt (iOS beendet sonst die App)');
+if (/UIUserInterfaceStyle string Light/.test(wf)) E('ios.yml erzwingt helle Darstellung – 3.0 hat einen Dunkelmodus');
+if (!wf.includes('node tests/app.test.js') || !wf.includes('node tests/core.test.js')) E('ios.yml: Tests fehlen in der Prüfkette');
+
+// ---- Kauf-Aufteilung: Erinnerungen sind frei ---------------------------------------
+const proKeys = (html.match(/const PRO_KEYS\s*=\s*\[([^\]]*)\]/) || [])[1] || '';
+if (/reminders/.test(proKeys)) E('Erinnerungen stehen in PRO_KEYS – sie gehören seit 3.0 zur kostenlosen Grundversion');
+if (!html.includes('==CORE-BEGIN==') || !html.includes('==CORE-END==')) E('CORE-Block-Markierungen fehlen (tests/core.test.js braucht sie)');
+for (const f of ['tests/core.test.js', 'tests/app.test.js']) if (!gibt(f)) E(f + ' fehlt');
+for (const dep of ['@ebarooni/capacitor-calendar', '@capacitor/status-bar'])
+  if (!pkg.dependencies[dep]) E('package.json: ' + dep + ' fehlt');
 
 if (fehler.length) {
   console.error('✗ ' + fehler.length + ' Problem(e):\n  - ' + fehler.join('\n  - '));

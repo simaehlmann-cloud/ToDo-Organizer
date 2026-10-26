@@ -60,9 +60,9 @@ auch in TestFlight nicht. Vorschlag für die Prüfnotiz:
 
 > Einstellungen → Vollversion. Die Testphase ist ein kostenloses, nicht
 > verbrauchbares Produkt; ab ihrem Kaufdatum sind 30 Tage alle Funktionen frei.
-> Danach bleiben Aufgaben frei, Kalender, Stundenplan, Einkaufsliste,
-> Erinnerungen, externer Kalender, verschlüsseltes Backup und Statistik
-> brauchen die Vollversion.
+> Danach bleiben Aufgaben samt Erinnerungen frei; Kalender, Fotos, Vorlagen,
+> Wochen-/Stundenplan, Gewohnheiten, Einkaufslisten, verschlüsseltes Backup
+> und Statistik brauchen die Vollversion.
 
 Voraussetzung: Der Vertrag für kostenpflichtige Apps ist aktiv – das ist er
 durch Zirkelwerk bereits.
@@ -139,8 +139,11 @@ Upload nicht mehr auf nur iPhone zurückstellen.
 ## 8. Testen in TestFlight
 
 - Käufe in TestFlight laufen über die Sandbox und kosten nichts.
-- Ende der Testphase prüfen: Info-Seite → **siebenmal auf „Version 2.4“
+- Ende der Testphase prüfen: Info-Seite → **siebenmal auf „Version 3.0“
   tippen** → Testmodus, die Testphase dauert dann 3 Minuten. Erneut
   siebenmal tippen schaltet zurück.
 - „Käufe wiederherstellen“ nach Neuinstallation testen: Die Testphase muss
   mit dem ursprünglichen Startdatum wiederkommen.
+- Im Testmodus zeigt die Karte „Vollversion“ eine **Diagnose** (Modul, Plugin,
+  Store bereit, Produkte gefunden, letzter Fehler). Steht dort „Produkte: 0“,
+  liegt es an App Store Connect (Metadaten, Vertrag, Bundle-ID), nicht an der App.
