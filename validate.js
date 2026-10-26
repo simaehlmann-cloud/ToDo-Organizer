@@ -1,0 +1,117 @@
+/* Statische Prüfung vor jedem Build (wie bei Zirkelwerk).
+ *
+ *   node validate.js
+ *
+ * Fängt die Fehler ab, die sonst erst auf dem teuren macOS-Läufer oder gar
+ * erst in App Store Connect auffallen würden. Bricht mit Code 1 ab, sobald
+ * eine Prüfung fehlschlägt.
+ */
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const fehler = [];
+const E = m => fehler.push(m);
+const lies = f => fs.readFileSync(f, 'utf8');
+const gibt = f => fs.existsSync(f);
+
+const APP_ID = 'de.maehlmann.todoorganizer';
+const html = lies('index.html');
+
+// ---- Skript übersetzbar --------------------------------------------------
+const skripte = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+if (!skripte.length) E('index.html: kein Inline-Skript gefunden');
+skripte.forEach((s, i) => {
+  try { new vm.Script(s, { filename: 'index.html#script' + i }); }
+  catch (e) { E('index.html: Syntaxfehler im Skript ' + i + ': ' + e.message); }
+});
+
+// ---- Version ---------------------------------------------------------------
+const ver = (html.match(/const APP_VERSION = "(\d+\.\d+(?:\.\d+)?)"/) || [])[1];
+if (!ver) E('APP_VERSION fehlt oder hat kein Format wie 2.4');
+
+// ---- Kauf und Testphase ----------------------------------------------------
+const konst = name => (html.match(new RegExp('const ' + name + ' *= *([^;\\n]+)')) || [])[1];
+const full = (konst('PRODUCT_FULL') || '').replace(/"/g, '').trim();
+const trial = (konst('PRODUCT_TRIAL') || '').replace(/"/g, '').trim();
+if (full !== APP_ID + '.vollversion') E('PRODUCT_FULL ist "' + full + '", erwartet ' + APP_ID + '.vollversion');
+if (trial !== APP_ID + '.testphase') E('PRODUCT_TRIAL ist "' + trial + '", erwartet ' + APP_ID + '.testphase');
+if (konst('TRIAL_DAYS') !== '30') E('TRIAL_DAYS ist nicht 30 – Produktname in App Store Connect und Texte anpassen');
+for (const f of ['README.md', 'APPSTORE-CONNECT.md']) {
+  if (!gibt(f)) { E(f + ' fehlt'); continue; }
+  const t = lies(f);
+  if (!t.includes(full) || !t.includes(trial)) E(f + ': Produkt-IDs stimmen nicht mit index.html überein');
+}
+const iapAn = konst('IAP_ENABLED') === 'true', grenzenAn = konst('LIMITS_ACTIVE') === 'true';
+if (grenzenAn && !iapAn) E('LIMITS_ACTIVE ohne IAP_ENABLED: Sperre ohne Kaufmöglichkeit – Apple lehnt ab');
+if (iapAn) {
+  for (const id of ['card-pro', 'btn-buy', 'btn-restore', 'btn-trial', 'dlg-pro'])
+    if (!html.includes('id="' + id + '"')) E('Kaufbereich unvollständig: #' + id + ' fehlt');
+  // Apple verlangt einen sichtbaren Knopf zum Wiederherstellen.
+  if (!/Käufe wiederherstellen/.test(html)) E('Knopf „Käufe wiederherstellen“ fehlt');
+}
+
+// ---- Texte und bekannte Fehler ---------------------------------------------
+const sichtbar = html.replace(/<script>[\s\S]*?<\/script>/g, '').replace(/<!--[\s\S]*?-->/g, '');
+if (/Android-App/.test(sichtbar)) E('Sichtbarer Text nennt „Android-App“ – in der iOS-App falsch (Richtlinie 2.3.10)');
+if (/Play Store|Google Play/.test(sichtbar)) E('Sichtbarer Text nennt Google Play (Richtlinie 2.3.10)');
+if (!html.includes('[hidden]{display:none!important}')) E('CSS-Regel für [hidden] fehlt (Mehr-Felder, Passwortfelder)');
+if (!html.includes('#toast:not(.show){visibility:hidden}')) E('Toast-Korrektur fehlt');
+for (const f of ['datenschutz.html', 'impressum.html'])
+  if (!html.includes('href="' + f + '"')) E('Info-Seite verlinkt ' + f + ' nicht');
+
+// ---- Rechtstexte -------------------------------------------------------------
+for (const f of ['datenschutz.html', 'impressum.html']) {
+  if (!gibt(f)) { E(f + ' fehlt'); continue; }
+  const t = lies(f);
+  if (!t.includes('Oderstraße 13') || !t.includes('smaehlmann.appdev@gmail.com')) E(f + ': Anschrift oder E-Mail fehlt');
+  if (!t.includes('href="index.html">Zurück zur App<')) E(f + ': Knopf „Zurück zur App“ fehlt');
+}
+if (gibt('datenschutz.html') && !/App Store/.test(lies('datenschutz.html'))) E('Datenschutzerklärung erwähnt den In-App-Kauf nicht');
+try {
+  const { erwarteteDateien } = require('./make-legal-pages.js');
+  const diff = Object.entries(erwarteteDateien())
+    .filter(([f, inhalt]) => !gibt(f) || lies(f) !== inhalt).map(([f]) => f);
+  if (diff.length) E('docs/ veraltet – bitte „node make-legal-pages.js“ ausführen: ' + diff.join(', '));
+} catch (e) { E('make-legal-pages.js: ' + e.message); }
+
+// ---- Offline-Cache -------------------------------------------------------------
+const sw = lies('sw.js');
+if (!/const CACHE = "todo-organizer-v\d+"/.test(sw)) E('sw.js: Cache-Name fehlt');
+for (const m of sw.matchAll(/"\.\/([^"]+)"/g))
+  if (m[1] && !gibt(m[1])) E('sw.js nennt fehlende Datei ' + m[1]);
+
+// ---- iOS-Projekt -----------------------------------------------------------------
+const cap = JSON.parse(lies('capacitor.config.json'));
+if (cap.appId !== APP_ID) E('capacitor.config.json: appId ist ' + cap.appId);
+if (cap.webDir !== 'www') E('capacitor.config.json: webDir muss www sein (der Workflow kopiert dorthin)');
+if (!lies('tools/ios-setup.rb').includes("APP_ID = '" + APP_ID + "'")) E('tools/ios-setup.rb: falsche Bundle-ID');
+const priv = lies('res/ios/PrivacyInfo.xcprivacy');
+if (!/<key>NSPrivacyTracking<\/key>\s*<false\/>/.test(priv)) E('Privacy-Manifest: NSPrivacyTracking muss false sein');
+if (!priv.includes('CA92.1')) E('Privacy-Manifest: Grund CA92.1 (UserDefaults) fehlt');
+
+// App-Icon: 1024 × 1024, RGB ohne Alphakanal (sonst Ablehnung beim Upload)
+try {
+  const b = fs.readFileSync('res/ios/icon-1024.png');
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20), farbtyp = b[25];
+  if (w !== 1024 || h !== 1024) E('Icon ist ' + w + '×' + h + ', erwartet 1024×1024');
+  if (farbtyp !== 2) E('Icon hat Farbtyp ' + farbtyp + ' – erwartet 2 (RGB ohne Alpha); python3 make-icons.py ausführen');
+} catch (e) { E('res/ios/icon-1024.png fehlt'); }
+
+// Feste Paketversionen: TestFlight- und Store-Build sollen gleich bauen.
+const pkg = JSON.parse(lies('package.json'));
+for (const [n, v] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies }))
+  if (!/^\d+\.\d+\.\d+$/.test(v)) E('package.json: ' + n + ' ist nicht fest gepinnt (' + v + ')');
+if (!pkg.dependencies['capacitor-plugin-cdv-purchase']) E('Kauf-Plugin fehlt in package.json');
+
+// ---- Workflow ------------------------------------------------------------------------
+const wf = lies('.github/workflows/ios.yml');
+for (const s of ['IOS_CERTIFICATE_P12_BASE64', 'IOS_PROVISIONING_PROFILE', 'IOS_TEAM_ID', 'ASC_KEY_ID', 'ASC_ISSUER_ID', 'ASC_KEY_P8'])
+  if (!wf.includes('secrets.' + s)) E('ios.yml: Secret ' + s + ' wird nicht verwendet');
+if (!wf.includes("github.event_name == 'workflow_dispatch'")) E('ios.yml: Upload darf nur beim manuellen Start laufen');
+
+if (fehler.length) {
+  console.error('✗ ' + fehler.length + ' Problem(e):\n  - ' + fehler.join('\n  - '));
+  process.exit(1);
+}
+console.log('✓ validate.js: alles in Ordnung (Version ' + ver + ')');

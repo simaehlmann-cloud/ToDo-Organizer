@@ -1,0 +1,9 @@
+{
+  "appId": "de.maehlmann.todoorganizer",
+  "appName": "ToDo Organizer",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f4f5f7"
+  }
+}

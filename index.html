@@ -36,10 +36,18 @@ body{display:flex;height:100dvh;background:var(--bg);color:var(--text);overflow:
   .nav-btn{flex:1;flex-direction:column;gap:3px;text-align:center;padding:9px 6px 8px;font-size:.66rem;border-left:none;border-top:3px solid transparent;white-space:nowrap;min-width:62px}
   .nav-btn:hover,.nav-btn.active{border-left-color:transparent;border-top-color:var(--primary)}
   .nav-btn .ico{font-size:1.15rem}
-  #main{order:1;padding:16px 14px 26px}
+  #main{order:1;
+    padding-top:calc(16px + env(safe-area-inset-top,0px));
+    padding-right:calc(14px + env(safe-area-inset-right,0px));
+    padding-bottom:26px;
+    padding-left:calc(14px + env(safe-area-inset-left,0px))}
   h1{font-size:1.28rem!important}
   .card{padding:15px}
 }
+/* Notlösung für WebViews, die env(safe-area-inset-top) nicht liefern,
+   die Seite aber trotzdem unter die Statusleiste zeichnen. Wird per JS
+   gesetzt und nur dann, wenn die Messung tatsächlich 0 ergibt. */
+body.sb-inset #main{padding-top:calc(16px + var(--sb-h,26px))}
 @media(min-width:761px){.nav-btn .ico{font-size:1rem}}
 
 .view{display:none;animation:fade .18s ease}
@@ -173,13 +181,54 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
   .brand-sub{font-size:.7rem}
 }
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---- Wochenübersicht ---- */
+.week-day{border:1px solid var(--border);border-radius:10px;margin-bottom:11px;overflow:hidden}
+.week-day.today{border-color:var(--primary);border-width:2px}
+.week-day.weekend{background:#fafafa}
+.wd-head{display:flex;justify-content:space-between;align-items:baseline;gap:9px;padding:9px 12px;background:var(--bg);font-weight:700;font-size:.9rem;flex-wrap:wrap}
+.week-day.today .wd-head{background:var(--primary);color:#fff}
+.wd-head .cnt2{font-weight:600;font-size:.74rem;color:var(--muted)}
+.week-day.today .wd-head .cnt2{color:#dbeafe}
+.wd-body{padding:9px 12px}
+.wd-lessons{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.wd-lesson{padding:3px 9px;border-radius:6px;color:#fff;font-size:.73rem;font-weight:600;white-space:nowrap}
+.wd-task{display:flex;align-items:center;gap:9px;padding:6px 0 6px 9px;border-left:3px solid var(--border);font-size:.88rem;cursor:pointer;word-break:break-word}
+.wd-task input[type=checkbox]{width:18px;height:18px}
+.wd-task .pt{margin-left:auto;font-size:.72rem;color:var(--muted);white-space:nowrap}
+
+/* ---- Seit 2.4 ---- */
+/* hidden muss immer gewinnen. Vorher setzten .grid (Mehr-Felder) und ein
+   Inline-Stil (Passwortfelder) display und hebelten hidden aus. */
+[hidden]{display:none!important}
+/* Ausgeblendeter Toast lugte auf Handys am unteren Rand hervor. */
+#toast{transition:transform .26s,visibility 0s .26s}
+#toast.show{transition:transform .26s,visibility 0s}
+#toast:not(.show){visibility:hidden}
+
+/* Vollversion */
+.nav-btn.locked{opacity:.62}
+.nav-btn.locked .ico{position:relative}
+.nav-btn.locked .ico::after{content:"🔒";position:absolute;right:-9px;bottom:-3px;font-size:.55rem}
+.card.locked>*:not(h3):not(.lock-note){display:none!important}
+.lock-note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+#card-pro{border:2px solid var(--primary)}
+#card-pro .pro-state{font-size:.9rem;line-height:1.55}
+#card-pro .pro-state strong{color:var(--text)}
+.pro-btns{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+.btn[disabled],.btn-sm[disabled]{opacity:.55;cursor:default}
+.tog.lock{opacity:.45}
+.legal-links{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+#dlg-pro ul{margin:10px 0 0 18px;font-size:.88rem;line-height:1.6}
+#dlg-pro p{font-size:.9rem;line-height:1.55}
 </style>
 </head>
 <body>
 
 <nav id="sidebar">
   <h2>ToDo Organizer</h2>
-  <button class="nav-btn active" data-view="tasks"><span class="ico">📋</span><span>Aufgaben</span></button>
+  <button class="nav-btn active" data-view="week"><span class="ico">📆</span><span>Woche</span></button>
+  <button class="nav-btn" data-view="tasks"><span class="ico">📋</span><span>Aufgaben</span></button>
   <button class="nav-btn" data-view="calendar"><span class="ico">🗓</span><span>Kalender</span></button>
   <button class="nav-btn" data-view="timetable"><span class="ico">📅</span><span>Stundenplan</span></button>
   <button class="nav-btn" data-view="shopping"><span class="ico">🛒</span><span>Einkauf</span></button>
@@ -190,8 +239,8 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 
 <main id="main">
 
-  <!-- AUFGABEN -->
-  <section id="view-tasks" class="view active">
+  <!-- WOCHE -->
+  <section id="view-week" class="view active">
     <header class="brand">
       <div class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -203,6 +252,23 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
         <p class="brand-sub" id="brand-sub"></p>
       </div>
     </header>
+    <div class="card">
+      <div class="cal-head">
+        <button class="btn-sm" id="wk-prev" aria-label="Vorige Woche">‹</button>
+        <span class="mo" id="wk-title"></span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" id="wk-now">Aktuelle Woche</button>
+          <button class="btn-sm" id="wk-next" aria-label="Nächste Woche">›</button>
+        </div>
+      </div>
+      <div id="wk-overdue"></div>
+      <div id="wk-days"></div>
+    </div>
+  </section>
+
+  <!-- AUFGABEN -->
+  <section id="view-tasks" class="view">
+    <h1>Aufgaben</h1>
     <div class="card">
       <div class="qa">
         <input type="text" id="t-title" placeholder="Was ist zu tun?" autocomplete="off">
@@ -300,6 +366,16 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
   <section id="view-settings" class="view">
     <h1>Einstellungen</h1>
 
+    <div class="card" id="card-pro" hidden>
+      <h3>Vollversion</h3>
+      <div class="pro-state" id="pro-state"></div>
+      <div class="pro-btns">
+        <button class="btn" id="btn-trial" hidden>30 Tage kostenlos testen</button>
+        <button class="btn" id="btn-buy">Vollversion kaufen</button>
+        <button class="btn-sm" id="btn-restore">Käufe wiederherstellen</button>
+      </div>
+    </div>
+
     <div class="card">
       <h3>Kategorien</h3>
       <p class="hint">Eigene Bereiche mit freier Farbwahl. Beim Löschen einer Kategorie bleiben zugehörige Aufgaben erhalten und werden auf „Ohne Kategorie“ gesetzt.</p>
@@ -317,7 +393,7 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
       <div id="feature-switches"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-pro="Stundenplan">
       <h3>Stundenplan-Zeiten</h3>
       <p class="hint">Eine Zeile pro Stunde, Format <code>08:00-08:45</code>. Leerzeilen werden ignoriert.</p>
       <textarea id="slot-editor" rows="8" style="font-family:ui-monospace,monospace;font-size:14px"></textarea>
@@ -332,9 +408,9 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-pro="Erinnerungen">
       <h3>Erinnerungen</h3>
-      <p class="hint">In der installierten Android-App werden Erinnerungen beim Betriebssystem eingeplant und erscheinen auch bei geschlossener App. Im Browser ist das technisch nicht möglich — dort erscheinen sie nur, solange die Seite geöffnet ist.</p>
+      <p class="hint">In der installierten App werden Erinnerungen beim Betriebssystem eingeplant und erscheinen auch bei geschlossener App. Im Browser ist das technisch nicht möglich — dort erscheinen sie nur, solange die Seite geöffnet ist.</p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end">
         <div><label class="fld" for="rem-time">Tägliche Erinnerung um</label><input type="time" id="rem-time" style="width:auto"></div>
         <button class="btn" id="btn-rem-allow">Benachrichtigungen erlauben</button>
@@ -343,9 +419,40 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
       <p class="hint" id="rem-status" style="margin:11px 0 0"></p>
     </div>
 
+    <div class="card" id="card-extcal" data-pro="Externer Kalender">
+      <h3>Externer Kalender (nur lesen)</h3>
+      <p class="hint">
+        Eigene, private Kalender-Adresse (ICS) eintragen, um deren Termine hier
+        zusätzlich anzuzeigen — rein lesend, ohne Anmeldung. Bei Google: Kalender
+        Einstellungen → „Kalender integrieren" → „Geheime Adresse im iCal-Format".
+        Die Adresse bleibt ausschließlich auf diesem Gerät. In der installierten
+        App funktioniert der Abruf zuverlässig; im reinen Browserbetrieb kann er
+        an Google-eigenen Einschränkungen (CORS) scheitern.
+      </p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <input type="url" id="extcal-url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" style="flex:1;min-width:220px">
+        <button class="btn" id="btn-extcal-load">Kalender laden</button>
+        <button class="btn-sm danger" id="btn-extcal-remove">Entfernen</button>
+      </div>
+      <p class="hint" id="extcal-status" style="margin:11px 0 0"></p>
+    </div>
+
     <div class="card">
       <h3>Sicherung</h3>
       <p class="hint">Der Browserspeicher ist nicht dauerhaft: Cache leeren oder App deinstallieren löscht alles. Regelmäßig exportieren.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:11px">
+        <label style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer">
+          <input type="checkbox" id="backup-encrypt" style="width:19px;height:19px">
+          Backup mit Passwort verschlüsseln <span id="enc-lock" hidden>🔒 Vollversion</span>
+        </label>
+      </div>
+      <div id="backup-pw-fields" hidden style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:13px">
+        <div style="flex:1;min-width:160px"><label class="fld" for="backup-pw">Passwort</label><input type="password" id="backup-pw" autocomplete="new-password"></div>
+        <div style="flex:1;min-width:160px"><label class="fld" for="backup-pw2">Passwort wiederholen</label><input type="password" id="backup-pw2" autocomplete="new-password"></div>
+      </div>
+      <p class="hint" id="backup-pw-hint" hidden style="margin:-4px 0 11px">
+        Ohne dieses Passwort lässt sich das Backup später nicht wieder einlesen — es gibt keinen Weg, es zu umgehen. Gut aufbewahren.
+      </p>
       <div style="display:flex;gap:9px;flex-wrap:wrap">
         <button class="btn" id="btn-export">Exportieren</button>
         <button class="btn-sm" id="btn-import">Importieren</button>
@@ -353,6 +460,11 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
         <input type="file" id="file-import" accept="application/json,.json" class="sr">
       </div>
       <p class="hint" id="storage-info" style="margin:12px 0 0"></p>
+    </div>
+
+    <div class="card" data-pro="Statistik">
+      <h3>Statistik</h3>
+      <div id="stats-box"></div>
     </div>
 
     <div class="card">
@@ -372,7 +484,7 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
         <div class="logo">📋</div>
         <div>
           <div style="font-size:1.2rem;font-weight:700">ToDo Organizer</div>
-          <div style="color:var(--muted);font-size:.86rem">Version <span id="app-ver"></span></div>
+          <div style="color:var(--muted);font-size:.86rem" id="ver-line">Version <span id="app-ver"></span></div>
         </div>
       </div>
       <p class="hint" style="margin:12px 0 0">Entwicklung und Konzept: <strong>Simon Mählmann</strong></p>
@@ -380,10 +492,12 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
         Aufgaben, Termine, Stundenplan und Einkaufsliste in einer App — ohne Konto,
         ohne Server, ohne Abo. Alle Daten bleiben auf diesem Gerät.
       </p>
+      <p class="hint" style="margin:8px 0 0" id="about-pro"></p>
     </div>
 
     <div class="card">
       <h3>Kernfunktionen</h3>
+      <div class="feat"><div class="i">📆</div><div><div class="t">Wochenübersicht</div><div class="d">Startbildschirm mit allen sieben Tagen der Woche: Stundenplan und fällige Aufgaben pro Tag, überfällige Aufgaben gesammelt darüber. Vor- und zurückblättern über beliebige Wochen.</div></div></div>
       <div class="feat"><div class="i">📋</div><div><div class="t">Aufgaben verwalten</div><div class="d">Anlegen, priorisieren, abhaken. Offene und erledigte Aufgaben getrennt oder gemeinsam anzeigen, nach Kategorie filtern und durchsuchen.</div></div></div>
       <div class="feat"><div class="i">🔄</div><div><div class="t">Wiederholungen</div><div class="d">Täglich bis jährlich. Beim Abhaken entsteht automatisch der nächste Termin — berechnet ab dem Fälligkeitsdatum, nicht ab dem Abhakzeitpunkt.</div></div></div>
       <div class="feat"><div class="i">⏭</div><div><div class="t">Verschieben</div><div class="d">Ein Tippen schiebt eine Aufgabe um einen Tag oder eine Woche nach hinten.</div></div></div>
@@ -397,17 +511,27 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
       <div class="feat"><div class="i">🔔</div><div><div class="t">Erinnerungen</div><div class="d">Tägliche Übersicht zur selbst gewählten Uhrzeit sowie eine Erinnerung am Fälligkeitstag jeder Aufgabe. In der installierten App plant das Betriebssystem diese Erinnerungen ein — sie kommen auch bei geschlossener App, ohne Server und ohne Konto. Aus der Benachrichtigung heraus lässt sich eine Aufgabe direkt um einen Tag oder eine Woche verschieben oder abhaken.</div></div></div>
       <div class="feat"><div class="i">↩</div><div><div class="t">Rückgängig</div><div class="d">Abhaken, Verschieben und Löschen lassen sich direkt aus der Einblendung heraus zurücknehmen.</div></div></div>
       <div class="feat"><div class="i">🗓</div><div><div class="t">Übertrag in den Google Kalender</div><div class="d">Aufgaben mit Datum lassen sich per Tippen als vorausgefüllter Termin im Google Kalender öffnen. Die App greift dabei nicht auf das Konto zu und benötigt keine Anmeldung.</div></div></div>
-      <div class="feat"><div class="i">💾</div><div><div class="t">Export und Import</div><div class="d">Vollständige Sicherung als JSON-Datei — diese lässt sich auch wieder importieren. Termine zusätzlich als .ics für den Import in Google Kalender, Apple Kalender oder Outlook; .ics dient nur der Ausgabe und kann nicht zurückgelesen werden.</div></div></div>
+      <div class="feat"><div class="i">💾</div><div><div class="t">Export und Import</div><div class="d">Vollständige Sicherung als JSON-Datei — diese lässt sich auch wieder importieren, auf Wunsch passwortverschlüsselt. Termine zusätzlich als .ics für den Import in Google Kalender, Apple Kalender oder Outlook; .ics dient nur der Ausgabe und kann nicht zurückgelesen werden.</div></div></div>
+      <div class="feat"><div class="i">🗓</div><div><div class="t">Externer Kalender</div><div class="d">Eigene, private ICS-Adresse hinterlegen und deren Termine schreibgeschützt zusätzlich anzeigen. Einzige Funktion mit Netzzugriff — und nur auf die selbst hinterlegte Adresse.</div></div></div>
+      <div class="feat" id="feat-share"><div class="i">📤</div><div><div class="t">Teilen an ToDo Organizer</div><div class="d">In der installierten App erscheint „ToDo Organizer" im Teilen-Menü anderer Apps. Geteilter Text wird als neue Aufgabe vorgeschlagen, vor dem Speichern noch bearbeitbar.</div></div></div>
+      <div class="feat"><div class="i">🔥</div><div><div class="t">Statistik</div><div class="d">Zeigt, an wie vielen Tagen in Folge alle fälligen Aufgaben erledigt wurden.</div></div></div>
     </div>
 
     <div class="card">
       <h3>Datenschutz</h3>
       <p class="hint" style="margin:0">
-        Die App speichert ausschließlich lokal im Browser dieses Geräts. Es werden keine Daten
-        übertragen, keine Konten angelegt und keine Zugriffe ausgewertet. Es bestehen keine
-        Verbindungen zu externen Diensten. Beim Versenden einer Erinnerung öffnet sich lediglich
-        das auf dem Gerät eingerichtete E-Mail-Programm — der Versand erfolgt dort.
+        Die App speichert ausschließlich lokal auf diesem Gerät. Es gibt keine Konten, keine
+        Analyse, keine Werbung, und der Anbieter erhält keine Daten. Beim Versenden einer
+        Erinnerung öffnet sich lediglich das auf dem Gerät eingerichtete E-Mail-Programm — der
+        Versand erfolgt dort. Eine Verbindung nach außen gibt es nur in zwei Fällen: Wird unter
+        Einstellungen eine eigene Kalender-Adresse hinterlegt, ruft die App genau diese eine
+        Adresse ab. Und Testphase und Vollversion laufen über den App Store von Apple — die App
+        erfährt dabei nur, ob sie freigeschaltet ist, keine Zahlungsdaten.
       </p>
+      <div class="legal-links">
+        <a class="btn-sm" href="datenschutz.html">Datenschutzerklärung</a>
+        <a class="btn-sm" href="impressum.html">Impressum</a>
+      </div>
     </div>
   </section>
 
@@ -483,16 +607,39 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 
 <div id="toast" role="status"></div>
 
+<dialog id="dlg-pro">
+  <div class="bd">
+    <h3>Willkommen im ToDo Organizer</h3>
+    <p><strong>30 Tage lang alle Funktionen kostenlos testen:</strong></p>
+    <ul>
+      <li>Monatskalender und Stundenplan</li>
+      <li>Einkaufsliste</li>
+      <li>Erinnerungen, auch bei geschlossener App</li>
+      <li>Externer Kalender (ICS-Abo)</li>
+      <li>Verschlüsseltes Backup, Kalenderdatei-Export und Statistik</li>
+    </ul>
+    <p style="margin-top:12px" id="dlg-pro-after"></p>
+  </div>
+  <div class="ft">
+    <button class="btn-sm" id="dlg-pro-later">Nur Aufgaben nutzen</button>
+    <button class="btn" id="dlg-pro-trial">30 Tage kostenlos testen</button>
+  </div>
+</dialog>
+
 <script>
 "use strict";
 /* ================================================================
    ToDo Organizer — lokale Version
    Entwickelt von Simon Mählmann.
-   Keine externen Dienste, keine Netzwerkaufrufe, keine Abhängigkeiten.
-   Speicherung ausschließlich in localStorage.
+   Kein Konto, kein eigener Server, keine Abhängigkeit von einem
+   Drittanbieter-Dienst. Speicherung ausschließlich in localStorage.
+   Einzige Ausnahme: Wird unter Einstellungen eine eigene, private
+   Kalender-Adresse (ICS) hinterlegt, ruft die App genau diese eine,
+   vom Nutzer selbst gelieferte Adresse rein lesend ab, um deren
+   Termine anzuzeigen. Ohne eingetragene Adresse passiert das nie.
    ================================================================ */
 
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.4";
 const KEY = "studiez-pro-v2";
 const LEGACY_KEY = "studiez-pro-v1";
 
@@ -509,7 +656,9 @@ const FEATURES = [
   { key:"assignee",  label:"Zuweisen an Personen", desc:"E-Mail-Feld bei Aufgaben plus Erinnerungsfunktion." },
   { key:"drafts",    label:"E-Mail-Entwürfe",      desc:"Vorformulierte Nachrichten über das Mailprogramm des Geräts." },
   { key:"gcalLink",  label:"Google-Kalender-Link", desc:"Button bei Aufgaben mit Datum, der den Google Kalender mit vorausgefülltem Termin öffnet. Die App selbst greift dabei nicht auf das Konto zu." },
-  { key:"reminders", label:"Erinnerungen",         desc:"Benachrichtigung bei fälligen Aufgaben. In der installierten App auch bei geschlossener App, im Browser nur bei geöffneter Seite. Muss zusätzlich unten freigegeben werden." }
+  { key:"reminders", label:"Erinnerungen",         desc:"Benachrichtigung bei fälligen Aufgaben. In der installierten App auch bei geschlossener App, im Browser nur bei geöffneter Seite. Muss zusätzlich unten freigegeben werden." },
+  { key:"extCal",    label:"Externer Kalender",    desc:"Eigene, private Kalender-Adresse (ICS) hinterlegen und deren Termine schreibgeschützt mit anzeigen. Erfordert einen Netzzugriff auf genau diese eine, selbst hinterlegte Adresse." },
+  { key:"stats",     label:"Statistik",            desc:"Zeigt, wie viele Tage in Folge alle fälligen Aufgaben erledigt wurden." }
 ];
 
 const DEFAULT_SLOTS = ["08:00-08:45","08:45-09:30","09:55-10:40","10:40-11:25","11:50-12:35","12:35-13:20","14:00-14:45","14:45-15:30"];
@@ -517,15 +666,22 @@ const DEFAULT_SLOTS = ["08:00-08:45","08:45-09:30","09:55-10:40","10:40-11:25","
 const DEFAULT_STATE = () => ({
   version: 2,
   tasks: [], lessons: [], shopping: [],
+  // Schreibgeschützte Termine aus einem abonnierten externen Kalender (ICS).
+  // Reiner Anzeige-Cache — wird bei jedem Abruf komplett neu befüllt.
+  extEvents: [],
   categories: [
     { id:"c3", name:"Privat", color:"#059669" }
   ],
   settings: {
-    features: { calendar:true, timetable:true, shopping:true, assignee:true, drafts:true, gcalLink:true, reminders:true },
+    features: { calendar:true, timetable:true, shopping:true, assignee:true, drafts:true, gcalLink:true, reminders:true, extCal:true, stats:true },
     reminderTime: "08:00",
     slots: [...DEFAULT_SLOTS],
     // "mofr" = Mo–Fr, "mosa" = Mo–Sa, "moso" = Mo–So
-    weekDays: "mofr"
+    weekDays: "mofr",
+    // Private ICS-Adresse eines eigenen Kalenders (z. B. Google). Bleibt
+    // ausschließlich auf dem Gerät gespeichert, steckt auch im Backup.
+    extCalUrl: "",
+    extCalLastSync: null
   }
 });
 
@@ -566,6 +722,7 @@ function load() {
       tasks:      Array.isArray(p.tasks)      ? p.tasks      : [],
       lessons:    Array.isArray(p.lessons)    ? p.lessons    : [],
       shopping:   Array.isArray(p.shopping)   ? p.shopping   : [],
+      extEvents:  Array.isArray(p.extEvents)  ? p.extEvents  : [],
       categories: Array.isArray(p.categories) && p.categories.length ? p.categories : d.categories,
       settings: {
         features: { ...d.settings.features, ...(p.settings && p.settings.features) },
@@ -573,7 +730,9 @@ function load() {
         reminderTime: (p.settings && p.settings.reminderTime) || d.settings.reminderTime,
         // Übernahme aus der Vorversion: dort gab es nur einen Samstag-Schalter.
         weekDays: (p.settings && p.settings.weekDays)
-          || (p.settings && p.settings.saturday ? "mosa" : d.settings.weekDays)
+          || (p.settings && p.settings.saturday ? "mosa" : d.settings.weekDays),
+        extCalUrl:      (p.settings && p.settings.extCalUrl) || "",
+        extCalLastSync: (p.settings && p.settings.extCalLastSync) || null
       }
     };
   } catch (e) {
@@ -661,6 +820,22 @@ function mailto(to, subject, body) {
   location.href = `mailto:${to || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 function download(filename, content, mime) {
+  // In der iOS-App (WKWebView) tun <a download>-Links nichts. Dort wird die
+  // Datei im Zwischenspeicher der App abgelegt und über das Teilen-Menü
+  // übergeben (Dateien, iCloud Drive, AirDrop, Mail …).
+  const P = window.Capacitor && window.Capacitor.Plugins;
+  if (isNative() && P && P.Filesystem && P.Share) {
+    (async () => {
+      try {
+        const r = await P.Filesystem.writeFile({ path: filename, data: content, directory: "CACHE", encoding: "utf8" });
+        await P.Share.share({ title: filename, files: [r.uri] });
+      } catch (e) {
+        const m = String((e && (e.message || e.errorMessage)) || e);
+        if (!/cancel/i.test(m)) toast("Datei konnte nicht weitergegeben werden.");
+      }
+    })();
+    return;
+  }
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -668,7 +843,80 @@ function download(filename, content, mime) {
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-const feat = k => !!state.settings.features[k];
+/* ---------- Vollversion, Testphase und Kauf ----------
+   Vorbild: Zirkelwerk. Einmalkauf ohne Abo, über die Familienfreigabe
+   teilbar. Die Testphase ist Apples vorgesehener Weg für Apps ohne Abo
+   (Richtlinie 3.1.1): ein kostenloses, nicht verbrauchbares Produkt
+   „30-Tage-Testphase“. Ab seinem Kaufdatum laufen 30 Tage.
+
+   Kein eigener Server: StoreKit 2 liefert bei jedem Start alle Käufe des
+   Apple-Kontos samt ursprünglichem Kaufdatum. Die Testphase lässt sich
+   deshalb auch durch Neuinstallation nicht verlängern.
+
+   Nach der Testphase bleiben die Aufgaben kostenlos (Wochenansicht,
+   Aufgaben, Kategorien, Unterpunkte, Wiederholungen, einfacher Export und
+   Import). Alles in PRO_KEYS sowie das verschlüsselte Backup und der
+   Kalenderdatei-Export brauchen die Vollversion. Gesperrt wird nur die
+   Anzeige — die Daten bleiben gespeichert und stecken weiter im Export.
+
+   Gilt vorerst nur für iOS. Die Android-App bleibt unverändert frei, bis
+   die Produkte auch in der Play Console angelegt sind; im Browser (PWA)
+   gibt es keinen Store und damit keine Sperre. */
+const IAP_ENABLED     = true;     // Kaufbereich, Testphase, Begrüßung
+const LIMITS_ACTIVE   = true;     // Sperren nach der Testphase
+const LIMIT_PLATFORMS = ["ios"];  // "android" erst mit Play-Produkten
+const PRODUCT_FULL    = "de.maehlmann.todoorganizer.vollversion";
+const PRODUCT_TRIAL   = "de.maehlmann.todoorganizer.testphase";
+const TRIAL_DAYS      = 30;
+const SHORT_TRIAL_MIN = 3;        // versteckter Testmodus für TestFlight
+const LIC_KEY         = "todo-organizer-license";
+const PRO_KEYS  = ["calendar","timetable","shopping","reminders","extCal","stats"];
+const PRO_LABEL = { calendar:"Der Kalender", timetable:"Der Stundenplan", shopping:"Die Einkaufsliste",
+                    reminders:"Erinnerungen", extCal:"Der externe Kalender", stats:"Die Statistik",
+                    encBackup:"Das verschlüsselte Backup", ics:"Der Kalenderdatei-Export" };
+
+function platformId() {
+  try { return (window.Capacitor && window.Capacitor.getPlatform) ? window.Capacitor.getPlatform() : "web"; }
+  catch { return "web"; }
+}
+
+const Lic = {
+  owned: false,        // Vollversion gekauft
+  trialStart: null,    // Zeitpunkt (ms) des Testphasen-„Kaufs“
+  short: false,        // Testmodus: Testphase nur wenige Minuten
+  welcomed: false,     // Begrüßung schon gezeigt
+  load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(LIC_KEY) || "{}");
+      this.owned = d.owned === true;
+      this.trialStart = typeof d.trialStart === "number" ? d.trialStart : null;
+      this.short = d.short === true;
+      this.welcomed = d.welcomed === true;
+    } catch {}
+  },
+  save() {
+    try {
+      localStorage.setItem(LIC_KEY, JSON.stringify({
+        owned: this.owned, trialStart: this.trialStart, short: this.short, welcomed: this.welcomed }));
+    } catch {}
+  },
+  limited()  { return IAP_ENABLED && LIMITS_ACTIVE && LIMIT_PLATFORMS.indexOf(platformId()) > -1; },
+  trialMs()  { return this.short ? SHORT_TRIAL_MIN * 60000 : TRIAL_DAYS * 86400000; },
+  trialEnd() { return this.trialStart ? this.trialStart + this.trialMs() : null; },
+  /* free = keine Sperre auf dieser Plattform, new = Testphase nie gestartet */
+  status() {
+    if (!this.limited()) return "free";
+    if (this.owned) return "full";
+    if (!this.trialStart) return "new";
+    return Date.now() < this.trialEnd() ? "trial" : "expired";
+  },
+  full() { const s = this.status(); return s === "free" || s === "full" || s === "trial"; },
+  daysLeft() { return Math.max(0, Math.ceil((this.trialEnd() - Date.now()) / 86400000)); }
+};
+
+/* wantFeat = Schalter unter „Funktionen“, feat = tatsächlich verfügbar. */
+const wantFeat = k => !!state.settings.features[k];
+const feat = k => wantFeat(k) && (PRO_KEYS.indexOf(k) < 0 || Lic.full());
 /* Welche Wochentage die Ansichten zeigen. Sonntag ist Tag 7. */
 function activeDays() {
   const m = state.settings.weekDays;
@@ -679,6 +927,7 @@ function activeDays() {
 
 /* ---------- Navigation ---------- */
 function switchTo(view) {
+  if (PRO_KEYS.indexOf(view) > -1 && !Lic.full()) { showProHint(view); return; }
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   $("view-" + view).classList.add("active");
@@ -689,14 +938,36 @@ function switchTo(view) {
 document.querySelectorAll(".nav-btn").forEach(b => b.onclick = () => switchTo(b.dataset.view));
 
 function applyFeatures() {
-  document.querySelector('.nav-btn[data-view="calendar"]').hidden  = !feat("calendar");
-  document.querySelector('.nav-btn[data-view="timetable"]').hidden = !feat("timetable");
-  document.querySelector('.nav-btn[data-view="shopping"]').hidden  = !feat("shopping");
+  const full = Lic.full();
+  for (const v of ["calendar","timetable","shopping"]) {
+    const b = document.querySelector('.nav-btn[data-view="' + v + '"]');
+    b.hidden = !wantFeat(v);                 // vom Nutzer ausgeblendet
+    b.classList.toggle("locked", !full);     // sichtbar, aber gesperrt
+  }
   $("fld-assignee").style.display   = feat("assignee") ? "" : "none";
   $("e-fld-assignee").style.display = feat("assignee") ? "" : "none";
+  $("card-extcal").style.display    = wantFeat("extCal") ? "" : "none";
+  document.querySelectorAll("[data-pro]").forEach(card => {
+    if (!card.querySelector(".lock-note")) {
+      const note = el("div", "lock-note");
+      const b = el("button", "btn-sm", "Mehr zur Vollversion");
+      b.onclick = () => showProHint();
+      note.append(el("span", null, "🔒 Teil der Vollversion."), b);
+      card.append(note);
+    }
+    card.classList.toggle("locked", !full);
+    card.querySelector(".lock-note").hidden = full;
+  });
+  $("backup-encrypt").disabled = !full;
+  $("enc-lock").hidden = full;
+  if (!full && $("backup-encrypt").checked) {
+    $("backup-encrypt").checked = false;
+    $("backup-pw-fields").hidden = true;
+    $("backup-pw-hint").hidden = true;
+  }
   const active = document.querySelector(".view.active");
   const cur = active ? active.id.replace("view-","") : null;
-  if (cur && ["calendar","timetable","shopping"].indexOf(cur) > -1 && !feat(cur)) switchTo("tasks");
+  if (cur && ["calendar","timetable","shopping"].indexOf(cur) > -1 && !feat(cur)) switchTo("week");
 }
 
 /* ---------- Kategorien ---------- */
@@ -976,7 +1247,7 @@ function nextLessonFor(subject) {
 }
 
 /* ---------- Erinnerungen ----------
-   Läuft die App als installierte Android-App (Capacitor), werden echte lokale
+   Läuft die App als installierte App (Capacitor), werden echte lokale
    Benachrichtigungen beim Betriebssystem eingeplant. Diese kommen auch bei
    geschlossener App. Im Browser gibt es diese Möglichkeit nicht; dort wird
    ersatzweise die Notification-API benutzt, die nur bei geöffneter Seite wirkt.
@@ -1220,6 +1491,8 @@ function renderTasks() {
   $("c-done").textContent = state.tasks.filter(t => t.completed).length || "";
   $("c-all").textContent  = state.tasks.length || "";
   updateBrandSub();
+  // Die Wochenansicht hängt an denselben Daten und wird mitgezogen.
+  if (typeof renderWeek === "function") renderWeek();
 
   const list = state.tasks.filter(t =>
     (filter === "all" || (filter === "open" ? !t.completed : t.completed)) &&
@@ -1357,6 +1630,136 @@ $("f-range").onchange = renderTasks;
 $("f-sort").onchange = renderTasks;
 $("f-search").oninput = renderTasks;
 
+/* ---------- Wochenübersicht ----------
+   Reine Zusammenstellung vorhandener Daten: Stundenplan des Wochentags und
+   Aufgaben mit Fälligkeitsdatum. Keine externen Quellen, keine Netzzugriffe. */
+let weekOffset = 0;
+
+function isoWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 864e5) + 1) / 7);
+}
+
+function weekTaskRow(t, withDate) {
+  const row = el("div","wd-task");
+  row.style.borderLeftColor = catColor(t.categoryId);
+  const cb = document.createElement("input");
+  cb.type = "checkbox"; cb.checked = false;
+  cb.setAttribute("aria-label","Erledigt");
+  // stopPropagation, damit das Abhaken nicht zusätzlich den Dialog öffnet.
+  cb.onclick = e => { e.stopPropagation(); toggleTask(t.id); };
+  row.append(cb, el("span",null,t.title));
+  const bits = [];
+  if (withDate && t.dueDate) bits.push(deDate(t.dueDate));
+  const subs = t.subtasks || [];
+  if (subs.length) bits.push(`${subs.filter(s => s.done).length}/${subs.length}`);
+  if (t.prio === "hoch") bits.push("!");
+  if (bits.length) row.append(el("span","pt", bits.join(" · ")));
+  row.onclick = () => openTaskDialog(t.id);
+  return row;
+}
+
+/* Alle überfälligen offenen Aufgaben gesammelt auf heute ziehen. */
+function bulkOverdueToToday() {
+  const today = todayISO();
+  const over = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate < today);
+  if (!over.length) return;
+  if (!confirm(`${over.length} überfällige Aufgabe(n) auf heute setzen?`)) return;
+  const snap = snapshot();
+  over.forEach(t => { t.dueDate = today; });
+  save(); renderAll();
+  toast(over.length + " auf heute gesetzt.", () => restore(snap));
+}
+
+function renderWeek() {
+  const box = $("wk-days"); if (!box) return;
+  box.replaceChildren();
+  const now = new Date(); now.setHours(12,0,0,0);
+  const mo = new Date(now);
+  mo.setDate(now.getDate() - ((now.getDay() + 6) % 7) + weekOffset * 7);
+  const su = new Date(mo); su.setDate(mo.getDate() + 6);
+  $("wk-title").textContent = `KW ${isoWeek(mo)} · `
+    + mo.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}) + " – "
+    + su.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+  // Überfällige Aufgaben nur in der aktuellen Woche oben anzeigen.
+  const ov = $("wk-overdue"); ov.replaceChildren();
+  const today = todayISO();
+  if (weekOffset === 0) {
+    const over = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate < today)
+      .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+    if (over.length) {
+      const head = el("div","grp warn","Überfällig");
+      const b = el("button","btn-sm","Alle auf heute");
+      b.style.marginLeft = "10px";
+      b.onclick = bulkOverdueToToday;
+      head.append(b);
+      ov.append(head);
+      over.slice(0,8).forEach(t => ov.append(weekTaskRow(t, true)));
+      if (over.length > 8) ov.append(el("p","hint",`+ ${over.length - 8} weitere unter Aufgaben → Überfällig`));
+    }
+  }
+
+  // Die Woche zeigt immer alle sieben Tage: Aufgaben gibt es auch am
+  // Wochenende, unabhängig davon, ob der Stundenplan Sa/So ausblendet.
+  const ttDays = activeDays();
+  for (let dow = 1; dow <= 7; dow++) {
+    const d = new Date(mo); d.setDate(mo.getDate() + dow - 1);
+    const iso = isoOf(d);
+    const dayEl = el("div","week-day"
+      + (iso === today ? " today" : "")
+      + (dow >= 6 ? " weekend" : ""));
+
+    const tasks = state.tasks.filter(t => t.dueDate === iso && !t.completed)
+      .sort((a,b) => (PRIO_RANK[a.prio] != null ? PRIO_RANK[a.prio] : 9)
+                   - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9));
+
+    const head = el("div","wd-head");
+    head.append(el("span",null,`${DAY_NAMES[dow]}, ${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}`));
+    if (tasks.length) head.append(el("span","cnt2", tasks.length + (tasks.length === 1 ? " Aufgabe" : " Aufgaben")));
+    dayEl.append(head);
+
+    const body = el("div","wd-body");
+    // Stundenplan nur an Tagen zeigen, die im Raster überhaupt aktiv sind.
+    if (feat("timetable") && ttDays.indexOf(dow) > -1) {
+      const lessons = state.lessons.filter(l => l.day === dow).sort((a,b) => a.slot - b.slot);
+      if (lessons.length) {
+        const row = el("div","wd-lessons");
+        for (const l of lessons) {
+          const start = (state.settings.slots[l.slot] || "").split("-")[0] || "";
+          const chip = el("span","wd-lesson", `${start} ${l.subject}${l.room ? " · " + l.room : ""}`.trim());
+          chip.style.background = l.color || "#2563eb";
+          row.append(chip);
+        }
+        body.append(row);
+      }
+    }
+    if (feat("extCal")) {
+      const extItems = (state.extEvents || []).filter(e => e.date === iso);
+      if (extItems.length) {
+        const row = el("div","wd-lessons");
+        for (const e of extItems) {
+          const chip = el("span","wd-lesson", (e.time ? e.time + " " : "") + e.title);
+          chip.style.background = "#9333ea";
+          row.append(chip);
+        }
+        body.append(row);
+      }
+    }
+    if (tasks.length) tasks.forEach(t => body.append(weekTaskRow(t, false)));
+    else if (!body.childNodes.length) body.append(el("p","hint","Keine fälligen Aufgaben."));
+    dayEl.append(body);
+    box.append(dayEl);
+  }
+}
+
+$("wk-prev").onclick = () => { weekOffset--; renderWeek(); };
+$("wk-next").onclick = () => { weekOffset++; renderWeek(); };
+$("wk-now").onclick  = () => { weekOffset = 0; renderWeek(); };
+
 /* ---------- Aufgaben-Dialog ---------- */
 let draftSubs = [];   // Arbeitskopie, wird erst beim Übernehmen geschrieben.
 
@@ -1448,6 +1851,8 @@ function renderCalendar() {
   for (const t of state.tasks) {
     if (t.dueDate && !t.completed) (byDate[t.dueDate] = byDate[t.dueDate] || []).push(t);
   }
+  const extByDate = {};
+  if (feat("extCal")) for (const e of (state.extEvents || [])) (extByDate[e.date] = extByDate[e.date] || []).push(e);
 
   for (let i = 0; i < 42; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i);
@@ -1458,20 +1863,40 @@ function renderCalendar() {
       + (iso === calSelected ? " sel" : ""));
     cell.append(el("div","n", String(d.getDate())));
     const items = byDate[iso] || [];
-    if (items.length) {
+    const extItems = extByDate[iso] || [];
+    const total = items.length + extItems.length;
+    if (total) {
       const dots = el("div","dots");
       items.slice(0,4).forEach(t => {
         const dot = el("span","dot");
         dot.style.background = catColor(t.categoryId);
         dots.append(dot);
       });
+      if (extItems.length && items.length < 4) {
+        const dot = el("span","dot");
+        dot.style.background = "#9333ea";
+        dot.title = "Externer Kalender";
+        dots.append(dot);
+      }
       cell.append(dots);
-      if (items.length > 4) cell.append(el("div","more","+" + (items.length - 4)));
+      if (total > 4) cell.append(el("div","more","+" + (total - 4)));
     }
     cell.onclick = () => { calSelected = iso; renderCalendar(); };
     grid.append(cell);
   }
   renderCalendarDay();
+}
+
+function extEventCard(e) {
+  const card = el("div","task");
+  card.style.borderLeftColor = "#9333ea";
+  const top = el("div","task-top");
+  top.append(el("span","title", (e.time ? e.time + " · " : "") + e.title));
+  card.append(top);
+  const meta = el("div","meta");
+  meta.append(el("span","badge",  "🗓 externer Kalender"));
+  card.append(meta);
+  return card;
 }
 
 function renderCalendarDay() {
@@ -1482,8 +1907,10 @@ function renderCalendarDay() {
   const items = state.tasks.filter(t => t.dueDate === iso)
     .sort((a,b) => (a.completed - b.completed) ||
       ((PRIO_RANK[a.prio] != null ? PRIO_RANK[a.prio] : 9) - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9)));
-  if (!items.length) { box.append(el("p","empty","Keine Aufgaben an diesem Tag.")); return; }
+  const extItems = feat("extCal") ? (state.extEvents || []).filter(e => e.date === iso) : [];
+  if (!items.length && !extItems.length) { box.append(el("p","empty","Keine Aufgaben an diesem Tag.")); return; }
   items.forEach(t => box.append(taskCard(t, todayISO())));
+  extItems.forEach(e => box.append(extEventCard(e)));
 }
 
 /* ---------- Stundenplan ---------- */
@@ -1622,13 +2049,15 @@ function renderSwitches() {
   for (const f of FEATURES) {
     const row = el("div","sw");
     const txt = el("div");
-    txt.append(el("div","lb", f.label), el("div","ds", f.desc));
-    const tg = el("button","tog" + (feat(f.key) ? " on" : ""));
+    const locked = PRO_KEYS.indexOf(f.key) > -1 && !Lic.full();
+    txt.append(el("div","lb", f.label + (locked ? " 🔒" : "")), el("div","ds", f.desc));
+    const tg = el("button","tog" + (wantFeat(f.key) ? " on" : "") + (locked ? " lock" : ""));
     tg.setAttribute("role","switch");
-    tg.setAttribute("aria-checked", String(feat(f.key)));
+    tg.setAttribute("aria-checked", String(wantFeat(f.key)));
     tg.setAttribute("aria-label", f.label);
     tg.onclick = () => {
-      state.settings.features[f.key] = !feat(f.key);
+      if (locked) { showProHint(f.key); return; }
+      state.settings.features[f.key] = !wantFeat(f.key);
       save(); renderSwitches(); applyFeatures(); renderAll();
     };
     row.append(txt, tg); box.append(row);
@@ -1670,19 +2099,429 @@ function updateStorageInfo() {
     `${state.tasks.length} Aufgaben · ${state.lessons.length} Stunden · ${state.shopping.length} Artikel · ${(bytes/1024).toFixed(1)} KB belegt`;
 }
 
+/* ---------- Statistik / Serie ----------
+   Ein Tag zählt als "erledigt", wenn er mindestens eine fällige Aufgabe
+   hatte und alle davon abgehakt sind. Tage ganz ohne fällige Aufgabe
+   unterbrechen die Serie nicht, verlängern sie aber auch nicht. Da erledigte
+   Aufgaben in den Daten erhalten bleiben (bis zum Aufräumen), lässt sich das
+   rückwirkend aus dem vorhandenen Bestand ermitteln — ohne eigenes Protokoll. */
+function dayStatus(iso) {
+  const due = state.tasks.filter(t => t.dueDate === iso);
+  if (!due.length) return "empty";
+  return due.every(t => t.completed) ? "complete" : "incomplete";
+}
+
+function computeStats() {
+  const today = todayISO();
+  let cursor = new Date(); cursor.setHours(12,0,0,0);
+  // Der heutige Tag zählt nur mit, wenn er selbst schon vollständig ist;
+  // sonst beginnt die Betrachtung erst gestern.
+  if (dayStatus(today) !== "complete") cursor.setDate(cursor.getDate() - 1);
+
+  let current = 0, longest = 0, running = 0, seenAny = false;
+  for (let i = 0; i < 730; i++) {
+    const iso = isoOf(cursor);
+    const st = dayStatus(iso);
+    if (st === "incomplete") {
+      if (!seenAny) current = running;
+      running = 0; seenAny = true;
+    } else if (st === "complete") {
+      running++;
+      if (!seenAny) current = running;
+      longest = Math.max(longest, running);
+    }
+    // "empty" überspringen, ohne running zu verändern.
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  if (!seenAny) current = running;
+  longest = Math.max(longest, current);
+
+  const doneTotal = state.tasks.filter(t => t.completed).length;
+  const mo = new Date(); mo.setHours(12,0,0,0); mo.setDate(mo.getDate() - ((mo.getDay()+6)%7));
+  const doneWeek = state.tasks.filter(t => t.completed && t.dueDate && t.dueDate >= isoOf(mo)).length;
+
+  return { current, longest, doneTotal, doneWeek };
+}
+
+function renderStats() {
+  const box = $("stats-box"); if (!box) return;
+  box.replaceChildren();
+  if (!feat("stats")) { box.append(el("p","hint","Ausgeblendet — unter „Funktionen“ wieder einschaltbar.")); return; }
+  const s = computeStats();
+  const row = (label, value) => {
+    const r = el("div","row");
+    r.append(el("span",null,label), el("span",null,String(value)));
+    return r;
+  };
+  box.append(row("🔥 Aktuelle Serie", s.current + (s.current === 1 ? " Tag" : " Tage")));
+  box.append(row("🏆 Längste Serie",  s.longest + (s.longest === 1 ? " Tag" : " Tage")));
+  box.append(row("✅ Diese Woche erledigt", s.doneWeek));
+  box.append(row("📦 Insgesamt erledigt", s.doneTotal));
+  box.append(el("p","hint","Ein Tag zählt, wenn an ihm mindestens eine Aufgabe fällig war und alle erledigt wurden. Tage ohne fällige Aufgabe unterbrechen die Serie nicht."));
+}
+
+/* ---------- Externer Kalender (ICS-Abo, nur lesen) ----------
+   Ruft eine vom Nutzer selbst hinterlegte, private ICS-Adresse ab (z. B. die
+   "Geheime Adresse im iCal-Format" aus dem eigenen Google-Kalender) und zeigt
+   deren Termine schreibgeschützt zusätzlich an. Kein Konto, kein API-Key,
+   keine Anmeldung durch diese App — nur ein Lesezugriff auf die eine Adresse,
+   die der Nutzer selbst einträgt.
+
+   In der installierten Android-App läuft der Abruf über Capacitors native
+   HTTP-Bridge (CapacitorHttp), die nicht der CORS-Prüfung des WebViews
+   unterliegt. Im reinen Browserbetrieb wird ersatzweise fetch() versucht —
+   das scheitert bei Google-Adressen erfahrungsgemäß an fehlender
+   CORS-Freigabe; das ist eine Einschränkung des Anbieters, keine
+   Fehlfunktion dieser App.
+
+   Der ICS-Parser deckt die in der Praxis häufigen Fälle ab: einzelne
+   Termine, sowie wiederkehrende Termine mit FREQ=DAILY/WEEKLY/MONTHLY/YEARLY,
+   INTERVAL, COUNT, UNTIL und (bei WEEKLY) BYDAY, dazu EXDATE und einfache
+   Einzeltermin-Überschreibungen (RECURRENCE-ID). Exotischere RRULE-Teile
+   (z. B. BYMONTHDAY, BYSETPOS) werden nicht ausgewertet. */
+
+const EXTCAL_WINDOW_PAST_DAYS   = 60;   // wie weit rückwirkend angezeigt wird
+const EXTCAL_WINDOW_FUTURE_DAYS = 365;  // wie weit im Voraus angezeigt wird
+const EXTCAL_MAX_EVENTS = 800;          // Obergrenze gegen ausufernde Serien
+
+function icsUrlNormalize(u) {
+  u = (u || "").trim();
+  if (u.startsWith("webcal://")) u = "https://" + u.slice(9);
+  return u;
+}
+
+/* Native HTTP-Bridge, falls verfügbar (umgeht CORS, da kein Browser-Request). */
+function nativeHttp() {
+  const c = window.Capacitor;
+  return (c && c.Plugins && c.Plugins.CapacitorHttp) || null;
+}
+
+async function fetchICSText(url) {
+  const http = nativeHttp();
+  if (http) {
+    const res = await http.get({ url, connectTimeout: 15000, readTimeout: 15000 });
+    if (res.status && (res.status < 200 || res.status >= 300))
+      throw new Error("Server antwortete mit Status " + res.status);
+    return typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+  }
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Server antwortete mit Status " + res.status);
+  return await res.text();
+}
+
+/* RFC5545-Zeilenumbruch rückgängig machen: eine Zeile, die mit Leerzeichen
+   oder Tab beginnt, ist Fortsetzung der vorigen Zeile. */
+function unfoldICS(text) {
+  const raw = text.split(/\r\n|\n|\r/);
+  const lines = [];
+  for (const line of raw) {
+    if ((line.startsWith(" ") || line.startsWith("\t")) && lines.length) lines[lines.length-1] += line.slice(1);
+    else lines.push(line);
+  }
+  return lines;
+}
+
+function icsUnescape(s) {
+  return String(s || "").replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
+}
+
+/* "20260731" oder "20260731T090000Z" -> { date:"2026-07-31", time:"09:00"|null }.
+   Ein "Z" am Ende bedeutet UTC — das wird in die Ortszeit dieses Geräts
+   umgerechnet, weil sich dabei auch das Datum verschieben kann
+   (z. B. 23:00 UTC ist hierzulande schon der nächste Tag). */
+function icsDateToParts(v) {
+  const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?/.exec(v || "");
+  if (!m) return null;
+  if (m[4] && m[7]) {
+    const d = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6]||0)));
+    return { date: isoOf(d), time: String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0") };
+  }
+  const date = `${m[1]}-${m[2]}-${m[3]}`;
+  const time = m[4] ? `${m[4]}:${m[5]}` : null;
+  return { date, time };
+}
+
+/* Property-Zeile "NAME;PARAM=X:WERT" in { name, params, value } zerlegen. */
+function parseICSLine(line) {
+  const c = line.indexOf(":");
+  if (c === -1) return null;
+  const head = line.slice(0, c), value = line.slice(c+1);
+  const [name, ...paramParts] = head.split(";");
+  const params = {};
+  for (const p of paramParts) {
+    const eq = p.indexOf("=");
+    if (eq > -1) params[p.slice(0,eq).toUpperCase()] = p.slice(eq+1);
+  }
+  return { name: name.toUpperCase(), params, value };
+}
+
+function parseRRuleString(v) {
+  const out = {};
+  for (const part of (v || "").split(";")) {
+    const eq = part.indexOf("=");
+    if (eq > -1) out[part.slice(0,eq).toUpperCase()] = part.slice(eq+1);
+  }
+  return out;
+}
+
+/* Wiederkehrende Termine innerhalb des Anzeigefensters entfalten. */
+function expandRRule(ev, windowStartISO, windowEndISO) {
+  const rule = ev.rrule;
+  const out = [];
+  const interval = Math.max(1, parseInt(rule.INTERVAL || "1", 10) || 1);
+  const count = rule.COUNT ? parseInt(rule.COUNT, 10) : null;
+  const until = rule.UNTIL ? (icsDateToParts(rule.UNTIL) || {}).date : null;
+  const dayMap = { MO:1, TU:2, WE:3, TH:4, FR:5, SA:6, SU:7 };
+  const byday = rule.BYDAY ? rule.BYDAY.split(",").map(s => dayMap[s.slice(-2)]).filter(Boolean) : null;
+  const startDate = parseISO(ev.date);
+  const hardEnd = windowEndISO < (until || windowEndISO) ? windowEndISO : until;
+  let n = 0;
+
+  const push = (d) => {
+    const iso = isoOf(d);
+    if (iso < windowStartISO || (hardEnd && iso > hardEnd) || iso > windowEndISO) return false;
+    out.push({ ...ev, date: iso });
+    return true;
+  };
+
+  if (rule.FREQ === "DAILY") {
+    for (let i = 0; i < 3000; i++) {
+      if (count != null && n >= count) break;
+      const d = new Date(startDate); d.setDate(startDate.getDate() + i * interval);
+      if (until && isoOf(d) > until) break;
+      if (isoOf(d) > windowEndISO) break;
+      n++;
+      push(d);
+    }
+  } else if (rule.FREQ === "WEEKLY") {
+    const days = byday && byday.length ? byday : [((startDate.getDay()+6)%7)+1];
+    for (let w = 0; w < 600; w++) {
+      if (count != null && n >= count) break;
+      const weekStart = new Date(startDate); weekStart.setDate(startDate.getDate() - (((startDate.getDay()+6)%7)) + w * interval * 7);
+      let stop = false;
+      for (const dow of days.slice().sort((a,b)=>a-b)) {
+        const d = new Date(weekStart); d.setDate(weekStart.getDate() + (dow - 1));
+        if (d < startDate) continue;
+        if (until && isoOf(d) > until) { stop = true; break; }
+        if (isoOf(d) > windowEndISO) { stop = true; break; }
+        if (count != null && n >= count) { stop = true; break; }
+        n++;
+        push(d);
+      }
+      if (stop) break;
+    }
+  } else if (rule.FREQ === "MONTHLY") {
+    for (let i = 0; i < 400; i++) {
+      if (count != null && n >= count) break;
+      const d = addMonths(startDate, i * interval);
+      if (until && isoOf(d) > until) break;
+      if (isoOf(d) > windowEndISO) break;
+      n++;
+      push(d);
+    }
+  } else if (rule.FREQ === "YEARLY") {
+    for (let i = 0; i < 60; i++) {
+      if (count != null && n >= count) break;
+      const d = addMonths(startDate, i * 12 * interval);
+      if (until && isoOf(d) > until) break;
+      if (isoOf(d) > windowEndISO) break;
+      n++;
+      push(d);
+    }
+  } else {
+    // Unbekannte Frequenz: nur den Einzeltermin selbst übernehmen.
+    push(startDate);
+  }
+  return out;
+}
+
+function parseICS(text) {
+  const lines = unfoldICS(text);
+  const rawEvents = [];
+  let cur = null;
+  for (const raw of lines) {
+    if (raw === "BEGIN:VEVENT") { cur = { exdates: [] }; continue; }
+    if (raw === "END:VEVENT") { if (cur) rawEvents.push(cur); cur = null; continue; }
+    if (!cur) continue;
+    const p = parseICSLine(raw);
+    if (!p) continue;
+    if (p.name === "UID") cur.uid = p.value;
+    else if (p.name === "SUMMARY") cur.title = icsUnescape(p.value);
+    else if (p.name === "STATUS") cur.status = p.value;
+    else if (p.name === "DTSTART") {
+      const parts = icsDateToParts(p.value);
+      if (parts) { cur.date = parts.date; cur.time = parts.time; }
+    }
+    else if (p.name === "RRULE") cur.rrule = parseRRuleString(p.value);
+    else if (p.name === "EXDATE") {
+      for (const v of p.value.split(",")) {
+        const parts = icsDateToParts(v);
+        if (parts) cur.exdates.push(parts.date);
+      }
+    }
+    else if (p.name === "RECURRENCE-ID") {
+      const parts = icsDateToParts(p.value);
+      if (parts) cur.recurrenceId = parts.date;
+    }
+  }
+
+  const today = todayISO();
+  const winStart = isoOf(new Date(Date.now() - EXTCAL_WINDOW_PAST_DAYS * 864e5));
+  const winEnd   = isoOf(new Date(Date.now() + EXTCAL_WINDOW_FUTURE_DAYS * 864e5));
+
+  const base = rawEvents.filter(e => !e.recurrenceId && e.date && e.title);
+  const overrides = rawEvents.filter(e => e.recurrenceId && e.uid);
+
+  let events = [];
+  for (const ev of base) {
+    if (ev.rrule) {
+      const occ = expandRRule(ev, winStart, winEnd)
+        .filter(o => ev.exdates.indexOf(o.date) === -1);
+      events.push(...occ);
+    } else if (ev.date >= winStart && ev.date <= winEnd) {
+      events.push(ev);
+    }
+    if (events.length > EXTCAL_MAX_EVENTS) break;
+  }
+
+  // Einzeltermin-Überschreibungen anwenden: passende Serieninstanz ersetzen
+  // oder (bei STATUS:CANCELLED) entfernen.
+  for (const ov of overrides) {
+    events = events.filter(e => !(e.uid === ov.uid && e.date === ov.recurrenceId));
+    if (ov.status !== "CANCELLED" && ov.date && ov.date >= winStart && ov.date <= winEnd) events.push(ov);
+  }
+
+  events = events.slice(0, EXTCAL_MAX_EVENTS);
+  events.sort((a,b) => a.date.localeCompare(b.date));
+  return events.map(e => ({
+    id: (e.uid || uid()) + "@" + e.date,
+    title: e.title || "(ohne Titel)",
+    date: e.date,
+    time: e.time || null
+  }));
+}
+
+async function fetchExternalCalendar(manual) {
+  const url = icsUrlNormalize(state.settings.extCalUrl);
+  const status = $("extcal-status");
+  if (!url) { if (manual) toast("Bitte zuerst eine Adresse eintragen."); return; }
+  if (manual && status) status.textContent = "Wird geladen …";
+  try {
+    const text = await fetchICSText(url);
+    const events = parseICS(text);
+    state.extEvents = events;
+    state.settings.extCalLastSync = Date.now();
+    save();
+    renderCalendar(); renderWeek();
+    updateExtCalStatus();
+    if (manual) toast(events.length + " Termine geladen.");
+  } catch (e) {
+    console.error("Externer Kalender:", e);
+    if (status) status.textContent = "Laden fehlgeschlagen: " + e.message
+      + (nativeHttp() ? "" : " — im Browserbetrieb häufig durch fehlende CORS-Freigabe des Anbieters.");
+    if (manual) toast("Laden fehlgeschlagen.");
+  }
+}
+
+function updateExtCalStatus() {
+  const status = $("extcal-status"); if (!status) return;
+  if (!state.settings.extCalUrl) { status.textContent = "Kein externer Kalender hinterlegt."; return; }
+  const n = (state.extEvents || []).length;
+  const last = state.settings.extCalLastSync
+    ? new Date(state.settings.extCalLastSync).toLocaleString("de-DE")
+    : "noch nie";
+  status.textContent = `${n} Termine geladen · zuletzt aktualisiert: ${last}`;
+}
+
+$("extcal-url").onchange = () => {
+  state.settings.extCalUrl = $("extcal-url").value.trim();
+  state.settings.extCalLastSync = null; state.extEvents = [];
+  save(); updateExtCalStatus(); renderCalendar(); renderWeek();
+  if (state.settings.extCalUrl) fetchExternalCalendar(true);
+};
+$("btn-extcal-load").onclick = () => fetchExternalCalendar(true);
+$("btn-extcal-remove").onclick = () => {
+  if (!state.settings.extCalUrl && !state.extEvents.length) return;
+  if (!confirm("Externen Kalender entfernen? Die eingetragene Adresse und alle geladenen Termine werden gelöscht.")) return;
+  state.settings.extCalUrl = ""; state.settings.extCalLastSync = null; state.extEvents = [];
+  $("extcal-url").value = "";
+  save(); updateExtCalStatus(); renderCalendar(); renderWeek();
+  toast("Externer Kalender entfernt.");
+};
+
+/* ---------- Verschlüsseltes Backup (Web Crypto, ohne externe Bibliothek) ----------
+   AES-GCM mit einem aus dem Passwort per PBKDF2 abgeleiteten Schlüssel.
+   Salt und IV werden je Backup neu gewürfelt und mit ausgeliefert — das ist
+   der übliche, sichere Aufbau und kein Sicherheitsrisiko. Ohne Passwort ist
+   die Datei nicht lesbar; es gibt bewusst keinen Umgehungsweg. */
+const ENC_MAGIC = "todo-organizer-enc-v1";
+
+async function deriveAesKey(passphrase, saltBytes) {
+  const enc = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: saltBytes, iterations: 210000, hash: "SHA-256" },
+    baseKey, { name: "AES-GCM", length: 256 }, false, ["encrypt","decrypt"]
+  );
+}
+function bufToB64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function b64ToBuf(b64) { const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return arr.buffer; }
+
+async function encryptBackup(jsonText, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+  const key  = await deriveAesKey(passphrase, salt);
+  const data = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, new TextEncoder().encode(jsonText));
+  return JSON.stringify({ magic: ENC_MAGIC, salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(data) });
+}
+async function decryptBackup(envelope, passphrase) {
+  const salt = new Uint8Array(b64ToBuf(envelope.salt));
+  const iv   = new Uint8Array(b64ToBuf(envelope.iv));
+  const key  = await deriveAesKey(passphrase, salt);
+  const plain = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, b64ToBuf(envelope.data));
+  return new TextDecoder().decode(plain);
+}
+
+$("backup-encrypt").onchange = e => {
+  $("backup-pw-fields").hidden = !e.target.checked;
+  $("backup-pw-hint").hidden = !e.target.checked;
+};
+
 /* ---------- Export / Import / ICS ---------- */
-$("btn-export").onclick = () => {
-  download(`todo-organizer-backup-${todayISO()}.json`, JSON.stringify(state, null, 2), "application/json");
-  toast("Sicherung erstellt.");
+$("btn-export").onclick = async () => {
+  const json = JSON.stringify(state, null, 2);
+  if ($("backup-encrypt").checked && !Lic.full()) return showProHint("encBackup");
+  if ($("backup-encrypt").checked) {
+    const pw = $("backup-pw").value, pw2 = $("backup-pw2").value;
+    if (!pw) return toast("Bitte ein Passwort eingeben.");
+    if (pw !== pw2) return toast("Die Passwörter stimmen nicht überein.");
+    try {
+      const envelope = await encryptBackup(json, pw);
+      download(`todo-organizer-backup-verschluesselt-${todayISO()}.json`, envelope, "application/json");
+      toast("Verschlüsselte Sicherung erstellt.");
+    } catch (e) { console.error(e); toast("Verschlüsselung fehlgeschlagen."); }
+  } else {
+    download(`todo-organizer-backup-${todayISO()}.json`, json, "application/json");
+    toast("Sicherung erstellt.");
+  }
 };
 $("btn-import").onclick = () => $("file-import").click();
 $("file-import").onchange = e => {
   const file = e.target.files[0];
   if (!file) return;
   const r = new FileReader();
-  r.onload = () => {
+  r.onload = async () => {
     try {
-      const d = JSON.parse(r.result);
+      let parsed = JSON.parse(r.result);
+      if (parsed && parsed.magic === ENC_MAGIC) {
+        const pw = prompt("Dieses Backup ist verschlüsselt. Bitte Passwort eingeben:");
+        if (pw == null) return;               // abgebrochen
+        let plain;
+        try { plain = await decryptBackup(parsed, pw); }
+        catch { return alert("Falsches Passwort oder beschädigte Datei."); }
+        parsed = JSON.parse(plain);
+      }
+      const d = parsed;
       if (!d || typeof d !== "object" || !Array.isArray(d.tasks)) throw new Error("Keine gültige Sicherungsdatei.");
       if (!confirm("Der aktuelle Bestand wird vollständig überschrieben. Fortfahren?")) return;
       if (d.version === 2 || Array.isArray(d.categories)) {
@@ -1690,6 +2529,7 @@ $("file-import").onchange = e => {
         state = {
           version: 2,
           tasks: d.tasks || [], lessons: d.lessons || [], shopping: d.shopping || [],
+          extEvents: Array.isArray(d.extEvents) ? d.extEvents : [],
           categories: (d.categories && d.categories.length) ? d.categories : def.categories,
           settings: {
             features: { ...def.settings.features, ...(d.settings && d.settings.features) },
@@ -1697,7 +2537,9 @@ $("file-import").onchange = e => {
             // reminderTime fehlte hier bisher und wurde bei jedem Import zurückgesetzt.
             reminderTime: (d.settings && d.settings.reminderTime) || def.settings.reminderTime,
             weekDays: (d.settings && d.settings.weekDays)
-              || (d.settings && d.settings.saturday ? "mosa" : def.settings.weekDays)
+              || (d.settings && d.settings.saturday ? "mosa" : def.settings.weekDays),
+            extCalUrl: (d.settings && d.settings.extCalUrl) || "",
+            extCalLastSync: (d.settings && d.settings.extCalLastSync) || null
           }
         };
       } else migrateV1(d);
@@ -1710,6 +2552,7 @@ $("file-import").onchange = e => {
 
 // Ganztägige Termine als Standard-ICS. Importierbar in jeden gängigen Kalender.
 $("btn-ics").onclick = () => {
+  if (!Lic.full()) return showProHint("ics");
   const list = state.tasks.filter(t => !t.completed && t.dueDate);
   if (!list.length) return toast("Keine offenen Aufgaben mit Datum.");
   const esc = s => String(s).replace(/([,;\\])/g, "\\$1").replace(/\r?\n/g, "\\n");
@@ -1757,15 +2600,20 @@ function initUI() {
   $("slot-editor").value = state.settings.slots.join("\n");
   $("tt-days").value = state.settings.weekDays || "mofr";
   $("rem-time").value = state.settings.reminderTime || "08:00";
+  $("extcal-url").value = state.settings.extCalUrl || "";
+  updateExtCalStatus();
+  renderStats();
   updateReminderStatus();
   applyFeatures();
 }
 function renderAll() {
   renderTasks(); renderCalendar(); renderTimetable(); renderShopping();
+  renderWeek(); renderStats();
   fillSubjectSelects(); updateStorageInfo();
 }
 
 load();
+Lic.load();
 calSelected = todayISO();
 initUI();
 renderAll();
@@ -1778,6 +2626,26 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW:", e));
   });
 }
+
+/* ---------- Statusleiste ----------
+   Die Seite wird in der installierten App unter die Statusleiste gezeichnet.
+   Normalerweise gleicht env(safe-area-inset-top) das aus; liefert der WebView
+   dafür 0, wird der Abstand hier ersatzweise gesetzt. */
+(function statusBarInset() {
+  try {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);pointer-events:none;opacity:0";
+    document.body.append(probe);
+    const measured = probe.getBoundingClientRect().height;
+    probe.remove();
+    if (measured < 1 && isNative()) {
+      // 26px entspricht der üblichen Höhe der Android-Statusleiste bei
+      // Standard-Schriftskalierung; bei Bedarf hier anpassen.
+      document.body.style.setProperty("--sb-h", "26px");
+      document.body.classList.add("sb-inset");
+    }
+  } catch {}
+})();
 
 /* ---------- Android-Zurück-Taste ----------
    Ohne Behandlung schließt die Zurück-Taste die App sofort. Erwartet wird:
@@ -1795,13 +2663,43 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     if (dlg) { dlg.close(); return; }
 
     const active = document.querySelector(".view.active");
-    const view = active ? active.id.replace("view-", "") : "tasks";
-    if (view !== "tasks") { switchTo("tasks"); return; }
+    const view = active ? active.id.replace("view-", "") : "week";
+    if (view !== "week") { switchTo("week"); return; }
 
     if (armed) { App.exitApp(); return; }
     armed = true;
     toast("Zum Beenden erneut zurück drücken.");
     setTimeout(() => { armed = false; }, 2200);
+  });
+})();
+
+/* ---------- Geteilter Text aus anderen Apps ----------
+   Setzt das Plugin @capgo/capacitor-share-target voraus (siehe separate
+   Anleitung zum Einbau). Läuft es nicht mit (Browserbetrieb, PWA, oder noch
+   nicht eingebaut), passiert einfach nichts — kein Fehler, keine Abhängigkeit. */
+function shareTargetPlugin() {
+  const c = window.Capacitor;
+  return (c && c.Plugins && c.Plugins.CapacitorShareTarget) || null;
+}
+
+function handleSharedText(text) {
+  text = (text || "").trim();
+  if (!text) return;
+  switchTo("tasks");
+  $("t-details").hidden = false;
+  $("btn-more").setAttribute("aria-expanded","true");
+  $("btn-more").textContent = "Weniger ▴";
+  $("t-title").value = text.length > 160 ? text.slice(0,160) : text;
+  $("t-title").focus();
+  toast("Geteilter Text übernommen — bitte prüfen und speichern.");
+}
+
+(function initShareTarget() {
+  const plugin = shareTargetPlugin();
+  if (!plugin || !plugin.addListener) return;
+  plugin.addListener("shareReceived", ev => {
+    const text = (ev && ev.texts && ev.texts[0]) || (ev && ev.title) || "";
+    handleSharedText(text);
   });
 })();
 
@@ -1821,6 +2719,230 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) { ch
   if ((await remStatus()) === "granted") await scheduleAll();
   await updateReminderStatus();
 })();
+
+// Externen Kalender in der installierten App beim Start automatisch auffrischen,
+// aber höchstens alle 6 Stunden — kein unnötiger Netzzugriff bei jedem Öffnen.
+(function autoRefreshExtCal() {
+  if (!isNative() || !feat("extCal") || !state.settings.extCalUrl) return;
+  const last = state.settings.extCalLastSync || 0;
+  if (Date.now() - last > 6 * 3600 * 1000) fetchExternalCalendar(false);
+})();
+
+/* ---------- Kauf (App Store) ----------
+   Grundlage: capacitor-plugin-cdv-purchase (StoreKit 2), dieselbe
+   Schnittstelle wie cordova-plugin-purchase bei Zirkelwerk. Der Workflow
+   bündelt das Plugin als purchase.js; die Datei gibt es nur in der App. */
+const STORE_DOWN = "Der App Store ist gerade nicht erreichbar. Bitte später erneut versuchen.";
+const Purchase = {
+  ready: false,
+  busy: false,
+  store() { return window.CdvPurchase && window.CdvPurchase.store; },
+  init() {
+    if (!Lic.limited()) return;
+    if (window.CdvPurchase) return this.setup();
+    const s = document.createElement("script");
+    s.src = "purchase.js";
+    s.onload = () => this.setup();
+    s.onerror = () => console.warn("Kauf: purchase.js fehlt");
+    document.head.append(s);
+  },
+  setup() {
+    const C = window.CdvPurchase;
+    if (!C || !C.store) { console.warn("Kauf: Plugin nicht verfügbar"); return; }
+    const { store, ProductType, Platform } = C;
+    store.register([
+      { id: PRODUCT_FULL,  type: ProductType.NON_CONSUMABLE, platform: Platform.APPLE_APPSTORE },
+      { id: PRODUCT_TRIAL, type: ProductType.NON_CONSUMABLE, platform: Platform.APPLE_APPSTORE }
+    ]);
+    /* Ohne Prüfserver: freigegebene Käufe sofort abschließen. approved kommt
+       mit StoreKit 2 bei jedem Start für alle Käufe des Kontos erneut. */
+    store.when()
+      .approved(tr => { this.take(tr); tr.finish(); })
+      .finished(tr => { this.take(tr); this.refresh(); })
+      .productUpdated(() => this.refresh())
+      .receiptUpdated(() => this.refresh());
+    store.error(err => console.warn("Kauf:", err && err.message));
+    store.initialize([Platform.APPLE_APPSTORE])
+      .catch(e => console.warn("Kauf: Start fehlgeschlagen", e && e.message))
+      .then(() => { this.ready = true; this.refresh(); });
+  },
+  /* Einmal gekauft bleibt gekauft: Meldet der Store kurz „nicht gekauft“
+     (kein Netz, Beleg noch nicht gelesen), sperrt das nichts wieder.
+     Für die Testphase zählt das früheste bekannte Kaufdatum. */
+  take(tr) {
+    if (!tr || !tr.products) return;
+    let changed = false;
+    for (const p of tr.products) {
+      if (p.id === PRODUCT_FULL && !Lic.owned) { Lic.owned = true; changed = true; }
+      if (p.id === PRODUCT_TRIAL) {
+        const d = tr.purchaseDate ? +new Date(tr.purchaseDate) : Date.now();
+        if (!isNaN(d) && (!Lic.trialStart || d < Lic.trialStart)) { Lic.trialStart = d; changed = true; }
+      }
+    }
+    if (changed) Lic.save();
+  },
+  refresh() {
+    const s = this.store();
+    if (s) {
+      const full = s.get(PRODUCT_FULL), trial = s.get(PRODUCT_TRIAL);
+      if (full && full.owned && !Lic.owned) { Lic.owned = true; Lic.save(); }
+      if (trial && trial.owned && !Lic.trialStart) { Lic.trialStart = Date.now(); Lic.save(); }
+    }
+    licenseChanged();
+  },
+  price(id) {
+    const p = this.ready && this.store() && this.store().get(id);
+    return (p && p.pricing && p.pricing.price) || "";
+  }
+};
+
+async function orderProduct(id) {
+  if (Purchase.busy) return;
+  if (!Purchase.ready) return toast(STORE_DOWN);
+  const p = Purchase.store().get(id);
+  const offer = p && p.getOffer && p.getOffer();
+  if (!offer) return toast(STORE_DOWN);
+  Purchase.busy = true; renderPro();
+  try {
+    const err = await offer.order();
+    if (err && err.code !== window.CdvPurchase.ErrorCode.PAYMENT_CANCELLED)
+      toast("Der Kauf konnte nicht abgeschlossen werden.");
+  } catch { toast("Der Kauf konnte nicht abgeschlossen werden."); }
+  finally { Purchase.busy = false; Purchase.refresh(); }
+}
+
+async function restorePurchases() {
+  if (Purchase.busy) return;
+  if (!Purchase.ready) return toast(STORE_DOWN);
+  Purchase.busy = true; renderPro();
+  try {
+    const err = await Purchase.store().restorePurchases();
+    Purchase.refresh();
+    if (err && !Lic.owned && !Lic.trialStart) toast(STORE_DOWN);
+    else toast(Lic.owned ? "Die Vollversion wurde wiederhergestellt."
+             : Lic.trialStart ? "Die Testphase wurde wiederhergestellt."
+             : "Für diese Apple-ID wurde kein Kauf gefunden.");
+  } catch { toast(STORE_DOWN); }
+  finally { Purchase.busy = false; renderPro(); }
+}
+
+const fmtDate = ms => new Date(ms).toLocaleDateString("de-DE", { day:"2-digit", month:"2-digit", year:"numeric" });
+const fmtTime = ms => new Date(ms).toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit" });
+
+function afterTrialText() {
+  const price = Purchase.price(PRODUCT_FULL);
+  return "Danach bleiben die Aufgaben dauerhaft kostenlos. Alles andere schaltet die Vollversion frei — "
+    + "einmalig" + (price ? " " + price : "") + ", kein Abo. Die Testphase endet von selbst; "
+    + "es wird nichts berechnet und nichts verlängert. Deine Einträge bleiben in jedem Fall gespeichert.";
+}
+
+function renderPro() {
+  const card = $("card-pro");
+  card.hidden = !Lic.limited();
+  const st = Lic.status();
+  $("about-pro").textContent =
+      st === "full"    ? "Vollversion freigeschaltet. Danke für die Unterstützung!"
+    : st === "trial"   ? "Testphase aktiv bis " + fmtDate(Lic.trialEnd()) + "."
+    : st === "expired" ? "Kostenlose Grundversion: Aufgaben. Die Vollversion gibt es unter Einstellungen."
+    : st === "new"     ? "Aufgaben sind kostenlos. Alle weiteren Funktionen 30 Tage gratis testen — unter Einstellungen."
+    : "";
+  if (card.hidden) return;
+  const price = Purchase.price(PRODUCT_FULL);
+  const box = $("pro-state"); box.replaceChildren();
+  const p = (html) => { const e = document.createElement("p"); e.innerHTML = html; box.append(e); };
+  if (st === "full") {
+    p("<strong>Die Vollversion ist freigeschaltet.</strong> Danke für die Unterstützung!");
+  } else if (st === "trial") {
+    const end = Lic.trialEnd();
+    p("<strong>Testphase aktiv</strong> — " + (Lic.short
+        ? "Testmodus, endet um " + fmtTime(end) + " Uhr."
+        : "noch " + Lic.daysLeft() + (Lic.daysLeft() === 1 ? " Tag" : " Tage") + ", bis " + fmtDate(end) + "."));
+    p("Danach bleiben die Aufgaben kostenlos. Kalender, Stundenplan, Einkaufsliste, Erinnerungen, "
+      + "externer Kalender, verschlüsseltes Backup und Statistik brauchen dann die Vollversion.");
+  } else if (st === "expired") {
+    p("<strong>Die Testphase ist beendet.</strong> Die Aufgaben bleiben kostenlos.");
+    p("Kalender, Stundenplan, Einkaufsliste, Erinnerungen, externer Kalender, verschlüsseltes Backup "
+      + "und Statistik schaltet die Vollversion frei. Deine Einträge dort sind weiter gespeichert und sofort wieder da.");
+  } else {
+    p("<strong>30 Tage alle Funktionen kostenlos testen.</strong>");
+    p(afterTrialText());
+  }
+  p("Einmalkauf ohne Abo, über die Familienfreigabe teilbar.");
+  $("btn-trial").hidden = st !== "new";
+  $("btn-buy").hidden = st === "full";
+  $("btn-buy").textContent = "Vollversion kaufen" + (price ? " – " + price : "");
+  for (const id of ["btn-trial","btn-buy","btn-restore"]) $(id).disabled = Purchase.busy;
+  if ($("dlg-pro").open) $("dlg-pro-after").textContent = afterTrialText();
+}
+
+let lastLicStatus = null;
+function licenseChanged() {
+  const st = Lic.status();
+  if (st !== lastLicStatus) {
+    const first = lastLicStatus === null;
+    lastLicStatus = st;
+    if (!first) {
+      renderSwitches(); applyFeatures(); renderAll();
+      scheduleAllSoon();          // abgelaufene Testphase: Erinnerungen abbestellen
+      if (st === "full") toast("Vollversion freigeschaltet. Danke!");
+      if (st === "trial") toast("Testphase gestartet — 30 Tage alles frei.");
+    }
+  }
+  renderPro();
+}
+
+function showProHint(key) {
+  if (!Lic.limited()) return;
+  if (document.querySelector(".view.active") !== $("view-settings")) switchTo("settings");
+  // Der Kaufbereich steht oben in den Einstellungen. Kein scrollIntoView:
+  // Das würde auch den eigentlich festen Seitenkörper verschieben.
+  $("main").scrollTo({ top: 0, behavior: "smooth" });
+  const what = PRO_LABEL[key];
+  toast(what ? what + " gehört zur Vollversion." : "Vollversion: einmal kaufen, kein Abo.");
+}
+
+$("btn-trial").onclick   = () => orderProduct(PRODUCT_TRIAL);
+$("btn-buy").onclick     = () => orderProduct(PRODUCT_FULL);
+$("btn-restore").onclick = () => restorePurchases();
+
+/* Begrüßung beim ersten Start: Testphase anbieten, nichts erzwingen. */
+function maybeWelcome() {
+  if (Lic.status() !== "new" || Lic.welcomed) return;
+  const d = $("dlg-pro");
+  $("dlg-pro-after").textContent = afterTrialText();
+  const done = () => { Lic.welcomed = true; Lic.save(); d.close(); };
+  $("dlg-pro-later").onclick = done;
+  $("dlg-pro-trial").onclick = () => { done(); orderProduct(PRODUCT_TRIAL); };
+  d.addEventListener("cancel", () => { Lic.welcomed = true; Lic.save(); }, { once: true });
+  d.showModal();
+}
+
+/* Versteckter Testmodus für TestFlight: siebenmal auf die Versionszeile
+   tippen. Die Testphase dauert dann nur SHORT_TRIAL_MIN Minuten. Kann
+   nichts freischalten, nur verkürzen — darf deshalb im Store-Build bleiben. */
+(function versionTaps() {
+  let n = 0, t = null;
+  $("ver-line").addEventListener("click", () => {
+    if (!Lic.limited()) return;
+    n++; clearTimeout(t); t = setTimeout(() => { n = 0; }, 1500);
+    if (n < 7) return;
+    n = 0;
+    Lic.short = !Lic.short; Lic.save();
+    toast(Lic.short ? "Testmodus an: Testphase " + SHORT_TRIAL_MIN + " Minuten." : "Testmodus aus: Testphase 30 Tage.");
+    licenseChanged();
+  });
+})();
+
+// Auf iOS gibt es (noch) keine Share Extension – Funktion nicht versprechen.
+if (platformId() === "ios") $("feat-share").hidden = true;
+
+lastLicStatus = Lic.status();
+renderPro();
+Purchase.init();
+maybeWelcome();
+// Ablauf der Testphase auch bei geöffneter App bemerken.
+setInterval(licenseChanged, 30 * 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) licenseChanged(); });
 </script>
 </body>
 </html>
