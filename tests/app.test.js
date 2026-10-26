@@ -6,6 +6,10 @@
 
    Jeder Abschnitt startet mit frischem Speicher. „Heute“ ist fest der
    Dienstag, 3. November 2026, 10:15 Uhr. */
+// Feste Zeitzone wie in der App (de-DE): GitHub rechnet in UTC, sonst
+// stimmen Uhrzeiten in den Prüfungen nicht (Lauf #23).
+process.env.TZ = 'Europe/Berlin';
+
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); }

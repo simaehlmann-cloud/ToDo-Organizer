@@ -1,5 +1,9 @@
 /* Test der reinen App-Logik (Block zwischen ==CORE-BEGIN== und ==CORE-END==
    in index.html) ohne Browser.   node tests/core.test.js [index.html] */
+// Feste Zeitzone wie in der App (de-DE): GitHub rechnet in UTC, sonst
+// stimmen Uhrzeiten in den Prüfungen nicht (Lauf #23).
+process.env.TZ = 'Europe/Berlin';
+
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
