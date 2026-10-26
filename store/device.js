@@ -41,23 +41,25 @@ function chromeCss(dev) {
   #sim-status .r{display:flex;gap:${dev.wide ? 6 : 7}px;align-items:center}
   #sim-status svg{display:block}
   #sim-home{position:fixed;left:50%;bottom:${dev.wide ? 6 : 8}px;transform:translateX(-50%);width:${dev.wide ? 320 : 140}px;height:5px;
-    border-radius:3px;background:${dev.wide ? '#000' : '#fff'};z-index:9998;pointer-events:none;opacity:.9}`;
+    border-radius:3px;background:${dev.wide ? '#000' : '#fff'};z-index:9998;pointer-events:none;opacity:.9}
+  :root[data-theme=dark] #sim-status{color:#fff}
+  :root[data-theme=dark] #sim-home{background:#fff}`;
 }
 
 const ICONS = (wide) => {
   const s = wide ? 0.85 : 1;
   return `
-  <svg width="${18 * s}" height="${12 * s}" viewBox="0 0 18 12"><g fill="#000">
+  <svg width="${18 * s}" height="${12 * s}" viewBox="0 0 18 12"><g fill="currentColor">
     <rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/>
     <rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></g></svg>
-  <svg width="${16 * s}" height="${12 * s}" viewBox="0 0 16 12"><g fill="#000">
+  <svg width="${16 * s}" height="${12 * s}" viewBox="0 0 16 12"><g fill="currentColor">
     <path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.2-1.3C13.5 1.5 10.9.4 8 .4S2.5 1.5.6 3.4l1.2 1.3C3.4 3.1 5.6 2.2 8 2.2z"/>
     <path d="M8 5.6c1.5 0 2.8.6 3.8 1.5L13 5.8C11.7 4.6 9.9 3.8 8 3.8s-3.7.8-5 2l1.2 1.3c1-.9 2.3-1.5 3.8-1.5z"/>
     <path d="M8 9l2.4-2.5C9.8 6 8.9 5.6 8 5.6s-1.8.4-2.4.9L8 9z" transform="translate(0 2)"/></g></svg>
   <svg width="${27 * s}" height="${13 * s}" viewBox="0 0 27 13">
-    <rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="#000" opacity=".4"/>
-    <rect x="2" y="2" width="20" height="9" rx="2" fill="#000"/>
-    <path d="M25 4.5v4c.8-.3 1.5-1.1 1.5-2s-.7-1.7-1.5-2z" fill="#000" opacity=".45"/></svg>`;
+    <rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/>
+    <rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/>
+    <path d="M25 4.5v4c.8-.3 1.5-1.1 1.5-2s-.7-1.7-1.5-2z" fill="currentColor" opacity=".45"/></svg>`;
 };
 
 async function openApp(browser, dev, opts = {}) {
@@ -71,6 +73,7 @@ async function openApp(browser, dev, opts = {}) {
   await page.addInitScript(state => {
     try { localStorage.setItem('studiez-pro-v2', JSON.stringify(state)); } catch {}
   }, STATE);
+  for (const [fn, arg] of (opts.init || [])) await page.addInitScript(fn, arg);
   await page.goto(APP);
   await page.addStyleTag({ content: chromeCss(dev) });
   await page.evaluate(({ icons, wide }) => {

@@ -67,14 +67,16 @@ async function prepare(page, dev) {
     const open = window.openTaskDialog;
     window.openTaskDialog = id => {
       open(id);
-      for (const i of document.querySelectorAll('#dlg-task input[type=date]')) {
-        i.dataset.iso = i.value; i.type = 'text'; i.value = i.value ? i.value.split('-').reverse().join('.') : '';
+      for (const i of document.querySelectorAll('#dlg-task input[type=date],#dlg-task input[type=time]')) {
+        const date = i.type === 'date';
+        i.dataset.iso = i.value; i.dataset.typ = i.type; i.type = 'text';
+        i.value = date && i.value ? i.value.split('-').reverse().join('.') : i.value;
       }
     };
     // … und vor dem Speichern zurück, damit die Daten stimmen
     window.pvRestoreDates = () => {
       for (const i of document.querySelectorAll('#dlg-task input[data-iso]')) {
-        i.type = 'date'; i.value = i.dataset.iso; delete i.dataset.iso;
+        i.type = i.dataset.typ || 'date'; i.value = i.dataset.iso; delete i.dataset.iso; delete i.dataset.typ;
       }
     };
     document.getElementById('e-save').addEventListener('pointerdown', () => window.pvRestoreDates(), true);
@@ -108,77 +110,81 @@ async function script(p, dev) {
 
   // 1 · Woche
   await cap(p, 'Deine Woche auf einen Blick');
-  await wait(p, 1300);
-  await smooth(p, dev.wide ? 260 : 520);
-  await wait(p, 1900);
+  await wait(p, 1200);
+  await smooth(p, dev.wide ? 300 : 560);
+  await wait(p, 1400);
 
-  // 2 · Aufgabe erfassen
-  await cap(p, 'Aufgaben in Sekunden erfassen');
+  // 2 · Schnelleingabe in Alltagssprache
+  await cap(p, 'Schreib einfach, was zu tun ist');
   await tap(p, nav('tasks'));
-  await wait(p, 600);
-  await p.evaluate(() => { document.getElementById('t-category').value = 'c1'; });
+  await wait(p, 500);
   await tap(p, p.locator('#t-title'));
-  await p.keyboard.type('Elternabend vorbereiten', { delay: 55 });
-  await wait(p, 250);
-  await tap(p, p.locator('#btn-quick-tom'));
-  await p.locator('#t-title').blur();
-  await wait(p, 1300);
-
-  // 3 · Abhaken mit Rückgängig
-  await cap(p, 'Abhaken – mit Rückgängig');
-  await smoothTo(p, '#task-list', off);
-  await wait(p, 700);
-  await tap(p, p.locator('#task-list .task', { hasText: 'Arbeitsblatt Bruchrechnung' }).locator('input[type=checkbox]'));
-  await wait(p, 1700);
-
-  // 4 · Unterpunkte
-  await cap(p, 'Große Vorhaben in kleinen Schritten');
-  await smoothTo(p, '#task-list .task', off, 'Klassenarbeit 7b');
-  await wait(p, 750);
-  await tap(p, p.locator('#task-list .task', { hasText: 'Klassenarbeit 7b' }).locator('.title'));
-  await p.evaluate(() => pvPromote());
+  await p.keyboard.type('Laufen Sa 9 Uhr #Sport', { delay: 45 });
   await wait(p, 800);
-  await tap(p, p.locator('#e-subs .sub-edit', { hasText: 'Notenspiegel' }).locator('input[type=checkbox]'));
-  await wait(p, 650);
-  await tap(p, p.locator('#e-save'));
+  await tap(p, p.locator('#btn-add-task'));
+  await p.locator('#t-title').blur();
   await wait(p, 900);
 
-  // 5 · Kalender
-  await cap(p, 'Der Monat im Überblick');
-  await tap(p, nav('calendar'));
-  await wait(p, 800);
-  await tap(p, p.locator('#cal-grid .cal-c:not(.out)').filter({ has: p.locator('.n', { hasText: /^5$/ }) }));
+  // 4 · Uhrzeit, Erinnerung, Unterpunkte
+  await cap(p, 'Uhrzeit, Erinnerung und Unterpunkte');
+  await smoothTo(p, '#task-list', off);
+  await wait(p, 300);
+  await smoothTo(p, '#task-list .task', off, 'Präsentation fertigstellen');
   await wait(p, 600);
+  await tap(p, p.locator('#task-list .task', { hasText: 'Präsentation fertigstellen' }).locator('.title'));
+  await p.evaluate(() => pvPromote());
+  await wait(p, 1000);
+  await tap(p, p.locator('#e-subs .sub-edit', { hasText: 'Beispiele ergänzen' }).locator('input[type=checkbox]'));
+  await wait(p, 700);
+  await tap(p, p.locator('#e-save'));
+  await wait(p, 700);
+
+  // 5 · Gewohnheiten
+  await cap(p, 'Gewohnheiten abhaken');
+  await tap(p, nav('week'));
+  await wait(p, 500);
+  await smooth(p, 0);
+  await wait(p, 500);
+  await tap(p, p.locator('#card-habits .habit', { hasText: 'Lesen' }).locator('.hday.today'));
+  await wait(p, 450);
+  await wait(p, 900);
+
+  // 6 · Kalender
+  await cap(p, 'Mit deinen Kalenderterminen');
+  await tap(p, nav('calendar'));
+  await wait(p, 700);
+  await tap(p, p.locator('#cal-grid .cal-c:not(.out)').filter({ has: p.locator('.n', { hasText: /^4$/ }) }));
+  await wait(p, 500);
   if (!dev.wide) await smoothTo(p, '#cal-day-title', off + 260);
-  await wait(p, 1300);
+  await wait(p, 1200);
 
-  // 6 · Stundenplan
-  await cap(p, 'Dein Stundenplan');
+  // 7 · Wochenplan
+  await cap(p, 'Wochenplan oder Stundenplan');
   await tap(p, nav('timetable'));
-  await wait(p, 500);
-  await p.evaluate(() => { document.getElementById('main').style.paddingBottom = '600px'; });
-  await smoothTo(p, '#tt-grid', off + 20);
-  await wait(p, 2100);
+  await germanInputs(p);
+  await wait(p, 1500);
 
-  // 7 · Einkauf
-  await p.evaluate(() => { document.getElementById('main').style.paddingBottom = ''; });
-  await cap(p, 'Die Einkaufsliste ist immer dabei');
+  // 8 · Einkauf
+  await cap(p, 'Einkaufslisten mit Vorschlägen');
   await tap(p, nav('shopping'));
-  await wait(p, 500);
+  await wait(p, 450);
   await tap(p, p.locator('#s-item'));
   await p.keyboard.type('Kaffee', { delay: 60 });
   await tap(p, p.locator('#btn-add-item'));
   await p.locator('#s-item').blur();
-  await wait(p, 450);
+  await wait(p, 400);
   await tap(p, p.locator('#shop-list .row', { hasText: 'Milch' }).locator('input'));
-  await wait(p, 380);
+  await wait(p, 350);
   await tap(p, p.locator('#shop-list .row', { hasText: 'Vollkornbrot' }).locator('input'));
-  await wait(p, 1100);
+  await wait(p, 900);
 
-  // 8 · Abschluss
-  await cap(p, 'Ohne Konto · ohne Server · ohne Abo');
+  // 9 · Dunkel und Abschluss
+  await cap(p, 'Hell oder dunkel');
   await tap(p, nav('week'));
-  await wait(p, 2600);
+  await p.evaluate(() => { state.settings.theme = 'dark'; applyTheme(); });
+  await wait(p, 1400);
+  await cap(p, 'Ohne Konto · ohne Server · ohne Abo');
+  await wait(p, 2000);
 }
 
 async function record(browser, key) {
@@ -221,6 +227,7 @@ async function record(browser, key) {
   const listFile = path.join(TMP, `frames-${key}.txt`);
   fs.writeFileSync(listFile, list);
   const total = Math.min(MAX_SEC, lastTs - t0);
+  if (lastTs - t0 > MAX_SEC) console.log(`  Achtung: Aufnahme ${(lastTs - t0).toFixed(1)} s, gekürzt auf ${MAX_SEC} s – Ende fehlt`);
   if (total < 15) throw new Error('Video kürzer als 15 s');
   const wav = path.join(TMP, `musik-${key}.wav`);
   writeMusic(wav, total, TAPS.map(x => x - t0 + 0.04));

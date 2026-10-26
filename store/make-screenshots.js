@@ -17,25 +17,44 @@ const TMP = path.join(__dirname, 'out', 'tmp');
 /* Reihenfolge = Reihenfolge im Store. Die ersten drei sieht man in der
    Suche ohne Antippen – sie müssen allein überzeugen. */
 const SCENES = [
-  { id: '01-woche', title: 'Deine Woche auf einen Blick', sub: 'Stundenplan, Termine und Aufgaben für jeden Tag',
-    go: async p => { await nav(p, 'week'); } },
-  { id: '02-aufgaben', title: 'Aufgaben schnell erfasst', sub: 'Mit Kategorien, Prioritäten und Wiederholungen',
-    go: async p => { await nav(p, 'tasks'); await scrollTo(p, '#f-search', 18); } },
-  { id: '03-unterpunkte', title: 'Große Vorhaben, kleine Schritte', sub: 'Unterpunkte mit Fortschrittsbalken',
+  { id: '01-woche', title: 'Deine Woche auf einen Blick', sub: 'Aufgaben, Kalendertermine und Wochenplan – nach Uhrzeit',
+    go: async p => { await nav(p, 'week'); await p.evaluate(() => { document.getElementById('card-habits').style.display = 'none'; }); } },
+  { id: '02-schnelleingabe', title: 'Schreib einfach, was zu tun ist', sub: 'Datum, Uhrzeit, Kategorie und Wiederholung erkennt die App',
+    go: async p => {
+      await nav(p, 'tasks');
+      await p.fill('#t-title', 'Arzt Fr 15 Uhr #Privat');
+      await p.dispatchEvent('#t-title', 'input');
+      await p.evaluate(() => document.activeElement && document.activeElement.blur());
+      await p.waitForTimeout(120);
+    } },
+  { id: '03-aufgabe', title: 'Alles zu einer Aufgabe', sub: 'Uhrzeit, Erinnerung vorab, Unterpunkte und Notizen',
     go: async p => { await nav(p, 'tasks'); await p.evaluate(() => openTaskDialog('t01')); await germanInputs(p); } },
-  { id: '04-kalender', title: 'Der Monat im Überblick', sub: 'Auf Wunsch mit deinem eigenen Kalender',
+  { id: '04-kalender', title: 'Der Monat im Überblick', sub: 'Mit den Terminen aus deinen Kalendern',
     go: async p => { await nav(p, 'calendar'); } },
-  { id: '05-stundenplan', title: 'Dein Stundenplan', sub: 'Eigene Zeiten, Fächer und Räume',
+  { id: '05-wochenplan', title: 'Wochenplan oder Stundenplan', sub: 'Für Training, Kurse, Schule und Unterricht',
     go: async p => {
       await nav(p, 'timetable');
-      // Platz zum Weiterscrollen, damit das Raster oben steht (wie nach Wischen)
-      await p.evaluate(() => { document.getElementById('main').style.paddingBottom = '600px'; });
-      await scrollTo(p, '#tt-grid', 18, true);
+      if (p.viewportSize().width < 761) {
+        await p.evaluate(() => { document.getElementById('main').style.paddingBottom = '600px'; });
+        await scrollTo(p, '#plan-mode', 18, true);
+      }
+      await germanInputs(p);
     } },
-  { id: '06-einkauf', title: 'Die Einkaufsliste ist immer dabei', sub: 'Abhaken, aufräumen, teilen',
-    go: async p => { await nav(p, 'shopping'); } },
-  { id: '07-privat', title: 'Ohne Konto. Ohne Server.', sub: 'Deine Daten bleiben bei dir – mit verschlüsseltem Backup',
+  { id: '06-gewohnheiten', title: 'Gute Gewohnheiten', sub: 'Wochenziel setzen, abhaken, Serie halten',
     go: async p => {
+      await nav(p, 'week');
+
+    } },
+  { id: '07-einkauf', title: 'Einkaufslisten, die mitdenken', sub: 'Mehrere Listen, Vorschläge, abhaken und teilen',
+    go: async p => { await nav(p, 'shopping'); } },
+  { id: '08-dunkel', title: 'Hell oder dunkel', sub: 'Passt sich deinem Gerät an',
+    go: async p => {
+      await p.evaluate(() => { state.settings.theme = 'dark'; applyTheme(); });
+      await nav(p, 'week');
+    } },
+  { id: '09-privat', title: 'Ohne Konto. Ohne Server.', sub: 'Deine Daten bleiben bei dir – mit verschlüsseltem Backup',
+    go: async p => {
+      await p.evaluate(() => { state.settings.theme = 'light'; applyTheme(); });
       await nav(p, 'settings');
       await p.evaluate(() => { const c = document.getElementById('backup-encrypt'); c.checked = true; c.dispatchEvent(new Event('change')); });
       await p.fill('#backup-pw', 'beispielpasswort'); await p.fill('#backup-pw2', 'beispielpasswort');
@@ -45,6 +64,7 @@ const SCENES = [
 
 async function nav(p, view) {
   await p.evaluate(v => {
+    document.querySelectorAll('#view-week .card').forEach(c => c.style.display = '');
     document.getElementById('main').style.paddingBottom = '';
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     switchTo(v);
