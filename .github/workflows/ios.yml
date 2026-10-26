@@ -43,9 +43,10 @@ jobs:
         run: |
           set -e
           node validate.js
+          node tests/core.test.js
           npm install --no-save --no-audit --no-fund "playwright@1.63.0"
           npx playwright install --with-deps chromium
-          node smoketest.js
+          node tests/app.test.js
 
   build:
     needs: pruefungen
@@ -189,9 +190,24 @@ jobs:
           # Nur Standard-Verschlüsselung (AES-GCM des Systems für das Backup):
           # ausgenommen, also false. Sonst fragt jeder Upload nach.
           setze ITSAppUsesNonExemptEncryption bool false
-          # Die App hat keine dunkle Darstellung. Hell erzwingen, sonst wird
-          # die Statusleiste im Dunkelmodus weiß auf hellem Grund.
-          setze UIUserInterfaceStyle string Light
+          # Seit 3.0 mit dunkler Darstellung: kein UIUserInterfaceStyle mehr.
+          # Die Statusleiste stellt die App selbst um (@capacitor/status-bar).
+          /usr/libexec/PlistBuddy -c "Delete :UIUserInterfaceStyle" "$P" 2>/dev/null || true
+
+          # Texte, mit denen iOS um Erlaubnis fragt. Fehlt einer, beendet iOS
+          # die App beim ersten Zugriff – und App Store Connect lehnt den
+          # Upload ab (ITMS-90683), sobald das Plugin die Schnittstelle enthält.
+          # plutil statt PlistBuddy: robust bei Satzzeichen und Leerzeichen.
+          text() { plutil -remove "$1" "$P" 2>/dev/null || true; plutil -insert "$1" -string "$2" "$P"; }
+          KAL="Der ToDo Organizer zeigt Termine aus deinen Kalendern in der Wochenübersicht und trägt Aufgaben auf deinen Wunsch als Termin ein. Alles bleibt auf deinem Gerät."
+          text NSCalendarsFullAccessUsageDescription "$KAL"
+          text NSCalendarsUsageDescription "$KAL"
+          text NSCalendarsWriteOnlyAccessUsageDescription "Der ToDo Organizer trägt Aufgaben auf deinen Wunsch als Termin in deinen Kalender ein."
+          ERI="Der ToDo Organizer liest und ändert keine Einträge der Erinnerungen-App. Die Kalenderanbindung enthält diese Möglichkeit nur technisch."
+          text NSRemindersFullAccessUsageDescription "$ERI"
+          text NSRemindersUsageDescription "$ERI"
+          text NSCameraUsageDescription "Mit der Kamera nimmst du auf Wunsch ein Foto zu einer Aufgabe auf. Das Foto bleibt auf deinem Gerät."
+          text NSPhotoLibraryUsageDescription "Du kannst ein Foto aus deiner Mediathek zu einer Aufgabe hinzufügen. Nur das gewählte Foto wird verwendet, es bleibt auf deinem Gerät."
           # iPhone nur Hochformat (wie im Web-Manifest). Das iPad braucht alle
           # vier Richtungen, sonst lehnt der Upload ab (Multitasking, ITMS-90474);
           # das breite Layout mit Seitenleiste passt dort in beiden Lagen.
@@ -234,7 +250,11 @@ jobs:
               || { echo "::error::capacitor-plugin-cdv-purchase fehlt im Xcode-Projekt."; FEHLER=1; }
             [ -s ios/App/App/public/purchase.js ] || { echo "::error::purchase.js fehlt im App-Paket."; FEHLER=1; }
           fi
-          for p in local-notifications filesystem share app; do
+          grep -q '@ebarooni/capacitor-calendar' "$SPM" || { echo "::error::Kalender-Plugin fehlt im Xcode-Projekt."; FEHLER=1; }
+          for k in NSCalendarsFullAccessUsageDescription NSCameraUsageDescription NSPhotoLibraryUsageDescription NSRemindersFullAccessUsageDescription; do
+            [ "$(holen $k)" != "FEHLT" ] || { echo "::error::$k fehlt in der Info.plist."; FEHLER=1; }
+          done
+          for p in local-notifications filesystem share app status-bar; do
             grep -q "@capacitor/$p\"" "$SPM" || { echo "::error::Plugin @capacitor/$p fehlt im Xcode-Projekt."; FEHLER=1; }
           done
           echo "--- Package.swift ---"; cat "$SPM"
