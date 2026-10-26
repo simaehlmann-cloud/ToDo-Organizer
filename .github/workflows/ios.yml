@@ -192,10 +192,17 @@ jobs:
           # Die App hat keine dunkle Darstellung. Hell erzwingen, sonst wird
           # die Statusleiste im Dunkelmodus weiß auf hellem Grund.
           setze UIUserInterfaceStyle string Light
-          # Nur Hochformat, wie im Web-Manifest
+          # iPhone nur Hochformat (wie im Web-Manifest). Das iPad braucht alle
+          # vier Richtungen, sonst lehnt der Upload ab (Multitasking, ITMS-90474);
+          # das breite Layout mit Seitenleiste passt dort in beiden Lagen.
           /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" "$P" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$P"
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" "$P"
+          /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations~ipad" "$P" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad array" "$P"
+          i=0; for o in Portrait PortraitUpsideDown LandscapeLeft LandscapeRight; do
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad:$i string UIInterfaceOrientation$o" "$P"; i=$((i+1))
+          done
           # Die Vorlage nennt noch armv7 – seit Langem arm64
           /usr/libexec/PlistBuddy -c "Delete :UIRequiredDeviceCapabilities" "$P" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIRequiredDeviceCapabilities array" "$P"
@@ -217,7 +224,7 @@ jobs:
           [ "$BUNDLE" = "$APP_ID" ] || { echo "::error::Bundle-ID ist '$BUNDLE', erwartet '$APP_ID'."; FEHLER=1; }
           [ "$(holen ITSAppUsesNonExemptEncryption)" = "false" ] || { echo "::error::ITSAppUsesNonExemptEncryption fehlt."; FEHLER=1; }
           grep -q 'PrivacyInfo.xcprivacy in Resources' "$PBX" || { echo "::error::Privacy-Manifest nicht im Projekt."; FEHLER=1; }
-          grep -q 'TARGETED_DEVICE_FAMILY = 1;' "$PBX" || { echo "::error::Gerätefamilie ist nicht iPhone."; FEHLER=1; }
+          grep -q 'TARGETED_DEVICE_FAMILY = "1,2";' "$PBX" || { echo "::error::Gerätefamilie ist nicht iPhone und iPad (1,2)."; FEHLER=1; }
           # Kauf: Plugin nativ eingebunden und purchase.js im App-Paket –
           # sonst bleibt der Kaufknopf tot und die App-Prüfung lehnt ab.
           SPM=ios/App/CapApp-SPM/Package.swift
