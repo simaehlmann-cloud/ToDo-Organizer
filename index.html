@@ -36,6 +36,9 @@ body{display:flex;height:100dvh;background:var(--bg);color:var(--text);overflow:
   .nav-btn{flex:1;flex-direction:column;gap:3px;text-align:center;padding:9px 6px 8px;font-size:.66rem;border-left:none;border-top:3px solid transparent;white-space:nowrap;min-width:62px}
   .nav-btn:hover,.nav-btn.active{border-left-color:transparent;border-top-color:var(--primary)}
   .nav-btn .ico{font-size:1.15rem}
+  /* Sieben Reiter passen auf schmalen Handys nicht nebeneinander. Info steht
+     dort unten in den Einstellungen. */
+  .nav-btn[data-view="about"]{display:none}
   #main{order:1;
     padding-top:calc(16px + env(safe-area-inset-top,0px));
     padding-right:calc(14px + env(safe-area-inset-right,0px));
@@ -48,7 +51,15 @@ body{display:flex;height:100dvh;background:var(--bg);color:var(--text);overflow:
    die Seite aber trotzdem unter die Statusleiste zeichnen. Wird per JS
    gesetzt und nur dann, wenn die Messung tatsächlich 0 ergibt. */
 body.sb-inset #main{padding-top:calc(16px + var(--sb-h,26px))}
-@media(min-width:761px){.nav-btn .ico{font-size:1rem}}
+@media(min-width:761px){.nav-btn .ico{font-size:1rem}
+  #card-about-link{display:none}
+  /* iPad: Die ganze App rückt unter der Statusleiste und über der
+     Home-Leiste ein. Nur die Seitenleiste einzurücken ginge nicht: Die
+     dunkle Statusleisten-Schrift stünde dann auf der dunklen Leiste. */
+  body{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}}
+@media(max-width:760px){
+  /* Handy: Beim Scrollen läuft der Inhalt sonst unter Uhrzeit und Akku durch. */
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:60;pointer-events:none}}
 
 .view{display:none;animation:fade .18s ease}
 .view.active{display:block}
@@ -133,7 +144,13 @@ input[type=checkbox]{width:21px;height:21px;flex-shrink:0;cursor:pointer;accent-
 .tog::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .18s}
 .tog.on::after{transform:translateX(20px)}
 
-dialog{border:none;border-radius:14px;padding:0;max-width:440px;width:calc(100% - 32px);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+dialog{border:none;border-radius:14px;padding:0;margin:auto;max-width:440px;width:calc(100% - 32px);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+/* margin:auto zentriert – die globale Rücksetzung *{margin:0} hatte Dialoge
+   an den linken oberen Rand geschoben (auf dem iPad deutlich sichtbar).
+   Hohe Dialoge (Aufgabe bearbeiten) nicht unter Statusleiste und Home-Leiste
+   ziehen: zentriert wird im sicheren Bereich, darüber hinaus scrollt der Dialog. */
+dialog[open]{top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);
+  max-height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px)}
 dialog::backdrop{background:rgba(0,0,0,.42)}
 dialog .bd{padding:20px}
 dialog h3{margin-bottom:14px}
@@ -439,7 +456,7 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 
     <div class="card">
       <h3>Sicherung</h3>
-      <p class="hint">Der Browserspeicher ist nicht dauerhaft: Cache leeren oder App deinstallieren löscht alles. Regelmäßig exportieren.</p>
+      <p class="hint">Alle Daten liegen nur auf diesem Gerät. Wird die App gelöscht (oder im Browser der Speicher geleert), sind sie weg. Deshalb regelmäßig exportieren.</p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:11px">
         <label style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer">
           <input type="checkbox" id="backup-encrypt" style="width:19px;height:19px">
@@ -473,6 +490,12 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
         <button class="btn-sm" id="btn-purge">Erledigte Aufgaben löschen</button>
         <button class="btn-sm danger" id="btn-reset">Alle Daten löschen</button>
       </div>
+    </div>
+
+    <div class="card" id="card-about-link">
+      <h3>Über die App</h3>
+      <p class="hint">Funktionen im Überblick, Version, Datenschutzerklärung und Impressum.</p>
+      <button class="btn-sm" id="btn-about">Info, Datenschutz und Impressum</button>
     </div>
   </section>
 
@@ -2901,6 +2924,7 @@ function showProHint(key) {
   toast(what ? what + " gehört zur Vollversion." : "Vollversion: einmal kaufen, kein Abo.");
 }
 
+$("btn-about").onclick   = () => switchTo("about");
 $("btn-trial").onclick   = () => orderProduct(PRODUCT_TRIAL);
 $("btn-buy").onclick     = () => orderProduct(PRODUCT_FULL);
 $("btn-restore").onclick = () => restorePurchases();

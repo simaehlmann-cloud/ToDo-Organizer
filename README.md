@@ -2,7 +2,7 @@
 
 Aufgaben, Wochenübersicht, Kalender, Stundenplan und Einkaufsliste – ohne
 Konto, ohne Server. Alle Daten bleiben auf dem Gerät.
-Läuft als iOS-App (Capacitor), als Android-App (Capacitor, lokal gebaut)
+Läuft als iOS-App für iPhone und iPad (Capacitor), als Android-App (Capacitor, lokal gebaut)
 und als installierbare Web-App (PWA).
 
 Aufbau, Prüfkette und Build nach dem Vorbild von Zirkelwerk.
@@ -26,6 +26,10 @@ validate.js                   statische Prüfung
 smoketest.js                  Ablauftest im Browser: Testphase, Kauf, Sperren
 .github/workflows/ios.yml     iOS-Build, Signierung, Upload nach App Store Connect
 APPSTORE-CONNECT.md           einmalige Einrichtung bei Apple und GitHub
+store/STORE-TEXTE.md          Store-Texte, Kategorien, Prüfnotizen zum Hineinkopieren
+store/make-screenshots.js     Store-Bildschirmfotos iPhone 6,3" und iPad 13"
+store/make-previews.js        App-Vorschauvideos (braucht ffmpeg)
+store/demo-data.js, device.js Beispieldaten und Gerätenachbildung dafür
 PROJEKTWISSEN.md              Entscheidungen und Technik
 mipmap-*/, playstore-icon-512.png, ANLEITUNG.txt   Icons fürs Android-Projekt
 ```

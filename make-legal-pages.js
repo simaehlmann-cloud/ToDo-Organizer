@@ -27,7 +27,7 @@ const START = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ToDo Organizer – Rechtliches</title>
+<title>ToDo Organizer – Hilfe und Rechtliches</title>
 <meta name="theme-color" content="#2563eb">
 <style>
   :root { --bg:#f4f5f7; --card:#fff; --text:#1f2937; --border:#2563eb; }
@@ -39,6 +39,8 @@ const START = `<!DOCTYPE html>
   main { max-width:640px; margin:0 auto; background:var(--card);
          border:2px solid var(--border); border-radius:14px; padding:24px; }
   h1 { font-size:24px; margin:0 0 8px; }
+  h2 { font-size:18px; margin:24px 0 8px; }
+  p { margin:0 0 12px; }
   ul { margin:0; padding-left:20px; }
   li { margin:6px 0; }
   a { color:var(--border); }
@@ -47,12 +49,35 @@ const START = `<!DOCTYPE html>
 <body>
 <main>
   <h1>ToDo Organizer</h1>
-  <p>Rechtliche Angaben zur App von Wisdompeak Apps – Simon Mählmann.</p>
+  <p>Aufgaben, Wochenübersicht, Kalender, Stundenplan und Einkaufsliste – ohne Konto,
+  ohne Server. Eine App von Wisdompeak Apps – Simon Mählmann.</p>
+
+  <h2>Hilfe und Kontakt</h2>
+  <p>Fragen, Fehler, Wünsche: <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a></p>
+
+  <h2>Häufige Fragen</h2>
+  <p><strong>Wo liegen meine Daten?</strong><br>
+  Nur auf deinem Gerät. Es gibt kein Konto und keinen Server. Wird die App gelöscht,
+  sind die Daten weg – sichere sie deshalb unter Einstellungen → Sicherung → Exportieren.</p>
+  <p><strong>Wie komme ich auf ein neues Gerät?</strong><br>
+  Auf dem alten Gerät exportieren, die Datei (z. B. über iCloud Drive oder AirDrop)
+  auf das neue bringen und dort unter Einstellungen → Sicherung → Importieren einlesen.</p>
+  <p><strong>Was passiert nach der Testphase?</strong><br>
+  Die Aufgaben bleiben kostenlos. Kalender, Stundenplan, Einkaufsliste, Erinnerungen,
+  externer Kalender, verschlüsselte Sicherung und Statistik schaltet die Vollversion frei –
+  ein Einmalkauf ohne Abo. Deine Einträge bleiben in jedem Fall gespeichert.</p>
+  <p><strong>Ich habe die Vollversion schon gekauft.</strong><br>
+  Einstellungen → Vollversion → „Käufe wiederherstellen“. Das gilt auch für die
+  Familienfreigabe.</p>
+  <p><strong>Erinnerungen kommen nicht.</strong><br>
+  In den Einstellungen des iPhones bzw. iPads unter Mitteilungen → ToDo Organizer
+  prüfen, ob Mitteilungen erlaubt sind.</p>
+
+  <h2>Rechtliches</h2>
   <ul>
     <li><a href="${ORDNER}/datenschutz.html">Datenschutzerklärung</a></li>
     <li><a href="${ORDNER}/impressum.html">Impressum</a></li>
   </ul>
-  <p>Kontakt: <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a></p>
 </main>
 </body>
 </html>

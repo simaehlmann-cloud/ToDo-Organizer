@@ -6,9 +6,12 @@
   Versionen 2.x) ist die öffentliche App. MyToDo (1.x, Google, IServ, Referendare)
   ist privat und wird nicht veröffentlicht.
 - **Paketkennung:** `de.maehlmann.todoorganizer` (iOS und Android, unveränderlich nach dem ersten Upload).
-- **Nur iPhone** (`TARGETED_DEVICE_FAMILY = 1`), nur Hochformat. Auf dem iPad läuft
-  die App im iPhone-Modus. Später auf universal erweiterbar – umgekehrt nicht.
-  Store braucht damit nur iPhone-Bildschirmfotos.
+- **Universal** (`TARGETED_DEVICE_FAMILY = "1,2"`, entschieden am 26.10.2026 für die
+  iPad-Vorschau im Store): iPhone nur Hochformat, iPad alle vier Richtungen (Pflicht).
+  Ab 761 px Breite zeigt die App das Layout mit Seitenleiste – auf dem iPad in beiden Lagen.
+  Nicht mehr auf iPhone zurückstellbar, sobald hochgeladen.
+  Store braucht iPhone 6,3" (1206×2622) und iPad 13" (2064×2752); Vorschauvideos
+  886×1920 bzw. 1200×1600. Alles in `store/`, erzeugt mit `store/make-store-assets.js`.
 - **Preis:** kostenlos laden, 30 Tage alles frei, dann Einmalkauf „Vollversion“
   für 2,99 €, kein Abo, Familienfreigabe an.
 - **Testphase** als kostenloses, nicht verbrauchbares Produkt „30-Tage-Testphase“
@@ -56,6 +59,21 @@
   Inline-Stil das Attribut aus (Mehr-Felder, Passwortfelder). Toast ist unsichtbar,
   solange er nicht gezeigt wird.
 
+- Seit 2.4 außerdem: Dialoge mit `margin:auto` (die Rücksetzung `*{margin:0}` hatte sie
+  an den linken Rand geschoben) und innerhalb der Safe-Area zentriert. Auf dem Handy
+  sind es sechs Reiter; „Info“ ist dort über Einstellungen → „Info, Datenschutz und
+  Impressum“ erreichbar (sieben passten nicht nebeneinander).
+
+## Store-Medien
+
+- `store/make-screenshots.js`, `store/make-previews.js` nehmen die echte App mit den
+  Beispieldaten aus `store/demo-data.js` auf („heute“ = Di, 3.11.2026). Statusleiste und
+  Home-Leiste bildet `store/device.js` nach. Ausgabe nach `store/out/` (nicht im Repo).
+- Vorschauvideos per Chromium-Bildschirmmitschnitt; nur mit
+  `--force-device-scale-factor` kommen die Bilder in Gerätepixeln. Musik und
+  Tippgeräusche erzeugt das Skript selbst (keine fremden Rechte).
+- Texte: `store/STORE-TEXTE.md`, Längen prüft `validate.js`.
+
 ## iOS-Build (GitHub Actions)
 
 - Das Xcode-Projekt liegt **nicht** im Repository. Jeder Lauf erzeugt es frisch:
@@ -66,7 +84,7 @@
   App-Ziel (Swift-Pakete vertragen keine Profile).
 - Info.plist: Anzeigename, Region `de`, `ITSAppUsesNonExemptEncryption = false`
   (nur Standardverschlüsselung des Systems), `UIUserInterfaceStyle = Light`
-  (keine Dunkeldarstellung; sonst weiße Statusleistenschrift), nur Hochformat,
+  (keine Dunkeldarstellung; sonst weiße Statusleistenschrift), iPhone Hochformat, iPad alle Lagen,
   `arm64` statt `armv7`.
 - Version = `APP_VERSION` aus index.html, Build-Nummer = Laufnummer des Workflows.
 - Secrets wie bei Zirkelwerk, Profil neu für `de.maehlmann.todoorganizer`

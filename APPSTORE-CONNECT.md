@@ -110,10 +110,8 @@ Nach ein bis zwei Minuten erreichbar:
 - `https://simaehlmann-cloud.github.io/ToDo-Organizer/todo-organizer/datenschutz.html`
 - `https://simaehlmann-cloud.github.io/ToDo-Organizer/todo-organizer/impressum.html`
 
-GitHub Pages ist bei privaten Repositorys im Gratis-Tarif nicht verfügbar.
-Ist das Repository privat, die beiden Dateien aus `docs/todo-organizer/`
-stattdessen ins Zirkelwerk-Repository nach `docs/todo-organizer/` legen;
-die Adressen lauten dann `…/Zirkelwerk/todo-organizer/…`.
+Die Übersichtsseite `https://simaehlmann-cloud.github.io/ToDo-Organizer/`
+ist zugleich die **Support-URL** (Kontakt und häufige Fragen).
 
 ## 6. Bauen und hochladen
 
@@ -128,7 +126,17 @@ TestFlight. Für **interne Tester** (bis 100 Personen aus dem eigenen Team)
 gibt es keine Beta-Prüfung: Gruppe anlegen, Build zuweisen, fertig. Für
 externe Tester prüft Apple den ersten Build kurz.
 
-## 7. Testen in TestFlight
+## 7. Store-Eintrag (nach der TestFlight-Phase)
+
+Texte, Kategorien, Altersfreigabe, Prüfnotizen: `store/STORE-TEXTE.md`.
+Bildschirmfotos und Vorschauvideos (iPhone 6,3" und iPad 13") erzeugt
+`node store/make-screenshots.js` bzw. `node store/make-previews.js`
+nach `store/out/` – fertige Fassungen liegen dem Paket bei.
+
+Die App ist **universal** (iPhone und iPad). Das lässt sich nach dem ersten
+Upload nicht mehr auf nur iPhone zurückstellen.
+
+## 8. Testen in TestFlight
 
 - Käufe in TestFlight laufen über die Sandbox und kosten nichts.
 - Ende der Testphase prüfen: Info-Seite → **siebenmal auf „Version 2.4“

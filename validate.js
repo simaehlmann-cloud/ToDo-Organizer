@@ -37,7 +37,7 @@ const trial = (konst('PRODUCT_TRIAL') || '').replace(/"/g, '').trim();
 if (full !== APP_ID + '.vollversion') E('PRODUCT_FULL ist "' + full + '", erwartet ' + APP_ID + '.vollversion');
 if (trial !== APP_ID + '.testphase') E('PRODUCT_TRIAL ist "' + trial + '", erwartet ' + APP_ID + '.testphase');
 if (konst('TRIAL_DAYS') !== '30') E('TRIAL_DAYS ist nicht 30 – Produktname in App Store Connect und Texte anpassen');
-for (const f of ['README.md', 'APPSTORE-CONNECT.md']) {
+for (const f of ['README.md', 'APPSTORE-CONNECT.md', 'store/STORE-TEXTE.md']) {
   if (!gibt(f)) { E(f + ' fehlt'); continue; }
   const t = lies(f);
   if (!t.includes(full) || !t.includes(trial)) E(f + ': Produkt-IDs stimmen nicht mit index.html überein');
@@ -85,7 +85,12 @@ for (const m of sw.matchAll(/"\.\/([^"]+)"/g))
 const cap = JSON.parse(lies('capacitor.config.json'));
 if (cap.appId !== APP_ID) E('capacitor.config.json: appId ist ' + cap.appId);
 if (cap.webDir !== 'www') E('capacitor.config.json: webDir muss www sein (der Workflow kopiert dorthin)');
-if (!lies('tools/ios-setup.rb').includes("APP_ID = '" + APP_ID + "'")) E('tools/ios-setup.rb: falsche Bundle-ID');
+const setup = lies('tools/ios-setup.rb');
+if (!setup.includes("APP_ID = '" + APP_ID + "'")) E('tools/ios-setup.rb: falsche Bundle-ID');
+// Universal seit 2.4: Eine iPad-fähige App lässt sich nach dem Upload nicht
+// mehr auf iPhone zurückstellen – diese Zeile soll niemand versehentlich ändern.
+if (!setup.includes("s['TARGETED_DEVICE_FAMILY'] = '1,2'")) E('tools/ios-setup.rb: Gerätefamilie muss 1,2 (iPhone und iPad) sein');
+if (!/min-width:761px[\s\S]{0,600}safe-area-inset-top/.test(html)) E('Breites Layout (iPad) ohne Safe-Area oben – Kopf läge unter der Statusleiste');
 const priv = lies('res/ios/PrivacyInfo.xcprivacy');
 if (!/<key>NSPrivacyTracking<\/key>\s*<false\/>/.test(priv)) E('Privacy-Manifest: NSPrivacyTracking muss false sein');
 if (!priv.includes('CA92.1')) E('Privacy-Manifest: Grund CA92.1 (UserDefaults) fehlt');
@@ -103,6 +108,19 @@ const pkg = JSON.parse(lies('package.json'));
 for (const [n, v] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies }))
   if (!/^\d+\.\d+\.\d+$/.test(v)) E('package.json: ' + n + ' ist nicht fest gepinnt (' + v + ')');
 if (!pkg.dependencies['capacitor-plugin-cdv-purchase']) E('Kauf-Plugin fehlt in package.json');
+
+// ---- Store-Texte: Apples Höchstlängen ------------------------------------------------
+if (gibt('store/STORE-TEXTE.md')) {
+  const st = lies('store/STORE-TEXTE.md');
+  let n = 0;
+  for (const m of st.matchAll(/### ([^\n(]+)\(max\. (\d+)\)\n```\n([\s\S]*?)\n```/g)) {
+    n++;
+    const text = m[3], max = +m[2];
+    if ([...text].length > max) E('STORE-TEXTE.md: „' + m[1].trim() + '“ hat ' + [...text].length + ' Zeichen, erlaubt ' + max);
+    if (/Schlüsselwörter/.test(m[1]) && /, /.test(text)) E('Schlüsselwörter ohne Leerzeichen nach dem Komma (jedes zählt mit)');
+  }
+  if (n < 8) E('STORE-TEXTE.md: Felder mit Längenangabe nicht gefunden (' + n + ')');
+} else E('store/STORE-TEXTE.md fehlt');
 
 // ---- Workflow ------------------------------------------------------------------------
 const wf = lies('.github/workflows/ios.yml');
