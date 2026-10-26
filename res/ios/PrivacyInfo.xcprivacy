@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Privacy-Manifest für den ToDo Organizer (wie bei Zirkelwerk).
+
+  Ohne passendes Manifest weist App Store Connect den Upload erst nach der
+  Verarbeitung zurück (ITMS-91053) – der Build ist dann verbrannt.
+
+  Der Inhalt muss das Verhalten der App abbilden: Sie erhebt nichts, sendet
+  nichts an den Anbieter und trackt nicht. Das deckt sich mit der
+  Datenschutzerklärung und der Angabe „Keine Daten erfasst“ in App Store
+  Connect.
+
+  Meldepflichtige Zugriffe:
+  - UserDefaults (CA92.1): Capacitor und das Kauf-Plugin legen dort eigene
+    Einstellungen der App ab, nur im eigenen App-Container.
+  - Dateizeitstempel (C617.1): Das Filesystem-Plugin liest beim Export
+    Dateiinformationen im eigenen App-Container.
+  Capacitor und seine Plugins bringen zusätzlich eigene Manifeste mit.
+-->
+<plist version="1.0">
+<dict>
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <!-- Leer und bewusst so: Die App sammelt keine Daten. -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>C617.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
