@@ -35,7 +35,7 @@ signieren = ENV['TEAM_ID'].to_s != '' && ENV['PROFILE_NAME'].to_s != ''
 ziel.build_configurations.each do |c|
   s = c.build_settings
   s['PRODUCT_BUNDLE_IDENTIFIER'] = APP_ID
-  s['TARGETED_DEVICE_FAMILY'] = '1'          # nur iPhone, siehe PROJEKTWISSEN.md
+  s['TARGETED_DEVICE_FAMILY'] = '1,2'        # iPhone und iPad, siehe PROJEKTWISSEN.md
   s['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'   # StoreKit 2 braucht iOS 15
   s['MARKETING_VERSION'] = ENV['MARKETING_VERSION'] if ENV['MARKETING_VERSION'].to_s != ''
   s['CURRENT_PROJECT_VERSION'] = ENV['CURRENT_PROJECT_VERSION'] if ENV['CURRENT_PROJECT_VERSION'].to_s != ''
