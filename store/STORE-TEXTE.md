@@ -70,6 +70,7 @@ FÜR SCHULE UND UNTERRICHT
 • Ferien und Feiertage aller 16 Bundesländer – Stunden fallen dort automatisch weg
 • A/B-Wochen, auf Wunsch ohne Ferienwochen gezählt
 • Ausfall und Vertretung für einzelne Tage
+• Mehr- und Minderstunden: Vertretungen, Ausfälle und Aufsichten mit Saldo je Halbjahr
 • Hausaufgaben „bis nächste Mathe“: fällig zur nächsten Stunde, über Ferien hinweg
 • Klassenarbeiten planen: vorbereiten, schreiben, korrigieren mit Rückgabefrist
 • Klausuren: ein Lernplan mit verteilten Einheiten bis zum Termin
@@ -94,7 +95,7 @@ KALENDER
 Alle Aufgaben im Monatsraster. Auf Wunsch zeigt die App die Termine deiner Kalender auf dem iPhone oder iPad an und trägt Aufgaben als Termin ein. Alternativ lässt sich ein privater Kalender per Adresse (ICS) einbinden.
 
 WOCHENPLAN
-Ohne Schule? Dann wird daraus ein Wochenplan für feste Termine wie Training, Kurse oder Chorprobe – mit Uhrzeit.
+Ohne Schule? Dann wird daraus ein Wochenplan für Training, Kurse oder Chorprobe.
 
 GEWOHNHEITEN
 Joggen, Lesen, Wasser trinken: Wochenziel festlegen, Tage abhaken und die Serie wachsen sehen.
@@ -112,7 +113,7 @@ HELL ODER DUNKEL
 Die App folgt deinem Gerät oder bleibt hell bzw. dunkel.
 
 SICHERUNG
-Vollständige Sicherung als Datei, auf Wunsch mit Passwort verschlüsselt (AES-GCM). Ablegen, wo du willst: Dateien-App, iCloud Drive oder per Mail. Aufgaben mit Datum lassen sich als Kalenderdatei (.ics) exportieren.
+Vollständige Sicherung als Datei, auf Wunsch verschlüsselt (AES-GCM) – in die Dateien-App, iCloud Drive oder per Mail. Dazu Export als Kalenderdatei (.ics).
 
 PRIVAT VON ANFANG AN
 • Kein Konto, keine Registrierung
