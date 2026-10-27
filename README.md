@@ -22,6 +22,7 @@ package.json                  native Pakete für den iOS-Build, fest gepinnt
 res/ios/                      App-Icon 1024 px, Privacy-Manifest
 tools/ios-setup.rb            passt das erzeugte Xcode-Projekt an
 tools/make-purchase-js.js     bündelt das Kauf-Plugin zu purchase.js
+tools/make-ferien.js          trägt die Schulferien aller Länder in index.html ein
 make-icons.py                 zeichnet das iOS-Icon
 make-legal-pages.js           erzeugt docs/ aus den Rechtstexten
 validate.js                   statische Prüfung
@@ -59,6 +60,21 @@ Einrichtung: siehe [APPSTORE-CONNECT.md](APPSTORE-CONNECT.md).
 **Android** baut weiter lokal im Android-Studio-Projekt (Dateien nach `www/`,
 `npx cap copy`, `.\gradlew.bat assembleDebug`). Die Sperren gelten dort
 vorerst nicht (`LIMIT_PLATFORMS` in `index.html`).
+
+## Ferien aktualisieren
+
+Die Schulferien stecken als Block `FERIEN` in `index.html` (derzeit bis 2030/31).
+Sobald die Länder weitere Schuljahre veröffentlichen:
+
+```bash
+git clone --depth 1 https://github.com/openpotato/openholidaysapi.data.git /tmp/oh
+node tools/make-ferien.js /tmp/oh/src/de/holidays
+```
+
+Das Skript prüft dabei die berechneten Feiertage gegen den Datensatz.
+Datenquelle: [OpenHolidays API Data](https://github.com/openpotato/openholidaysapi.data),
+lizenziert unter der [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+Der daraus erzeugte Block steht unter derselben Lizenz.
 
 ## Vollversion
 

@@ -4,7 +4,7 @@
    Nutzer nach einem Update sofort die neue Fassung und die App
    funktioniert trotzdem offline. */
 
-const CACHE = "todo-organizer-v3";
+const CACHE = "todo-organizer-v4";
 const ASSETS = [
   "./",
   "./index.html",

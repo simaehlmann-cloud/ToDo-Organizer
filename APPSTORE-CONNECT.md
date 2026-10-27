@@ -139,7 +139,7 @@ Upload nicht mehr auf nur iPhone zurückstellen.
 ## 8. Testen in TestFlight
 
 - Käufe in TestFlight laufen über die Sandbox und kosten nichts.
-- Ende der Testphase prüfen: Info-Seite → **siebenmal auf „Version 3.0“
+- Ende der Testphase prüfen: Info-Seite → **siebenmal auf „Version 3.1“
   tippen** → Testmodus, die Testphase dauert dann 3 Minuten. Erneut
   siebenmal tippen schaltet zurück.
 - „Käufe wiederherstellen“ nach Neuinstallation testen: Die Testphase muss

@@ -1,5 +1,27 @@
 # ToDo Organizer – Projektwissen, Stand 3.0 (allgemeine To-do-App)
 
+## 3.1 – Schule als Schwerpunkt (Oktober 2026)
+
+- Positionierung: „der private Planer für Schule und Alltag“. Allgemeine To-do-Apps
+  sind kostenlos (Apple Erinnerungen) oder Abos; Schule + Alltag + ohne Konto ist die Lücke.
+- Feiertage aller 16 Länder werden berechnet (`publicHolidays`, Ostern nach Gauß).
+  Schulferien als Block `FERIEN` in index.html aus OpenHolidays (ODbL), erzeugt mit
+  `tools/make-ferien.js`, das zugleich die Feiertage gegen den Datensatz prüft.
+  Feiertage sind frei, auch in der Grundversion.
+- Im Stundenplan (Schulstunden) fallen Stunden an Feiertagen und in den Ferien weg,
+  der Wochenplan (Uhrzeiten) läuft weiter.
+- A/B-Wochen: `settings.ab = { on, anchor, type, skip }`, Stunde mit `week: "A"|"B"|null`.
+  `skip` = Ferienwochen nicht mitzählen. Eine Zelle kann eine A- und eine B-Stunde haben.
+- Ausfall/Vertretung je Tag: `state.lessonEx["stundenId|JJJJ-MM-TT"]`, beim Laden nach 60 Tagen weg.
+- Hausaufgabe aus der Woche (Stunde antippen) und per Schnelleingabe „bis nächste Mathe“
+  (`parseQuick` mit `subjects`/`lessonDate`, `matchSubject` erkennt Anfänge ab 3 Buchstaben).
+  `nextLesson` überspringt Ferien, Feiertage, falsche A/B-Woche und Ausfälle.
+- Klassenarbeit planen (`planExam`): Lehrkraft → vorbereiten (Werktag davor), schreiben,
+  korrigieren mit Frist (Werktag danach); Schüler → Lernplan mit 2–5 Einheiten. Vollversion.
+- Gefunden im Review: „Übernehmen“ im Aufgaben-Dialog setzte `spawned` immer zurück –
+  nach Wiederöffnen und erneutem Abhaken entstand ein zweiter Folgetermin. Jetzt nur bei
+  geänderter Wiederholung oder geändertem Datum.
+
 ## 3.0 im Überblick (November 2026)
 
 - Vom Schul-Organizer zur **allgemeinen To-do-App**. Beim ersten Start fragt die App

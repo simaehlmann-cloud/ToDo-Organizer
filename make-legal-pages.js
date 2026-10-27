@@ -49,8 +49,8 @@ const START = `<!DOCTYPE html>
 <body>
 <main>
   <h1>ToDo Organizer</h1>
-  <p>Aufgaben mit Erinnerungen, Wochenübersicht mit Gerätekalender, Wochen- oder Stundenplan,
-  Gewohnheiten und Einkaufslisten – ohne Konto, ohne Server. Eine App von Wisdompeak Apps – Simon Mählmann.</p>
+  <p>Der private Planer für Schule und Alltag: Aufgaben mit Erinnerungen, Stundenplan mit Ferien,
+  A/B-Wochen und Vertretungen, Klassenarbeiten, Gewohnheiten und Einkaufslisten – ohne Konto, ohne Server. Eine App von Wisdompeak Apps – Simon Mählmann.</p>
 
   <h2>Hilfe und Kontakt</h2>
   <p>Fragen, Fehler, Wünsche: <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a></p>
@@ -71,6 +71,13 @@ const START = `<!DOCTYPE html>
   Schreib einfach, was zu tun ist, z. B. „Zahnarzt morgen 15 Uhr #Privat !“ oder
   „Müll rausbringen jeden Dienstag“. Datum, Uhrzeit, Kategorie, Priorität und Wiederholung
   erkennt die App selbst.</p>
+  <p><strong>Wie kommen Ferien und Feiertage in die App?</strong><br>
+  Einstellungen → Feiertage und Ferien → Bundesland wählen. Feiertage werden berechnet, die
+  Schulferien aller 16 Länder sind in der App hinterlegt (Quelle: OpenHolidays API, Lizenz ODbL) –
+  ohne Abruf aus dem Netz. Im Stundenplan fallen Stunden an diesen Tagen weg.</p>
+  <p><strong>Wie funktionieren A/B-Wochen?</strong><br>
+  Im Stundenplan „A/B-Wochen“ einschalten. Jede Stunde gilt dann in jeder Woche, nur in Woche A oder
+  nur in Woche B. Auf Wunsch zählen Ferienwochen nicht mit.</p>
   <p><strong>Meine Termine erscheinen nicht in der Wochenübersicht.</strong><br>
   Einstellungen → Gerätekalender anzeigen einschalten. Wurde der Zugriff abgelehnt:
   iPhone-Einstellungen → Datenschutz &amp; Sicherheit → Kalender → ToDo Organizer → Vollzugriff.</p>
