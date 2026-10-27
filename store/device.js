@@ -41,7 +41,7 @@ function chromeCss(dev) {
   #sim-status .r{display:flex;gap:${dev.wide ? 6 : 7}px;align-items:center}
   #sim-status svg{display:block}
   #sim-home{position:fixed;left:50%;bottom:${dev.wide ? 6 : 8}px;transform:translateX(-50%);width:${dev.wide ? 320 : 140}px;height:5px;
-    border-radius:3px;background:${dev.wide ? '#000' : '#fff'};z-index:9998;pointer-events:none;opacity:.9}
+    border-radius:3px;background:#000;z-index:9998;pointer-events:none;opacity:.9}
   :root[data-theme=dark] #sim-status{color:#fff}
   :root[data-theme=dark] #sim-home{background:#fff}`;
 }
