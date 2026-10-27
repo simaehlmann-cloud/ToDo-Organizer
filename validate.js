@@ -137,6 +137,23 @@ const proKeys = (html.match(/const PRO_KEYS\s*=\s*\[([^\]]*)\]/) || [])[1] || ''
 if (/reminders/.test(proKeys)) E('Erinnerungen stehen in PRO_KEYS – sie gehören seit 3.0 zur kostenlosen Grundversion');
 if (!html.includes('==CORE-BEGIN==') || !html.includes('==CORE-END==')) E('CORE-Block-Markierungen fehlen (tests/core.test.js braucht sie)');
 
+// ---- Heute-Widget (seit 3.1) ---------------------------------------------------------
+for (const f of ['res/ios/widget/TodayWidget.swift', 'res/ios/widget/Info.plist', 'res/ios/widget/TodayWidget.entitlements',
+                 'res/ios/widget/PrivacyInfo.xcprivacy', 'res/ios/app/WidgetDataPlugin.swift', 'res/ios/app/AppViewController.swift',
+                 'res/ios/app/App.entitlements'])
+  if (!gibt(f)) E(f + ' fehlt (Heute-Widget)');
+if (gibt('res/ios/widget/TodayWidget.swift')) {
+  const sw = lies('res/ios/widget/TodayWidget.swift'), pl = lies('res/ios/app/WidgetDataPlugin.swift');
+  const grp = 'group.' + 'de.maehlmann.todoorganizer';
+  for (const [n, t] of [['TodayWidget.swift', sw], ['WidgetDataPlugin.swift', pl], ['App.entitlements', lies('res/ios/app/App.entitlements')],
+                        ['TodayWidget.entitlements', lies('res/ios/widget/TodayWidget.entitlements')]])
+    if (!t.includes(grp)) E(n + ': App-Gruppe ' + grp + ' fehlt');
+  if (!/jsName = "WidgetData"/.test(pl) || !html.includes('Plugins.WidgetData')) E('Widget-Brücke: Name in Swift und index.html passt nicht (WidgetData)');
+  if (!/1C8F\.1/.test(lies('res/ios/PrivacyInfo.xcprivacy'))) E('PrivacyInfo der App: Grund 1C8F.1 (App-Gruppe) fehlt');
+}
+if (!wf.includes('IOS_PROVISIONING_PROFILE_WIDGET') || !wf.includes('export WIDGET=1')) E('ios.yml: Heute-Widget nicht eingebunden');
+if (!wf.includes('CFBundleURLSchemes') || !html.includes('todoorganizer:')) E('Link-Schema todoorganizer fehlt (Widget öffnet sonst nur die App)');
+
 // ---- Ferien (seit 3.1): Daten vorhanden, Quelle genannt, nicht veraltet ------------
 if (!html.includes('/* ==FERIEN-BEGIN==') || !html.includes('/* ==FERIEN-END== */')) E('FERIEN-Block fehlt – node tools/make-ferien.js ausführen');
 else {

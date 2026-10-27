@@ -22,6 +22,24 @@
   nach Wiederöffnen und erneutem Abhaken entstand ein zweiter Folgetermin. Jetzt nur bei
   geänderter Wiederholung oder geändertem Datum.
 
+## Heute-Widget (3.1)
+
+- Swift-Widget (WidgetKit, iOS 15+, klein/mittel/groß) in `res/ios/widget/`. Die App
+  schreibt per eigenem Plugin `WidgetData.set({json})` (`res/ios/app/WidgetDataPlugin.swift`,
+  angemeldet in `AppViewController`, der in Main.storyboard Capacitors Startbildschirm
+  ersetzt) eine Zusammenfassung von drei Tagen in `UserDefaults(suiteName: group.de.maehlmann.todoorganizer)`.
+- Fertige Plugins (capacitor-widgetsbridge-plugin) gibt es nur für CocoaPods – unser
+  Build nutzt SPM, deshalb die eigene Brücke.
+- `widgetSnapshot()` in index.html baut die Daten (Stunden mit Ferien/A/B/Ausfall,
+  Termine, Aufgaben); `Widget.soon()` nach Speichern/Neuzeichnen, `Widget.push()` beim
+  Verlassen der App. Gleicher Stand wird nicht erneut geschickt.
+- Das Widget wechselt um Mitternacht selbst auf den nächsten Tag und blendet begonnene
+  Stunden/Termine aus. Tipp öffnet `todoorganizer://week` (CFBundleURLTypes, `appUrlOpen`).
+- Build: ohne Signierung immer mit Widget (Swift wird bei jedem Push übersetzt), signiert
+  nur mit `IOS_PROVISIONING_PROFILE_WIDGET` und App-Gruppe in beiden Profilen.
+- Kostenlos (auch nach der Testphase); Stunden erscheinen nur mit Vollversion, weil der
+  Stundenplan dazugehört.
+
 ## 3.0 im Überblick (November 2026)
 
 - Vom Schul-Organizer zur **allgemeinen To-do-App**. Beim ersten Start fragt die App

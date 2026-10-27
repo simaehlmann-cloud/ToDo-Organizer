@@ -147,3 +147,35 @@ Upload nicht mehr auf nur iPhone zurückstellen.
 - Im Testmodus zeigt die Karte „Vollversion“ eine **Diagnose** (Modul, Plugin,
   Store bereit, Produkte gefunden, letzter Fehler). Steht dort „Produkte: 0“,
   liegt es an App Store Connect (Metadaten, Vertrag, Bundle-ID), nicht an der App.
+
+## 9. Heute-Widget einrichten (seit 3.1, einmalig)
+
+Ohne diese Schritte baut der signierte Lauf wie bisher – nur ohne Widget.
+
+developer.apple.com → Certificates, Identifiers & Profiles:
+
+1. **App-Gruppe anlegen:** Identifiers → „+“ → **App Groups** → Beschreibung
+   `ToDo Organizer`, Kennung `group.de.maehlmann.todoorganizer` → Register.
+2. **App-ID der App erweitern:** Identifiers → `de.maehlmann.todoorganizer` →
+   **App Groups** anhaken → Configure → die Gruppe wählen → Save.
+   (Apple warnt, dass Profile ungültig werden – das ist gewollt.)
+3. **App-ID fürs Widget:** Identifiers → „+“ → App IDs → App → Beschreibung
+   `ToDo Organizer Widget`, Bundle ID (Explicit) `de.maehlmann.todoorganizer.widget`,
+   **App Groups** anhaken → Register. Danach die ID öffnen → App Groups →
+   Configure → Gruppe wählen → Save.
+4. **Profile:**
+   - Profiles → das bisherige App-Store-Profil der App öffnen → Edit → Save
+     (neu erzeugen) → Download.
+   - Profiles → „+“ → **App Store Connect** → App-ID `…todoorganizer.widget` →
+     dasselbe Zertifikat wie bei der App → Name `ToDo Organizer Widget` → Generate → Download.
+5. **Secrets bei GitHub** (beide Profile wie in Schritt 4 base64-umwandeln):
+   - `IOS_PROVISIONING_PROFILE` **ersetzen** durch das neu erzeugte App-Profil
+   - `IOS_PROVISIONING_PROFILE_WIDGET` **neu** mit dem Widget-Profil
+6. Actions → Run workflow. Im Schritt „Erzeugtes Projekt bestätigen“ steht dann
+   „Heute-Widget eingebaut.“
+
+Fehlt die App-Gruppe in einem der Profile, bricht der Lauf mit einer genauen
+Meldung ab, welches Profil neu erzeugt werden muss.
+
+Auf dem iPhone: Home-Bildschirm lange drücken → „+“ → „ToDo Organizer“ → Heute.
+

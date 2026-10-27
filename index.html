@@ -1679,6 +1679,58 @@ function migrateV1(old) {
   toast("Daten aus der Vorversion übernommen.");
 }
 
+/* ---------- Heute-Widget (iOS) ----------
+   Die App legt nach jeder Änderung eine kleine Zusammenfassung der nächsten
+   drei Tage in der App-Gruppe ab (natives WidgetDataPlugin, nur auf dem Gerät).
+   Das Widget zeigt daraus den Tag und wechselt um Mitternacht selbst weiter.
+   Im Browser und ohne Widget-Brücke passiert nichts. */
+const Widget = {
+  last: "", timer: null,
+  plugin() { const c = window.Capacitor; return (c && c.Plugins && c.Plugins.WidgetData) || null; },
+  soon() {
+    if (!this.plugin()) return;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.push(), 1200);
+  },
+  async push() {
+    const p = this.plugin(); if (!p) return;
+    clearTimeout(this.timer);
+    let json;
+    try { json = JSON.stringify(widgetSnapshot()); } catch (e) { console.warn("Widget:", e && e.message); return; }
+    if (json === this.last) return;
+    try { await p.set({ json }); this.last = json; }
+    catch (e) { console.warn("Widget:", e && e.message); }
+  }
+};
+function widgetSnapshot() {
+  const today = todayISO();
+  const days = [];
+  for (let i = 0; i < 3; i++) {
+    const iso = addDays(today, i);
+    const items = [];
+    if (feat("timetable")) lessonsOn(iso).forEach(l => {
+      const ex = lessonExOf(l, iso) || {};
+      const subj = ex.subject || l.subject, room = ex.room || l.room;
+      items.push({ id: "l" + l.id, kind: "lesson", time: lessonStart(l, state.settings.slots),
+                   title: subj + (room ? " · " + room : ""), color: l.color || "#2563eb", cancelled: !!ex.cancel });
+    });
+    if (feat("extCal")) eventsOn(iso).forEach((e, k) => items.push({ id: "e" + k, kind: "event",
+      time: validTime(e.time) ? e.time : null, title: String(e.title || "Termin"), color: e.color || "#9333ea" }));
+    state.tasks.filter(t => !t.completed && t.dueDate === iso).forEach(t => items.push({ id: "t" + t.id, kind: "task",
+      time: validTime(t.dueTime) ? t.dueTime : null, title: t.title, color: catColor(t.categoryId) }));
+    // Ganztägige Termine zuerst, dann nach Uhrzeit, Aufgaben ohne Uhrzeit am Ende
+    const key = x => x.time || (x.kind === "task" ? "~" : " ");
+    // Einfacher Zeichenvergleich: localeCompare sortiert „~“ vor die Ziffern
+    items.sort((a, b) => key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0);
+    const wd = parseISO(iso).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+    const off = dayInfo(iso);
+    days.push({ iso, label: (i === 0 ? "Heute" : i === 1 ? "Morgen" : "Übermorgen") + ", " + wd,
+                off: off.holiday || off.ferien || null, items: items.slice(0, 14) });
+  }
+  const overdue = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate < today).length;
+  return { v: 1, days, overdue };
+}
+
 function save() {
   abMemo = {};
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
@@ -1689,6 +1741,7 @@ function save() {
   }
   // Erinnerungen an den neuen Stand anpassen (gebündelt, nicht bei jedem Tastendruck).
   if (typeof scheduleAllSoon === "function") scheduleAllSoon();
+  Widget.soon();
 }
 
 /* ---------- Hilfen ---------- */
@@ -4481,6 +4534,7 @@ function renderAll() {
   renderTasks(); renderCalendar(); renderTimetable(); renderShopping();
   renderWeek(); renderHabits(); renderStats();
   fillSubjectSelects(); updateStorageInfo();
+  Widget.soon();
 }
 
 load();
@@ -4516,6 +4570,22 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
       document.body.classList.add("sb-inset");
     }
   } catch {}
+})();
+
+/* ---------- Link aus dem Widget: todoorganizer://week ---------- */
+(function widgetLinks() {
+  const c = window.Capacitor;
+  const App = c && c.Plugins && c.Plugins.App;
+  if (!App || !App.addListener) return;
+  const open = url => {
+    const m = /^todoorganizer:\/\/([a-z]+)/.exec(url || "");
+    if (!m || ["week", "tasks", "calendar", "timetable", "shopping", "settings"].indexOf(m[1]) < 0) return;
+    document.querySelectorAll("dialog[open]").forEach(d => { if (d.id !== "dlg-onboard") d.close(); });
+    if (m[1] === "week") { weekOffset = 0; renderWeek(); renderHabits(); }
+    switchTo(m[1]);
+  };
+  App.addListener("appUrlOpen", e => open(e && e.url));
+  if (App.getLaunchUrl) App.getLaunchUrl().then(r => open(r && r.url)).catch(() => {});
 })();
 
 /* ---------- Android-Zurück-Taste ----------
@@ -4578,7 +4648,7 @@ function handleSharedText(text) {
 checkReminder();
 setInterval(checkReminder, 5 * 60 * 1000);
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) return;
+  if (document.hidden) { Widget.push(); return; }    // beim Verlassen sofort aktuell
   checkReminder(); renderTasks(); renderHabits();
   // Der Kalender kann sich außerhalb der App geändert haben.
   if (DevCal.on()) { DevCal.reset(); renderWeek(); renderCalendar(); }

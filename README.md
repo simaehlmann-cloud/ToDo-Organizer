@@ -20,6 +20,7 @@ docs/                         dieselben Rechtstexte für GitHub Pages (erzeugt)
 capacitor.config.json         Capacitor-Konfiguration (App-ID, Name)
 package.json                  native Pakete für den iOS-Build, fest gepinnt
 res/ios/                      App-Icon 1024 px, Privacy-Manifest
+res/ios/widget/, res/ios/app/ Heute-Widget (Swift) und Brücke in der App
 tools/ios-setup.rb            passt das erzeugte Xcode-Projekt an
 tools/make-purchase-js.js     bündelt das Kauf-Plugin zu purchase.js
 tools/make-ferien.js          trägt die Schulferien aller Länder in index.html ein
