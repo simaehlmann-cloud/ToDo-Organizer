@@ -65,7 +65,8 @@ von Daten an Dritte.
 <li>Fotos, die Sie einer Aufgabe hinzufügen (verkleinert, im Speicher <em>IndexedDB</em> der App)</li>
 <li>Kategorien, Vorlagen, Gewohnheiten mit den abgehakten Tagen, Wochen- bzw. Stundenplan
   (Einträge, Räume, Zeiten) und Einkaufslisten mit den zuletzt gekauften Artikeln als Vorschläge</li>
-<li>Ihre Einstellungen, etwa eingeblendete Funktionen, Darstellung (hell/dunkel), Wochentage und Uhrzeit der Erinnerung</li>
+<li>Ihre Einstellungen, etwa eingeblendete Funktionen, Darstellung (hell/dunkel), Bundesland (für Feiertage und Ferien), A/B-Wochen, Wochentage und Uhrzeit der Erinnerung</li>
+<li>Ausfälle und Vertretungen, die Sie für einzelne Stunden eintragen</li>
 <li>gegebenenfalls die Adresse eines eigenen Kalenders (ICS) und die zuletzt abgerufenen Termine daraus</li>
 <li>ob die Testphase begonnen hat (mit Datum) und ob die Vollversion freigeschaltet ist</li>
 </ul>
@@ -100,6 +101,13 @@ Die Erlaubnis lässt sich jederzeit in den iOS-Einstellungen widerrufen.
 Fügen Sie einer Aufgabe ein Foto hinzu, öffnet die App die Kamera oder die Fotoauswahl von iOS.
 Die App erhält nur das eine Foto, das Sie aufnehmen oder auswählen, verkleinert es und speichert
 es auf dem Gerät. Fotos werden nicht übertragen; eine Sicherungsdatei, die Sie selbst exportieren, enthält sie.
+</p>
+
+<h3>Feiertage und Schulferien</h3>
+<p>
+Feiertage berechnet die App selbst. Die Schulferien aller Bundesländer sind in der App enthalten
+(Quelle: OpenHolidays API, Lizenz ODbL). Dafür ruft die App nichts aus dem Internet ab; das gewählte
+Bundesland bleibt auf Ihrem Gerät.
 </p>
 
 <h2>5. Sicherung, Export und Teilen</h2>

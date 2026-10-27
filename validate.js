@@ -136,6 +136,18 @@ if (!wf.includes('node tests/app.test.js') || !wf.includes('node tests/core.test
 const proKeys = (html.match(/const PRO_KEYS\s*=\s*\[([^\]]*)\]/) || [])[1] || '';
 if (/reminders/.test(proKeys)) E('Erinnerungen stehen in PRO_KEYS – sie gehören seit 3.0 zur kostenlosen Grundversion');
 if (!html.includes('==CORE-BEGIN==') || !html.includes('==CORE-END==')) E('CORE-Block-Markierungen fehlen (tests/core.test.js braucht sie)');
+
+// ---- Ferien (seit 3.1): Daten vorhanden, Quelle genannt, nicht veraltet ------------
+if (!html.includes('/* ==FERIEN-BEGIN==') || !html.includes('/* ==FERIEN-END== */')) E('FERIEN-Block fehlt – node tools/make-ferien.js ausführen');
+else {
+  const bis = (html.match(/FERIEN_BIS = "(\d{4}-\d{2}-\d{2})"/) || [])[1] || '';
+  const regionen = (html.slice(html.indexOf('const FERIEN = {'), html.indexOf('/* ==FERIEN-END== */')).match(/^  [A-Z]{2}: \[/gm) || []).length;
+  if (regionen !== 16) E('FERIEN: ' + regionen + ' statt 16 Länder');
+  const inEinemJahr = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
+  if (!bis) E('FERIEN_BIS fehlt');
+  else if (bis < inEinemJahr) console.log('Hinweis: Ferientermine reichen nur bis ' + bis + ' – tools/make-ferien.js mit neuen Daten ausführen.');
+  if (!/OpenHolidays/.test(html.slice(html.indexOf('id="view-about"')))) E('Quellenangabe OpenHolidays (ODbL) fehlt auf der Info-Seite');
+}
 for (const f of ['tests/core.test.js', 'tests/app.test.js']) if (!gibt(f)) E(f + ' fehlt');
 for (const dep of ['@ebarooni/capacitor-calendar', '@capacitor/status-bar'])
   if (!pkg.dependencies[dep]) E('package.json: ' + dep + ' fehlt');

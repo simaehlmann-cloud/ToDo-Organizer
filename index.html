@@ -328,6 +328,29 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .tpl .s{font-size:.74rem;color:var(--muted);font-weight:400}
 .cal-list label{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:.88rem;cursor:pointer}
 .cal-list .sw-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.wd-off{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:8px;white-space:nowrap}
+.wd-off.hol{background:#fee2e2;color:#b91c1c}
+.wd-off.fer{background:#dcfce7;color:#047857}
+:root[data-theme=dark] .wd-off.hol{background:#4c1d1d;color:#fca5a5}
+:root[data-theme=dark] .wd-off.fer{background:#123524;color:#86efac}
+.wd-lesson.tap{cursor:pointer}
+.wd-lesson.cx{text-decoration:line-through;opacity:.5}
+.wd-lesson.sub::before{content:"↻ "}
+.cal-c.hol .n{color:#dc2626;font-weight:800}
+.cal-c.fer{background:color-mix(in srgb,#10b981 13%,transparent)}
+.cal-off{font-size:.82rem;font-weight:600;margin:0 0 10px;padding:7px 11px;border-radius:10px}
+.cal-off.hol{background:#fee2e2;color:#b91c1c}
+.cal-off.fer{background:#dcfce7;color:#047857}
+:root[data-theme=dark] .cal-off.hol{background:#4c1d1d;color:#fca5a5}
+:root[data-theme=dark] .cal-off.fer{background:#123524;color:#86efac}
+.ex-preview{display:grid;gap:5px}
+.ex-preview div{font-size:.84rem;padding:7px 10px;border-radius:9px;background:var(--bg,#f4f5f7);display:flex;justify-content:space-between;gap:10px}
+.ex-preview .d{color:var(--muted);white-space:nowrap}
+.ab-badge{display:inline-block;font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--primary);color:#fff;white-space:nowrap;vertical-align:2px}
+.ab-tag{font-size:.6rem;font-weight:800;background:rgba(255,255,255,.3);border-radius:5px;padding:0 4px;margin-left:4px}
+.ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0 4px;font-size:.86rem}
+.ab-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
+.ab-row input[type=checkbox]{width:19px;height:19px}
 .diag{font-family:ui-monospace,monospace;font-size:.72rem;color:var(--muted);margin-top:12px;white-space:pre-wrap;word-break:break-word}
 h4{font-size:.9rem;margin:14px 0 8px}
 </style>
@@ -457,6 +480,13 @@ h4{font-size:.9rem;margin:14px 0 8px}
         <button data-mode="week">Wochenplan (Uhrzeiten)</button>
         <button data-mode="school">Stundenplan (Schulstunden)</button>
       </div>
+      <div class="ab-row">
+        <label><input type="checkbox" id="ab-on"> A/B-Wochen</label>
+        <span id="ab-ctl" hidden>
+          <span class="seg" id="ab-view" style="display:inline-flex;margin:0"><button data-w="A">Woche A</button><button data-w="B">Woche B</button></span>
+        </span>
+      </div>
+      <p class="hint" id="ab-hint" hidden style="margin:0 0 10px"></p>
       <div class="tt" id="tt-grid"></div>
       <div id="plan-list"></div>
       <p class="hint" id="plan-hint" style="margin:13px 0 0">Eintrag antippen zum Bearbeiten oder Löschen.</p>
@@ -471,6 +501,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
         <div><label class="fld" for="tt-subject" id="lbl-subject">Termin</label><input type="text" id="tt-subject" placeholder="z. B. Training"></div>
         <div><label class="fld" for="tt-room" id="lbl-room">Ort</label><input type="text" id="tt-room" placeholder="optional"></div>
         <div><label class="fld" for="tt-color">Farbe</label><input type="color" id="tt-color" value="#2563eb" style="height:44px;padding:3px"></div>
+        <div class="fld-week" hidden><label class="fld" for="tt-week">Gilt in</label><select id="tt-week">
+          <option value="">jeder Woche</option><option value="A">nur Woche A</option><option value="B">nur Woche B</option></select></div>
       </div>
       <button class="btn" id="btn-add-lesson">Speichern</button>
     </div>
@@ -518,6 +550,16 @@ h4{font-size:.9rem;margin:14px 0 8px}
           <option value="everyday">Alltag und Beruf</option><option value="school">Schule oder Studium</option><option value="teacher">Unterricht (Lehrkraft)</option></select></div>
       </div>
       <p class="hint" style="margin:10px 0 0">Bei Schule und Unterricht zeigt die App den Stundenplan mit Schulstunden und verknüpft Aufgaben mit Fächern.</p>
+    </div>
+
+    <div class="card" id="card-region">
+      <h3>Feiertage und Ferien</h3>
+      <div class="grid" style="margin-bottom:0">
+        <div><label class="fld" for="set-region">Bundesland</label><select id="set-region"></select></div>
+        <div style="display:flex;align-items:flex-end"><label style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer;min-height:44px">
+          <input type="checkbox" id="set-ferien" style="width:19px;height:19px"> Schulferien anzeigen</label></div>
+      </div>
+      <p class="hint" style="margin:10px 0 0" id="region-hint"></p>
     </div>
 
     <div class="card">
@@ -674,7 +716,9 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div class="feat"><div class="i">🔄</div><div><div class="t">Wiederholungen</div><div class="d">Täglich, werktags, wöchentlich, monatlich, jährlich oder „alle N Tage/Wochen/Monate“ – auf Wunsch ab dem Tag des Erledigens gezählt.</div></div></div>
       <div class="feat"><div class="i">🔔</div><div><div class="t">Erinnerungen</div><div class="d">Zur Uhrzeit der Aufgabe oder vorher (15 Minuten bis 1 Woche), dazu eine tägliche Übersicht. Aus der Mitteilung heraus verschieben oder abhaken.</div></div></div>
       <div class="feat"><div class="i">🗓</div><div><div class="t">Kalender</div><div class="d">Monatsansicht aller Aufgaben. Auf Wunsch mit den Terminen deiner Gerätekalender oder eines Kalender-Abos (ICS); Aufgaben lassen sich als Termin eintragen.</div></div></div>
-      <div class="feat"><div class="i">📅</div><div><div class="t">Wochenplan und Stundenplan</div><div class="d">Feste Wochentermine wie Training oder Kurse – oder als Stundenplan mit Schulstunden, Fächern und „Hausaufgabe bis zur nächsten Stunde“.</div></div></div>
+      <div class="feat"><div class="i">📅</div><div><div class="t">Wochenplan und Stundenplan</div><div class="d">Feste Wochentermine wie Training oder Kurse – oder als Stundenplan mit Schulstunden, A/B-Wochen, Ausfall und Vertretung. Hausaufgaben „bis nächste Mathe“ landen bei der nächsten Stunde – Ferien und Feiertage werden übersprungen.</div></div></div>
+      <div class="feat"><div class="i">🏖</div><div><div class="t">Feiertage und Ferien</div><div class="d">Für alle 16 Bundesländer in Woche und Kalender. Feiertage werden berechnet, Schulferien sind in der App hinterlegt (Quelle: OpenHolidays API, Lizenz ODbL) – ohne Abruf aus dem Netz.</div></div></div>
+      <div class="feat"><div class="i">📝</div><div><div class="t">Klassenarbeiten und Klausuren</div><div class="d">Für Lehrkräfte: Vorbereiten, Schreiben, Korrigieren mit Frist. Für Schüler: ein Lernplan mit verteilten Einheiten bis zur Klausur.</div></div></div>
       <div class="feat"><div class="i">✅</div><div><div class="t">Gewohnheiten</div><div class="d">Sport, Lesen, Wasser trinken: mit Wochenziel abhaken, Serien sehen.</div></div></div>
       <div class="feat"><div class="i">🧾</div><div><div class="t">Vorlagen</div><div class="d">Wiederkehrende Abläufe wie „Urlaub packen“ einmal anlegen und mit einem Tippen samt Unterpunkten einsetzen.</div></div></div>
       <div class="feat"><div class="i">🛒</div><div><div class="t">Einkaufslisten</div><div class="d">Mehrere Listen, Vorschläge aus früheren Einkäufen, abhaken, aufräumen, teilen.</div></div></div>
@@ -783,12 +827,62 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div><label class="fld" for="l-subject" id="l-lbl-subject">Fach</label><input type="text" id="l-subject"></div>
       <div><label class="fld" for="l-room" id="l-lbl-room">Raum / Lehrkraft</label><input type="text" id="l-room"></div>
       <div><label class="fld" for="l-color">Farbe</label><input type="color" id="l-color" style="width:100%;height:42px;padding:3px"></div>
+      <div class="fld-week" hidden><label class="fld" for="l-week">Gilt in</label><select id="l-week">
+        <option value="">jeder Woche</option><option value="A">nur Woche A</option><option value="B">nur Woche B</option></select></div>
     </div>
   </div>
   <div class="ft">
     <button class="btn-sm danger" id="l-del">Löschen</button>
     <button class="btn-sm" id="l-cancel">Abbrechen</button>
     <button class="btn" id="l-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-lday">
+  <div class="bd">
+    <h3 id="ld-head">Stunde</h3>
+    <p class="hint" id="ld-sub" style="margin:-4px 0 12px"></p>
+    <label style="display:flex;align-items:center;gap:9px;font-size:.92rem;cursor:pointer;margin-bottom:12px">
+      <input type="checkbox" id="ld-cancel" style="width:20px;height:20px"> Fällt an diesem Tag aus</label>
+    <div id="ld-subfields" class="grid" style="margin-bottom:6px">
+      <div><label class="fld" for="ld-subject" id="ld-lbl-subject">Vertretung / anderes Fach</label><input type="text" id="ld-subject" placeholder="wie geplant"></div>
+      <div><label class="fld" for="ld-room">Raum</label><input type="text" id="ld-room" placeholder="wie geplant"></div>
+    </div>
+    <div id="ld-hw-box">
+      <label class="fld" for="ld-hw">Hausaufgabe bis zur nächsten Stunde</label>
+      <div class="inline-btns"><input type="text" id="ld-hw" placeholder="z. B. S. 34 Nr. 5" enterkeyhint="done"><button class="btn-sm" id="ld-hw-add" type="button">Eintragen</button></div>
+      <p class="hint" id="ld-hw-hint" style="margin:6px 0 0"></p>
+    </div>
+    <button class="btn-sm" id="ld-exam" type="button" style="margin-top:12px">📝 Klassenarbeit an diesem Tag planen</button>
+  </div>
+  <div class="ft">
+    <button class="btn-sm" id="ld-reset">Zurücksetzen</button>
+    <button class="btn-sm" id="ld-close">Abbrechen</button>
+    <button class="btn" id="ld-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-exam">
+  <div class="bd">
+    <h3>Klassenarbeit oder Klausur planen</h3>
+    <div class="seg" id="ex-kind" style="margin-bottom:12px"><button data-k="teacher">Ich korrigiere</button><button data-k="student">Ich lerne dafür</button></div>
+    <div class="grid" style="margin-bottom:6px">
+      <div><label class="fld" for="ex-title">Titel</label><input type="text" id="ex-title" placeholder="z. B. 7b Bruchrechnung"></div>
+      <div id="ex-fld-subject"><label class="fld" for="ex-subject">Fach</label><select id="ex-subject"></select></div>
+      <div><label class="fld" for="ex-date">Termin</label><input type="date" id="ex-date"></div>
+      <div class="ex-t"><label class="fld" for="ex-prep">Vorbereiten</label><select id="ex-prep">
+        <option value="2">2 Tage vorher</option><option value="3" selected>3 Tage vorher</option><option value="5">5 Tage vorher</option><option value="7">1 Woche vorher</option></select></div>
+      <div class="ex-t"><label class="fld" for="ex-corr">Zurückgeben bis</label><select id="ex-corr">
+        <option value="7">1 Woche danach</option><option value="14" selected>2 Wochen danach</option><option value="21">3 Wochen danach</option></select></div>
+      <div class="ex-s"><label class="fld" for="ex-sessions">Lerneinheiten</label><select id="ex-sessions">
+        <option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+    </div>
+    <p class="hint" style="margin:4px 0 6px">Es entstehen diese Aufgaben:</p>
+    <div id="ex-preview" class="ex-preview"></div>
+  </div>
+  <div class="ft">
+    <button class="btn-sm" id="ex-cancel">Abbrechen</button>
+    <button class="btn" id="ex-save">Anlegen</button>
   </div>
 </dialog>
 
@@ -801,6 +895,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <button class="choice" data-profile="everyday"><span class="i">🏡</span><span><span class="t">Alltag und Beruf</span><br><span class="d">Aufgaben, Termine, Gewohnheiten, Einkauf</span></span></button>
     <button class="choice" data-profile="school"><span class="i">🎒</span><span><span class="t">Schule oder Studium</span><br><span class="d">dazu Stundenplan und Hausaufgaben</span></span></button>
     <button class="choice" data-profile="teacher"><span class="i">🧑‍🏫</span><span><span class="t">Unterricht</span><br><span class="d">dazu Stundenplan mit Klassen und Räumen</span></span></button>
+    <label class="fld" for="ob-region" style="margin-top:14px">Bundesland – für Feiertage und Ferien (optional)</label>
+    <select id="ob-region"></select>
   </div>
 </dialog>
 
@@ -808,6 +904,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
   <div class="bd">
     <h3>Vorlagen</h3>
     <p class="hint" id="tpl-hint">Antippen legt eine neue Aufgabe mit allen Unterpunkten an. Eigene Vorlagen speicherst du im Aufgaben-Dialog („Als Vorlage speichern“).</p>
+    <button class="btn-sm" id="tpl-exam" type="button" style="margin-bottom:12px">📝 Klassenarbeit oder Klausur planen</button>
     <div id="tpl-list"></div>
   </div>
   <div class="ft"><button class="btn-sm" id="tpl-close">Schließen</button></div>
@@ -956,12 +1053,27 @@ function validDate(y, m, d) {
   return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? isoOf(dt) : null;
 }
 
+/* Fach zu einem oder zwei Wörtern finden: genau (ohne Groß/klein) oder als
+   Anfang ab drei Buchstaben („Mathe“ → „Mathematik“). Zwei Wörter zuerst
+   („Mathe 7b“). → { subject, words } oder null */
+function matchSubject(subjects, w1, w2) {
+  const low = x => String(x).toLowerCase();
+  const find = q => {
+    q = low(q);
+    return subjects.find(x => low(x) === q)
+        || (q.length >= 3 ? subjects.find(x => low(x).startsWith(q)) : null);
+  };
+  if (w2) { const two = subjects.find(x => low(x) === low(w1 + " " + w2)); if (two) return { subject: two, words: 2 }; }
+  const one = find(w1);
+  return one ? { subject: one, words: 1 } : null;
+}
+
 function parseQuick(text, opts = {}) {
   const now = opts.now || new Date();
   const today = isoOf(now);
   const cats = opts.categories || [];
   const res = { title: text, date: null, time: null, catId: null, prio: null,
-                rec: null, every: null, unit: null, hits: [] };
+                rec: null, every: null, unit: null, subject: null, hits: [] };
   let s = " " + text + " ";
   const cut = m => { s = s.slice(0, m.index) + " " + s.slice(m.index + m[0].length); };
   const find = (rx) => { const m = new RegExp(rx, "iu").exec(s); return m; };
@@ -989,6 +1101,27 @@ function parseQuick(text, opts = {}) {
     res.rec = r.rec; res.every = r.every || null; res.unit = r.unit || null;
     if (r.wd) res.date = nextWeekday(today, r.wd, false);
     res.hits.push("rec"); cut(m); break;
+  }
+
+  // 1b · Fach: „bis (zur) nächsten Mathe“, „nächste Stunde Deutsch“, „bis Bio“
+  //      Datum = nächste Stunde des Fachs, sofern kein Datum genannt ist.
+  const subjects = (opts.subjects || []).filter(Boolean);
+  if (subjects.length) {
+    const NX = "(?:nächste[nrm]?|naechste[nrm]?)";
+    const rxs = QB + "((?:bis\\s+(?:zur\\s+|zum\\s+)?(?:" + NX + "\\s+)?|(?:(?:zur|zum)\\s+)?" + NX + "\\s+)"
+                    + "(?:stunde\\s+)?)([\\p{L}][\\p{L}\\d]*)(?:\\s+([\\p{L}\\d]+))?";
+    // erster Treffer, der wirklich ein Fach ist („bis Freitag“ ist keins)
+    for (const sm of s.matchAll(new RegExp(rxs, "giu"))) {
+      const hit = matchSubject(subjects, sm[2], sm[3]);
+      if (hit) {
+        res.subject = hit.subject;
+        // nur so viel ausschneiden, wie zum Fach gehört
+        const used = hit.words === 2 ? sm[0].length : sm[1].length + sm[2].length;
+        s = s.slice(0, sm.index) + " " + s.slice(sm.index + used);
+        res.hits.push("subject");
+        break;
+      }
+    }
   }
 
   // 2 · Datum
@@ -1072,6 +1205,11 @@ function parseQuick(text, opts = {}) {
     res.hits.push("prio"); s = s.slice(0, pm.index) + " " + s.slice(pm.index + pm[0].length);
   }
 
+  // Fach ohne Datum: zur nächsten Stunde
+  if (res.subject && !res.date && typeof opts.lessonDate === "function") {
+    const n = opts.lessonDate(res.subject);
+    if (n && n.iso) res.date = n.iso;
+  }
   // Uhrzeit ohne Datum: heute, wenn noch nicht vorbei – sonst morgen
   if (res.time && !res.date) {
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -1082,7 +1220,7 @@ function parseQuick(text, opts = {}) {
   if (res.rec && !res.date) res.date = res.rec === "weekdays" && dowOf(today) > 5 ? nextWeekday(today, 1, false) : today;
 
   let title = s.replace(/\s+/g, " ").trim()
-               .replace(/\s+(am|um|ab|bis|,|-|–)$/i, "").replace(/^(am|um)\s+/i, "").trim();
+               .replace(/\s+(am|um|ab|bis|,|-|–)$/i, "").replace(/^(am|um|bis)\s+/i, "").trim();
   if (!title) { title = text.trim(); }
   res.title = title;
   return res;
@@ -1127,26 +1265,192 @@ function lessonStart(l, slots) {
   const t = s.split("-")[0].trim();
   return validTime(t) ? t : "00:00";
 }
-/* Nächste Stunde eines Fachs ab jetzt → { iso, start, diff } oder null */
-function nextLesson(lessons, slots, subject, now) {
+/* Nächste Stunde eines Fachs ab jetzt → { iso, start, diff, day, lesson } oder null.
+   opts.ctx(iso) → { week, off } (A/B-Woche, schulfrei), opts.cancelled(l, iso) → true,
+   wenn die Stunde an dem Tag ausfällt. Gesucht wird höchstens 10 Wochen voraus. */
+function nextLesson(lessons, slots, subject, now, opts = {}) {
   if (!subject) return null;
-  const rows = (lessons || []).filter(l => l.subject === subject);
+  const rows = (lessons || []).filter(l => l.subject === subject)
+    .sort((a, b) => lessonStart(a, slots).localeCompare(lessonStart(b, slots)));
   if (!rows.length) return null;
-  const today = isoOf(now), dow = dowOf(today), nowMin = now.getHours() * 60 + now.getMinutes();
-  let best = null;
-  for (const l of rows) {
-    const start = lessonStart(l, slots);
-    const [h, m] = start.split(":").map(Number);
-    let diff = (l.day - dow + 7) % 7;
-    if (diff === 0 && nowMin >= h * 60 + m) diff = 7;
-    if (!best || diff < best.diff || (diff === best.diff && start < best.start)) best = { diff, start, day: l.day };
+  const today = isoOf(now), nowMin = now.getHours() * 60 + now.getMinutes();
+  for (let diff = 0; diff <= (opts.horizon || 70); diff++) {
+    const iso = addDays(today, diff), dow = dowOf(iso);
+    const cand = rows.filter(l => l.day === dow);
+    if (!cand.length) continue;
+    const ctx = opts.ctx ? opts.ctx(iso) : null;
+    for (const l of cand) {
+      if (!lessonOn(l, iso, ctx)) continue;
+      if (opts.cancelled && opts.cancelled(l, iso)) continue;
+      const start = lessonStart(l, slots);
+      const [h, m] = start.split(":").map(Number);
+      if (diff === 0 && nowMin >= h * 60 + m) continue;
+      return { iso, start, diff, day: dow, lesson: l };
+    }
   }
-  return best && { iso: addDays(today, best.diff), start: best.start, diff: best.diff, day: best.day };
+  return null;
+}
+/* ---- Feiertage und Ferien ----
+   Gesetzliche Feiertage werden berechnet (Ostern nach Gauß/Meeus), nur
+   landesweite Feiertage; örtliche (Augsburger Friedensfest, Fronleichnam in
+   Teilen Sachsens/Thüringens) fehlen bewusst. Ferien kommen als Daten
+   (FERIEN, erzeugt mit tools/make-ferien.js). */
+const REGIONS = { BW:"Baden-Württemberg", BY:"Bayern", BE:"Berlin", BB:"Brandenburg", HB:"Bremen",
+  HH:"Hamburg", HE:"Hessen", MV:"Mecklenburg-Vorpommern", NI:"Niedersachsen", NW:"Nordrhein-Westfalen",
+  RP:"Rheinland-Pfalz", SL:"Saarland", SN:"Sachsen", ST:"Sachsen-Anhalt", SH:"Schleswig-Holstein", TH:"Thüringen" };
+function easterSunday(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  return `${y}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+const holidayCache = {};
+function publicHolidays(y, region) {
+  const key = y + region;
+  if (holidayCache[key]) return holidayCache[key];
+  const o = {}, add = (iso, name, regions) => {
+    if (iso.slice(0, 4) === String(y) && (!regions || regions.indexOf(region) > -1)) o[iso] = name;
+  };
+  const md = (m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const es = easterSunday(y);
+  add(md(1, 1), "Neujahr");
+  add(md(1, 6), "Heilige Drei Könige", ["BW", "BY", "ST"]);
+  add(md(3, 8), "Internationaler Frauentag", y >= 2023 ? ["BE", "MV"] : y >= 2019 ? ["BE"] : []);
+  add(addDays(es, -2), "Karfreitag");
+  add(addDays(es, 1), "Ostermontag");
+  add(md(5, 1), "Tag der Arbeit");
+  add(addDays(es, 39), "Christi Himmelfahrt");
+  add(addDays(es, 50), "Pfingstmontag");
+  add(addDays(es, 60), "Fronleichnam", ["BW", "BY", "HE", "NW", "RP", "SL"]);
+  // Bayern: nur in überwiegend katholischen Gemeinden, liegt aber stets in den Sommerferien
+  add(md(8, 15), "Mariä Himmelfahrt", ["SL", "BY"]);
+  add(md(9, 20), "Weltkindertag", y >= 2019 ? ["TH"] : []);
+  add(md(10, 3), "Tag der Deutschen Einheit");
+  add(md(10, 31), "Reformationstag", y >= 2018 ? ["BB", "HB", "HH", "MV", "NI", "SN", "ST", "SH", "TH"] : ["BB", "MV", "SN", "ST", "TH"]);
+  add(md(11, 1), "Allerheiligen", ["BW", "BY", "NW", "RP", "SL"]);
+  // Buß- und Bettag: Mittwoch vor dem 23. November
+  const nov22 = md(11, 22), back = (dowOf(nov22) - 3 + 7) % 7;
+  add(addDays(nov22, -back), "Buß- und Bettag", ["SN"]);
+  // einmalige Feiertage
+  add("2025-05-08", "80. Jahrestag des Kriegsendes", ["BE"]);
+  add("2028-06-17", "75. Jahrestag des Volksaufstands", ["BE"]);
+  add(md(12, 25), "1. Weihnachtstag");
+  add(md(12, 26), "2. Weihnachtstag");
+  return (holidayCache[key] = o);
+}
+const holidayName = (iso, region) => region ? (publicHolidays(+iso.slice(0, 4), region)[iso] || null) : null;
+/* Ferien: list = [[start, ende, namensnummer], …] (ende einschließlich), names = Namen */
+function ferienName(iso, list, names) {
+  for (const f of (list || [])) if (iso >= f[0] && iso <= f[1]) return (names && names[f[2]]) || "Ferien";
+  return null;
+}
+/* Schulfrei an einem Tag? → { holiday, ferien } (je Name oder null) */
+function dayOff(iso, region, list, names) {
+  return { holiday: holidayName(iso, region), ferien: list ? ferienName(iso, list, names) : null };
+}
+/* Ferienwoche: Montag bis Freitag alle frei (Feiertag oder Ferien) */
+function isFerienWeek(mondayISO, region, list, names) {
+  for (let i = 0; i < 5; i++) {
+    const o = dayOff(addDays(mondayISO, i), region, list, names);
+    if (!o.holiday && !o.ferien) return false;
+  }
+  return true;
+}
+/* A/B-Woche zu einem Datum. ab = { anchor: Montag, type: "A"|"B", skip: Ferienwochen nicht zählen }
+   free = (montagISO) → true, wenn die Woche nicht mitzählt. → "A" | "B" | null */
+function abWeekOf(iso, ab, free) {
+  if (!ab || !ab.anchor || !/^\d{4}-\d{2}-\d{2}$/.test(ab.anchor)) return null;
+  const from = mondayOf(ab.anchor), to = mondayOf(iso);
+  let n = 0;
+  if (to !== from) {
+    const dir = to > from ? 1 : -1;
+    for (let w = from; w !== to; w = addDays(w, 7 * dir)) {
+      const step = dir > 0 ? addDays(w, 7) : w;      // Woche, die überschritten wird
+      if (!(ab.skip && free && free(step))) n++;
+      if (Math.abs(n) > 1000) break;
+    }
+  }
+  const flip = n % 2 === 1;
+  const base = ab.type === "B" ? "B" : "A";
+  return flip ? (base === "A" ? "B" : "A") : base;
+}
+
+/* Gilt ein Plan-Eintrag an einem Datum?  ctx = { week: "A"|"B"|null, off: bool } */
+function lessonOn(l, iso, ctx) {
+  if (!l || l.day !== dowOf(iso)) return false;
+  if (ctx && ctx.off) return false;
+  if (l.week && ctx && ctx.week && l.week !== ctx.week) return false;
+  return true;
+}
+
+/* ---- Klassenarbeit / Lernplan ----
+   o = { kind: "teacher"|"student", title, date, today, prep, corr, sessions }
+   → [{ role, title, dueDate, prio, subtasks: [text] }] */
+function planExam(o) {
+  const title = String(o.title || "").trim() || (o.kind === "teacher" ? "Klassenarbeit" : "Klausur");
+  const today = o.today, date = o.date;
+  const out = [];
+  const clamp = iso => iso < today ? today : iso;
+  // Wochenende vermeiden: Vorbereitung auf den Freitag davor, Rückgabe auf den Montag danach
+  const before = iso => { while (dowOf(iso) > 5) iso = addDays(iso, -1); return iso; };
+  const after = iso => { while (dowOf(iso) > 5) iso = addDays(iso, 1); return iso; };
+  if (o.kind === "teacher") {
+    const prep = Math.max(1, +o.prep || 3), corr = Math.max(1, +o.corr || 14);
+    if (date > today) out.push({ role: "prep", title: title + ": vorbereiten", dueDate: clamp(before(addDays(date, -prep))), prio: "mittel",
+      subtasks: ["Aufgaben erstellen", "Erwartungshorizont", "Kopieren"] });
+    out.push({ role: "exam", title: title + ": Klassenarbeit", dueDate: date, prio: "hoch", subtasks: [] });
+    out.push({ role: "corr", title: title + ": korrigieren", dueDate: after(addDays(date, corr)), prio: "mittel",
+      subtasks: ["Korrigieren", "Notenspiegel", "Zurückgeben und besprechen", "Noten eintragen"] });
+    return out;
+  }
+  const n = Math.min(8, Math.max(1, +o.sessions || 3));
+  const avail = Math.max(0, Math.round((parseISO(date) - parseISO(today)) / 864e5));   // Tage bis zur Klausur
+  const span = Math.min(avail, 2 * n - 1);
+  const offs = [];
+  if (span >= 1) for (let k = 0; k < n; k++) {
+    const off = n === 1 ? 1 : Math.round(1 + (span - 1) * k / (n - 1));
+    if (offs.indexOf(off) < 0) offs.push(off);
+  }
+  offs.sort((a, b) => b - a);                    // früheste Einheit zuerst
+  offs.forEach((off, i) => {
+    const last = i === offs.length - 1, first = i === 0;
+    out.push({ role: "learn", title: `${title}: lernen (${i + 1}/${offs.length})`, dueDate: addDays(date, -off), prio: "mittel",
+      subtasks: first && !last ? ["Stoff zusammenstellen", "Lücken notieren"]
+              : last ? ["Alles wiederholen", "Probeaufgaben unter Zeit"] : ["Üben", "Lücken schließen"] });
+  });
+  out.push({ role: "exam", title: title + ": Klausur", dueDate: date, prio: "hoch", subtasks: [] });
+  return out;
 }
 /* ==CORE-END== */
 
+/* ==FERIEN-BEGIN== Schulferien je Land, erzeugt mit tools/make-ferien.js.
+   Quelle: OpenHolidays API Data (openholidaysapi.org), Lizenz ODbL 1.0. Ohne Gewähr. */
+const FERIEN_STAND = "2026-10-27", FERIEN_BIS = "2031-05-23";
+const FERIEN_NAMES = ["Sommerferien","Herbstferien","Weihnachtsferien","Winterferien","Osterferien","Variabler Ferientag","Pfingstferien","Unterrichtsfreier Tag","Reformationsfest","Gründonnerstag","Buß- und Bettag","Frühjahrsferien","Halbjahresferien","Tag nach Himmelfahrt","Tag vor dem 3. Oktober","Tag vor dem 1. Mai","Tage nach dem 3. Oktober","Halbjahrespause","Brückentag","Zusätzlicher Ferientag","Schulfrei","Himmelfahrt","Fastnachtsferien","Ferientag","Schulfreier Tag"];
+const FERIEN = {
+  BB: [["2025-07-24","2025-09-06",0],["2025-10-20","2025-11-01",1],["2025-12-22","2026-01-02",2],["2026-02-02","2026-02-07",3],["2026-03-30","2026-04-10",4],["2026-05-15","2026-05-15",5],["2026-05-26","2026-05-26",6],["2026-07-09","2026-08-22",0],["2026-10-19","2026-10-30",1],["2026-12-23","2027-01-02",2],["2027-02-01","2027-02-06",3],["2027-03-22","2027-04-03",4],["2027-05-07","2027-05-07",5],["2027-05-18","2027-05-18",6],["2027-07-01","2027-08-14",0],["2027-10-11","2027-10-23",1],["2027-12-23","2027-12-31",2],["2028-01-31","2028-02-05",3],["2028-04-10","2028-04-22",4],["2028-05-26","2028-05-26",5],["2028-06-29","2028-08-12",0],["2028-10-02","2028-10-14",1],["2028-10-30","2028-10-30",5],["2028-12-22","2029-01-02",2],["2029-01-29","2029-02-03",3],["2029-03-26","2029-04-06",4],["2029-04-30","2029-04-30",5],["2029-05-11","2029-05-11",5],["2029-05-22","2029-05-22",6],["2029-06-28","2029-08-11",0],["2029-10-01","2029-10-12",1],["2029-12-21","2030-01-04",2],["2030-02-04","2030-02-09",3],["2030-04-15","2030-04-26",4],["2030-05-31","2030-05-31",5],["2030-07-04","2030-08-17",0]],
+  BE: [["2025-07-24","2025-09-06",0],["2025-10-20","2025-11-01",1],["2025-12-22","2026-01-02",2],["2026-02-02","2026-02-07",3],["2026-03-30","2026-04-10",4],["2026-05-15","2026-05-15",7],["2026-05-26","2026-05-26",6],["2026-07-09","2026-08-22",0],["2026-10-19","2026-10-31",1],["2026-12-23","2027-01-02",2],["2027-02-01","2027-02-06",3],["2027-03-22","2027-04-02",4],["2027-05-07","2027-05-07",7],["2027-05-18","2027-05-19",6],["2027-07-01","2027-08-14",0],["2027-10-11","2027-10-23",1],["2027-12-22","2027-12-31",2],["2028-01-31","2028-02-05",3],["2028-04-10","2028-04-22",4],["2028-05-26","2028-05-26",7],["2028-06-01","2028-06-02",6],["2028-07-01","2028-08-12",0],["2028-10-02","2028-10-14",1],["2028-12-22","2029-01-02",2],["2029-01-29","2029-02-03",3],["2029-03-09","2029-03-09",7],["2029-03-26","2029-04-06",4],["2029-04-30","2029-04-30",7],["2029-05-11","2029-05-11",7],["2029-05-22","2029-05-25",6],["2029-07-01","2029-08-11",0],["2029-10-01","2029-10-12",1],["2029-12-21","2030-01-04",2],["2030-02-04","2030-02-09",3],["2030-04-15","2030-04-26",4],["2030-05-31","2030-05-31",7],["2030-06-07","2030-06-07",6],["2030-07-04","2030-08-17",0]],
+  BW: [["2025-07-31","2025-09-13",0],["2025-10-27","2025-10-30",1],["2025-10-31","2025-10-31",8],["2025-12-22","2026-01-05",2],["2026-03-30","2026-04-11",4],["2026-05-26","2026-06-05",6],["2026-07-30","2026-09-12",0],["2026-10-26","2026-10-30",1],["2026-10-31","2026-10-31",8],["2026-12-23","2027-01-09",2],["2027-03-25","2027-03-25",9],["2027-03-30","2027-04-03",4],["2027-05-18","2027-05-29",6],["2027-07-29","2027-09-11",0],["2027-11-02","2027-11-06",1],["2027-12-23","2028-01-08",2],["2028-04-13","2028-04-13",9],["2028-04-18","2028-04-22",4],["2028-06-06","2028-06-17",6],["2028-07-27","2028-09-09",0],["2028-10-30","2028-11-03",1],["2028-12-23","2029-01-05",2],["2029-03-26","2029-04-07",4],["2029-05-22","2029-06-01",6],["2029-07-26","2029-09-08",0],["2029-10-29","2029-11-02",1],["2029-12-22","2030-01-05",2],["2030-04-15","2030-04-26",4],["2030-06-11","2030-06-21",6],["2030-07-25","2030-09-07",0]],
+  BY: [["2025-08-01","2025-09-15",0],["2025-11-03","2025-11-07",1],["2025-11-19","2025-11-19",10],["2025-12-22","2026-01-05",2],["2026-02-16","2026-02-20",11],["2026-03-30","2026-04-10",4],["2026-05-26","2026-06-05",6],["2026-08-03","2026-09-14",0],["2026-11-02","2026-11-06",1],["2026-11-18","2026-11-18",10],["2026-12-24","2027-01-08",2],["2027-02-08","2027-02-12",11],["2027-03-22","2027-04-02",4],["2027-05-18","2027-05-28",6],["2027-08-02","2027-09-13",0],["2027-11-02","2027-11-05",1],["2027-11-17","2027-11-17",10],["2027-12-24","2028-01-07",2],["2028-02-28","2028-03-03",11],["2028-04-10","2028-04-21",4],["2028-06-06","2028-06-16",6],["2028-07-31","2028-09-11",0],["2028-10-30","2028-11-03",1],["2028-11-22","2028-11-22",10],["2028-12-23","2029-01-05",2],["2029-02-12","2029-02-16",11],["2029-03-26","2029-04-06",4],["2029-05-22","2029-06-01",6],["2029-07-30","2029-09-10",0],["2029-10-29","2029-11-02",1],["2029-11-21","2029-11-21",10],["2029-12-24","2030-01-04",2],["2030-03-04","2030-03-08",11],["2030-04-15","2030-04-26",4],["2030-06-11","2030-06-21",6],["2030-07-29","2030-09-09",0],["2030-11-20","2030-11-20",10]],
+  HB: [["2025-07-03","2025-08-13",0],["2025-10-13","2025-10-25",1],["2025-12-22","2026-01-05",2],["2026-02-02","2026-02-03",12],["2026-03-23","2026-04-07",4],["2026-05-15","2026-05-15",13],["2026-05-26","2026-05-26",6],["2026-07-02","2026-08-12",0],["2026-10-12","2026-10-24",1],["2026-12-23","2027-01-09",2],["2027-02-01","2027-02-02",12],["2027-03-22","2027-04-03",4],["2027-05-07","2027-05-07",13],["2027-05-18","2027-05-18",6],["2027-07-08","2027-08-18",0],["2027-10-18","2027-10-30",1],["2027-12-23","2028-01-08",2],["2028-01-31","2028-02-01",12],["2028-04-10","2028-04-22",4],["2028-05-26","2028-05-26",13],["2028-06-06","2028-06-06",6],["2028-07-20","2028-08-30",0],["2028-10-02","2028-10-02",14],["2028-10-23","2028-11-04",1],["2028-12-27","2029-01-06",2],["2029-02-01","2029-02-02",12],["2029-03-19","2029-04-03",4],["2029-04-30","2029-04-30",15],["2029-05-11","2029-05-11",13],["2029-05-22","2029-05-22",6],["2029-07-19","2029-08-29",0],["2029-10-04","2029-10-05",16],["2029-10-22","2029-11-02",1],["2029-12-21","2030-01-05",2],["2030-01-31","2030-02-01",12],["2030-04-08","2030-04-23",4],["2030-05-31","2030-05-31",13],["2030-06-11","2030-06-11",6],["2030-07-11","2030-08-21",0]],
+  HE: [["2025-07-07","2025-08-15",0],["2025-10-06","2025-10-18",1],["2025-12-22","2026-01-10",2],["2026-03-30","2026-04-10",4],["2026-06-29","2026-08-07",0],["2026-10-05","2026-10-17",1],["2026-12-23","2027-01-12",2],["2027-03-22","2027-04-02",4],["2027-06-28","2027-08-06",0],["2027-10-04","2027-10-16",1],["2027-12-23","2028-01-11",2],["2028-04-03","2028-04-14",4],["2028-07-03","2028-08-11",0],["2028-10-09","2028-10-20",1],["2028-12-27","2029-01-12",2],["2029-03-29","2029-04-13",4],["2029-07-16","2029-08-24",0],["2029-10-15","2029-10-26",1],["2029-12-24","2030-01-11",2],["2030-04-08","2030-04-22",4],["2030-07-22","2030-08-30",0]],
+  HH: [["2025-07-24","2025-09-03",0],["2025-10-20","2025-10-31",1],["2025-12-17","2026-01-02",2],["2026-01-30","2026-01-30",17],["2026-03-02","2026-03-13",11],["2026-05-11","2026-05-15",6],["2026-07-09","2026-08-19",0],["2026-10-19","2026-10-30",1],["2026-12-21","2027-01-01",2],["2027-01-29","2027-01-29",17],["2027-03-01","2027-03-12",11],["2027-05-07","2027-05-14",6],["2027-07-01","2027-08-11",0],["2027-10-11","2027-10-22",1],["2027-12-20","2027-12-31",2],["2028-01-28","2028-01-28",17],["2028-03-06","2028-03-17",11],["2028-05-22","2028-05-26",6],["2028-07-03","2028-08-11",0],["2028-10-02","2028-10-13",1],["2028-10-30","2028-10-30",18],["2028-12-18","2028-12-29",2],["2029-02-02","2029-02-02",17],["2029-03-05","2029-03-16",11],["2029-05-11","2029-05-18",6],["2029-07-02","2029-08-10",0],["2029-10-01","2029-10-12",1],["2029-12-21","2030-01-04",2],["2030-02-01","2030-02-01",17],["2030-03-04","2030-03-15",11],["2030-05-20","2030-05-24",6],["2030-05-31","2030-05-31",18],["2030-07-04","2030-08-14",0]],
+  MV: [["2025-07-28","2025-09-06",0],["2025-10-02","2025-10-02",19],["2025-10-20","2025-10-24",1],["2025-11-03","2025-11-03",19],["2025-12-20","2026-01-03",2],["2026-02-09","2026-02-20",3],["2026-03-30","2026-04-08",4],["2026-05-15","2026-05-15",19],["2026-05-22","2026-05-26",6],["2026-07-13","2026-08-22",0],["2026-10-15","2026-10-24",1],["2026-11-26","2026-11-26",19],["2026-11-27","2026-11-27",19],["2026-12-21","2027-01-02",2],["2027-02-08","2027-02-19",3],["2027-03-24","2027-04-02",4],["2027-05-07","2027-05-07",19],["2027-05-14","2027-05-18",6],["2027-07-05","2027-08-14",0],["2027-10-14","2027-10-23",1],["2027-11-25","2027-11-25",19],["2027-11-26","2027-11-26",19],["2027-12-22","2028-01-04",2],["2028-02-05","2028-02-17",3],["2028-02-18","2028-02-18",20],["2028-04-12","2028-04-21",4],["2028-05-26","2028-05-26",19],["2028-06-02","2028-06-06",6],["2028-06-26","2028-08-05",0],["2028-10-02","2028-10-02",19],["2028-10-23","2028-10-28",1],["2028-10-30","2028-10-30",19],["2028-12-22","2029-01-02",2],["2029-02-05","2029-02-16",3],["2029-03-09","2029-03-09",19],["2029-03-28","2029-04-06",4],["2029-04-30","2029-04-30",19],["2029-05-11","2029-05-11",19],["2029-05-18","2029-05-22",6],["2029-06-18","2029-07-28",0],["2029-10-22","2029-10-27",1],["2029-10-29","2029-10-29",19],["2029-10-30","2029-10-30",19],["2029-12-21","2030-01-04",2],["2030-02-04","2030-02-15",3],["2030-04-17","2030-04-26",4],["2030-05-31","2030-05-31",19],["2030-06-07","2030-06-11",6],["2030-07-01","2030-08-10",0]],
+  NI: [["2025-07-03","2025-08-13",0],["2025-10-13","2025-10-25",1],["2025-12-22","2026-01-05",2],["2026-02-02","2026-02-03",12],["2026-03-23","2026-04-07",4],["2026-05-15","2026-05-15",13],["2026-05-26","2026-05-26",6],["2026-07-02","2026-08-12",0],["2026-10-12","2026-10-24",1],["2026-12-23","2027-01-09",2],["2027-02-01","2027-02-02",12],["2027-03-22","2027-04-03",4],["2027-05-07","2027-05-07",13],["2027-05-18","2027-05-18",6],["2027-07-08","2027-08-18",0],["2027-10-16","2027-10-30",1],["2027-12-23","2028-01-08",2],["2028-01-31","2028-02-01",12],["2028-04-10","2028-04-22",4],["2028-05-26","2028-05-26",13],["2028-06-06","2028-06-06",6],["2028-07-20","2028-08-30",0],["2028-10-02","2028-10-02",14],["2028-10-23","2028-11-04",1],["2028-12-27","2029-01-06",2],["2029-02-01","2029-02-02",12],["2029-03-19","2029-04-03",4],["2029-04-30","2029-04-30",15],["2029-05-11","2029-05-11",13],["2029-05-22","2029-05-22",6],["2029-07-19","2029-08-29",0],["2029-10-04","2029-10-05",16],["2029-10-22","2029-11-02",1],["2029-12-21","2030-01-05",2],["2030-01-31","2030-02-01",12],["2030-04-08","2030-04-23",4],["2030-05-31","2030-05-31",13],["2030-06-11","2030-06-11",6],["2030-07-11","2030-08-21",0]],
+  NW: [["2025-07-14","2025-08-26",0],["2025-10-13","2025-10-25",1],["2025-12-22","2026-01-06",2],["2026-03-30","2026-04-11",4],["2026-05-26","2026-05-26",6],["2026-07-20","2026-09-01",0],["2026-10-17","2026-10-31",1],["2026-12-23","2027-01-06",2],["2027-03-22","2027-04-03",4],["2027-05-18","2027-05-18",6],["2027-07-19","2027-08-31",0],["2027-10-23","2027-11-06",1],["2027-12-24","2028-01-08",2],["2028-04-10","2028-04-22",4],["2028-07-10","2028-08-22",0],["2028-10-23","2028-11-04",1],["2028-12-21","2029-01-05",2],["2029-03-26","2029-04-07",4],["2029-05-22","2029-05-22",6],["2029-07-02","2029-08-14",0],["2029-10-15","2029-10-27",1],["2029-12-20","2030-01-04",2],["2030-04-15","2030-04-27",4],["2030-06-24","2030-08-06",0]],
+  RP: [["2025-07-07","2025-08-15",0],["2025-10-13","2025-10-24",1],["2025-12-22","2026-01-07",2],["2026-03-30","2026-04-10",4],["2026-06-29","2026-08-07",0],["2026-10-05","2026-10-16",1],["2026-12-23","2027-01-08",2],["2027-03-22","2027-04-02",4],["2027-06-28","2027-08-06",0],["2027-10-04","2027-10-15",1],["2027-12-23","2028-01-07",2],["2028-04-10","2028-04-21",4],["2028-07-03","2028-08-11",0],["2028-10-09","2028-10-20",1],["2028-12-21","2029-01-08",2],["2029-03-26","2029-04-06",4],["2029-07-16","2029-08-24",0],["2029-10-22","2029-11-02",1],["2029-12-24","2030-01-09",2],["2030-04-15","2030-04-30",4],["2030-07-22","2030-08-30",0]],
+  SH: [["2025-07-28","2025-09-06",0],["2025-10-20","2025-10-30",1],["2025-12-19","2026-01-06",2],["2026-03-26","2026-04-10",4],["2026-05-15","2026-05-15",21],["2026-07-04","2026-08-15",0],["2026-10-12","2026-10-24",1],["2026-12-21","2027-01-06",2],["2027-03-30","2027-04-10",4],["2027-05-07","2027-05-07",21],["2027-07-03","2027-08-14",0],["2027-10-11","2027-10-23",1],["2027-12-23","2028-01-08",2],["2028-04-03","2028-04-15",4],["2028-05-26","2028-05-26",21],["2028-06-24","2028-08-04",0],["2028-10-16","2028-10-30",1],["2028-12-21","2029-01-05",2],["2029-03-23","2029-04-06",4],["2029-05-11","2029-05-11",21],["2029-06-23","2029-08-03",0],["2029-10-08","2029-10-19",1],["2029-12-21","2030-01-08",2],["2030-04-08","2030-04-20",4],["2030-05-31","2030-05-31",21],["2030-07-08","2030-08-17",0],["2030-10-14","2030-10-25",1],["2030-12-20","2031-01-06",2],["2031-03-28","2031-04-10",4],["2031-05-23","2031-05-23",21]],
+  SL: [["2025-07-07","2025-08-14",0],["2025-10-13","2025-10-24",1],["2025-12-22","2026-01-02",2],["2026-02-16","2026-02-20",22],["2026-04-07","2026-04-17",4],["2026-06-29","2026-08-07",0],["2026-10-05","2026-10-16",1],["2026-12-21","2026-12-31",2],["2027-02-08","2027-02-12",22],["2027-03-30","2027-04-09",4],["2027-06-28","2027-08-06",0],["2027-10-04","2027-10-15",1],["2027-12-20","2027-12-31",2],["2028-02-21","2028-02-29",22],["2028-04-12","2028-04-21",4],["2028-07-03","2028-08-11",0],["2028-10-09","2028-10-20",1],["2028-12-20","2029-01-02",2],["2029-02-12","2029-02-16",22],["2029-03-26","2029-04-06",4],["2029-05-22","2029-05-25",6],["2029-07-16","2029-08-24",0],["2029-10-22","2029-11-02",1],["2029-12-21","2030-01-04",2],["2030-02-25","2030-03-05",22],["2030-04-15","2030-04-26",4],["2030-07-22","2030-08-30",0]],
+  SN: [["2025-06-28","2025-08-08",0],["2025-10-06","2025-10-18",1],["2025-12-22","2026-01-02",2],["2026-02-09","2026-02-21",3],["2026-04-03","2026-04-10",4],["2026-05-15","2026-05-15",7],["2026-07-04","2026-08-14",0],["2026-10-12","2026-10-24",1],["2026-12-23","2027-01-02",2],["2027-02-08","2027-02-19",3],["2027-03-26","2027-04-02",4],["2027-05-07","2027-05-07",7],["2027-05-15","2027-05-18",6],["2027-07-10","2027-08-20",0],["2027-10-11","2027-10-23",1],["2027-12-23","2028-01-01",2],["2028-02-14","2028-02-26",3],["2028-04-14","2028-04-22",4],["2028-05-26","2028-05-26",7],["2028-07-22","2028-09-01",0],["2028-10-23","2028-11-03",1],["2028-12-23","2029-01-03",2],["2029-02-05","2029-02-16",3],["2029-03-29","2029-04-06",4],["2029-05-11","2029-05-11",7],["2029-05-19","2029-05-22",6],["2029-07-21","2029-08-31",0],["2029-10-22","2029-11-02",1],["2029-12-22","2030-01-04",2],["2030-02-18","2030-03-01",3],["2030-04-19","2030-04-26",4],["2030-05-31","2030-05-31",7],["2030-06-08","2030-06-11",6],["2030-07-13","2030-08-23",0]],
+  ST: [["2025-06-28","2025-08-08",0],["2025-10-13","2025-10-25",1],["2025-12-22","2026-01-05",2],["2026-01-31","2026-02-06",3],["2026-03-30","2026-04-04",4],["2026-05-26","2026-05-29",6],["2026-07-04","2026-08-14",0],["2026-10-19","2026-10-30",1],["2026-12-21","2027-01-02",2],["2027-02-01","2027-02-06",3],["2027-03-22","2027-03-27",4],["2027-05-15","2027-05-22",6],["2027-07-10","2027-08-20",0],["2027-10-18","2027-10-23",1],["2027-12-20","2027-12-31",2],["2028-02-07","2028-02-12",3],["2028-04-10","2028-04-22",4],["2028-06-03","2028-06-10",6],["2028-07-22","2028-09-01",0],["2028-10-02","2028-10-02",23],["2028-10-30","2028-11-03",1],["2028-12-21","2029-01-02",2],["2029-02-05","2029-02-10",3],["2029-03-26","2029-03-31",4],["2029-04-30","2029-04-30",23],["2029-05-11","2029-05-25",6],["2029-07-21","2029-08-31",0],["2029-10-29","2029-11-02",1],["2029-12-21","2030-01-05",2],["2030-02-04","2030-02-08",3],["2030-04-08","2030-04-20",4],["2030-05-31","2030-05-31",23],["2030-06-03","2030-06-08",6],["2030-07-13","2030-08-23",0]],
+  TH: [["2025-06-28","2025-08-08",0],["2025-10-06","2025-10-18",1],["2025-12-22","2026-01-03",2],["2026-02-16","2026-02-21",3],["2026-04-07","2026-04-17",4],["2026-05-15","2026-05-15",24],["2026-07-04","2026-08-14",0],["2026-10-12","2026-10-24",1],["2026-12-23","2027-01-02",2],["2027-02-01","2027-02-06",3],["2027-03-22","2027-04-03",4],["2027-05-07","2027-05-07",24],["2027-07-10","2027-08-20",0],["2027-10-09","2027-10-23",1],["2027-12-23","2027-12-31",2],["2028-02-07","2028-02-12",3],["2028-04-03","2028-04-15",4],["2028-05-26","2028-05-26",24],["2028-07-22","2028-09-01",0],["2028-10-23","2028-11-03",1],["2028-12-23","2029-01-05",2],["2029-02-12","2029-02-17",3],["2029-03-26","2029-04-07",4],["2029-05-11","2029-05-11",24],["2029-07-21","2029-08-31",0],["2029-10-22","2029-11-03",1],["2029-12-22","2030-01-04",2],["2030-02-11","2030-02-16",3],["2030-04-08","2030-04-20",4],["2030-05-31","2030-05-31",24],["2030-07-13","2030-08-23",0]]
+};
+/* ==FERIEN-END== */
 
-const APP_VERSION = "3.0";
+
+const APP_VERSION = "3.1";
 const KEY = "studiez-pro-v2";
 const LEGACY_KEY = "studiez-pro-v1";
 
@@ -1193,6 +1497,8 @@ const DEFAULT_STATE = () => ({
   shopping: [], shopLists: [{ id:"s1", name:"Einkauf" }], shopHistory: {},
   templates: DEFAULT_TEMPLATES(),
   habits: [], habitLog: {},
+  // Ausnahmen im Stundenplan an einem Tag: "stundenId|JJJJ-MM-TT" → { cancel } oder { subject, room }
+  lessonEx: {},
   // Schreibgeschützte Termine aus einem abonnierten Kalender (ICS) – Anzeige-Cache.
   extEvents: [],
   categories: [ { id:"c3", name:"Privat", color:"#059669" } ],
@@ -1209,7 +1515,10 @@ const DEFAULT_STATE = () => ({
     devCal: false,            // Gerätekalender verbunden
     devCalHidden: [],         // ausgeblendete Kalender (IDs)
     extCalUrl: "",
-    extCalLastSync: null
+    extCalLastSync: null,
+    region: "",               // Bundesland für Feiertage und Ferien (z. B. "NI")
+    showFerien: false,        // Schulferien anzeigen
+    ab: { on: false, anchor: null, type: "A", skip: true }   // A/B-Wochen
   }
 });
 
@@ -1227,8 +1536,18 @@ function normalizeState(p) {
     id: l.id || uid(), day: +l.day,
     slot: l.slot != null && l.slot !== "" && !isNaN(+l.slot) ? +l.slot : null,
     start: validTime(l.start) ? l.start : null, end: validTime(l.end) ? l.end : null,
-    subject: String(l.subject || "").slice(0, 80), room: l.room || null, color: l.color || "#2563eb"
+    subject: String(l.subject || "").slice(0, 80), room: l.room || null, color: l.color || "#2563eb",
+    week: l.week === "A" || l.week === "B" ? l.week : null
   }));
+  // Ausnahmen: nur gültige Schlüssel, nur zu vorhandenen Stunden, nicht älter als 60 Tage
+  const lessonIds = new Set(lessons.map(l => l.id)), exFrom = addDays(todayISO(), -60);
+  const lessonEx = {};
+  for (const [k, v] of Object.entries(p.lessonEx && typeof p.lessonEx === "object" ? p.lessonEx : {})) {
+    const m = /^(.+)\|(\d{4}-\d{2}-\d{2})$/.exec(k);
+    if (!m || !lessonIds.has(m[1]) || m[2] < exFrom || !v || typeof v !== "object") continue;
+    lessonEx[k] = v.cancel ? { cancel: true }
+      : { subject: String(v.subject || "").slice(0, 80) || null, room: String(v.room || "").slice(0, 80) || null };
+  }
   const lists = arr(p.shopLists).filter(x => x && x.id && x.name);
   if (!lists.length) lists.push({ id:"s1", name:"Einkauf" });
   const listIds = new Set(lists.map(x => x.id));
@@ -1263,6 +1582,7 @@ function normalizeState(p) {
     habits: arr(p.habits).filter(x => x && x.id && x.name).map(x => ({
       id: x.id, name: String(x.name), perWeek: Math.min(7, Math.max(1, +x.perWeek || 3)), color: x.color || "#059669" })),
     habitLog: p.habitLog && typeof p.habitLog === "object" ? p.habitLog : {},
+    lessonEx,
     extEvents: arr(p.extEvents),
     categories: arr(p.categories).length ? p.categories : d.categories,
     settings: {
@@ -1275,7 +1595,15 @@ function normalizeState(p) {
       slots: arr(ps.slots).length ? ps.slots : d.settings.slots,
       weekDays: ps.weekDays || (ps.saturday ? "mosa" : d.settings.weekDays),
       devCal: !!ps.devCal, devCalHidden: arr(ps.devCalHidden),
-      extCalUrl: ps.extCalUrl || "", extCalLastSync: ps.extCalLastSync || null
+      extCalUrl: ps.extCalUrl || "", extCalLastSync: ps.extCalLastSync || null,
+      region: REGIONS[ps.region] ? ps.region : "",
+      showFerien: "showFerien" in ps ? !!ps.showFerien : (ps.profile === "school" || ps.profile === "teacher"),
+      ab: {
+        on: !!(ps.ab && ps.ab.on),
+        anchor: ps.ab && /^\d{4}-\d{2}-\d{2}$/.test(ps.ab.anchor || "") ? mondayOf(ps.ab.anchor) : null,
+        type: ps.ab && ps.ab.type === "B" ? "B" : "A",
+        skip: !(ps.ab && ps.ab.skip === false)
+      }
     }
   };
   if (legacy) {
@@ -1352,6 +1680,7 @@ function migrateV1(old) {
 }
 
 function save() {
+  abMemo = {};
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
   catch (e) {
     alert(e.name === "QuotaExceededError"
@@ -1458,7 +1787,8 @@ const PRO_KEYS  = ["calendar","extCal","timetable","habits","shopping","stats"];
 const PRO_LABEL = { calendar:"Der Kalender", extCal:"„Kalender verbinden“", timetable:"Der Wochenplan",
                     habits:"Gewohnheiten", shopping:"Die Einkaufslisten", stats:"Die Statistik",
                     images:"Bilder zu Aufgaben", templates:"Vorlagen",
-                    encBackup:"Das verschlüsselte Backup", ics:"Der Kalenderdatei-Export" };
+                    encBackup:"Das verschlüsselte Backup", ics:"Der Kalenderdatei-Export",
+                    exam:"Die Planung von Klassenarbeiten" };
 const PRO_LIST = "Kalender samt Gerätekalender, Bilder, Vorlagen, Wochen- bzw. Stundenplan, Gewohnheiten, "
                + "Einkaufslisten, verschlüsselte Sicherung und Statistik";
 
@@ -1665,7 +1995,10 @@ let qaIgnore = false;
 function quickParse() {
   const raw = $("t-title").value.trim();
   if (!raw || qaIgnore) return { title: raw, hits: [] };
-  return parseQuick(raw, { now: new Date(), categories: state.categories });
+  const plan = feat("timetable") && state.lessons.length;
+  return parseQuick(raw, { now: new Date(), categories: state.categories,
+    subjects: plan ? subjectList() : [],
+    lessonDate: sub => nextLesson(state.lessons, state.settings.slots, sub, new Date(), nextLessonOpts()) });
 }
 function humanDate(iso, time) {
   if (!iso) return "";
@@ -1685,6 +2018,7 @@ function renderQuickPreview() {
   if (p.rec) chip("🔄 " + recLabel({ recurrence: p.rec, recurEvery: p.every, recurUnit: p.unit }));
   if (p.catId) { const c = catById(p.catId); if (c) { const e = el("span", "pv cat", "#" + c.name); e.style.background = c.color; box.append(e); } }
   if (p.prio) chip("❗ " + PRIO_LABEL[p.prio]);
+  if (p.subject) chip("📚 " + p.subject);
   chip("„" + p.title + "“");
   const off = el("button", null, "nicht erkennen");
   off.type = "button";
@@ -1712,7 +2046,7 @@ function addTask(dueOverride) {
     recurUnit: p.rec ? (p.unit || "d") : $("t-rec-unit").value,
     recurFromDone: p.rec ? false : $("t-rec-fromdone").checked,
     assignee: feat("assignee") ? ($("t-assignee").value.trim() || null) : null,
-    subject: feat("timetable") ? ($("t-subject").value || null) : null,
+    subject: feat("timetable") ? (p.subject || $("t-subject").value || null) : null,
     subtasks: [], images: [],
     note: "", completed: false, createdAt: Date.now()
   };
@@ -1849,7 +2183,7 @@ function fillSubjectSelects() {
 
 /* Nächster Termin eines Fachs (Stundenplan) bzw. Eintrags (Wochenplan). */
 function nextLessonFor(subject) {
-  const n = nextLesson(state.lessons, state.settings.slots, subject, new Date());
+  const n = nextLesson(state.lessons, state.settings.slots, subject, new Date(), nextLessonOpts());
   if (!n) return null;
   return `${n.diff === 0 ? "heute" : n.diff === 1 ? "morgen" : DAY_SHORT[n.day]} ${n.start}`;
 }
@@ -1857,8 +2191,8 @@ function nextLessonFor(subject) {
 function homeworkDate(prefix) {
   const subject = $(prefix + "-subject").value;
   if (!subject) return toast("Bitte zuerst ein Fach wählen.");
-  const n = nextLesson(state.lessons, state.settings.slots, subject, new Date());
-  if (!n) return toast("Für dieses Fach gibt es keine Stunde im Plan.");
+  const n = nextLesson(state.lessons, state.settings.slots, subject, new Date(), nextLessonOpts());
+  if (!n) return toast("Für dieses Fach gibt es in den nächsten Wochen keine Stunde im Plan.");
   $(prefix + "-date").value = n.iso;
   toast("Fällig zur nächsten Stunde: " + humanDate(n.iso, n.start) + ".");
 }
@@ -2339,7 +2673,10 @@ function renderWeek() {
 
   // Die Woche zeigt immer alle sieben Tage: Aufgaben gibt es auch am
   // Wochenende, unabhängig davon, ob der Stundenplan Sa/So ausblendet.
-  const ttDays = activeDays();
+  // A/B-Woche als Plakette – nicht in Ferienwochen, die ohnehin nicht zählen
+  const abNow = abOf(isoOf(mo));
+  const ferienWoche = isFerienWeek(isoOf(mo), state.settings.region, ferienList(), FERIEN_NAMES);
+  if (abNow && feat("timetable") && !ferienWoche) $("wk-title").append(" ", el("span", "ab-badge", "Woche " + abNow));
   for (let dow = 1; dow <= 7; dow++) {
     const d = new Date(mo); d.setDate(mo.getDate() + dow - 1);
     const iso = isoOf(d);
@@ -2353,7 +2690,11 @@ function renderWeek() {
                    - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9));
 
     const head = el("div","wd-head");
-    head.append(el("span",null,`${DAY_NAMES[dow]}, ${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}`));
+    const hl = el("span",null,`${DAY_NAMES[dow]}, ${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}`);
+    const off = dayInfo(iso);
+    if (off.holiday) hl.append(el("span","wd-off hol", off.holiday));
+    else if (off.ferien) hl.append(el("span","wd-off fer", off.ferien));
+    head.append(hl);
     if (tasks.length) head.append(el("span","cnt2", tasks.length + (tasks.length === 1 ? " Aufgabe" : " Aufgaben")));
     dayEl.append(head);
 
@@ -2362,16 +2703,26 @@ function renderWeek() {
     // Plan-Einträge und Kalendertermine zusammen, nach Uhrzeit (ganztägige zuerst)
     const chips = [];
     if (feat("timetable")) {
-      state.lessons.filter(l => l.day === dow && planVisible(l)
-                                && (l.slot == null || !isSchool() || ttDays.indexOf(dow) > -1))
-        .forEach(l => chips.push({ time: lessonStart(l, state.settings.slots),
-                                   text: `${l.subject}${l.room ? " · " + l.room : ""}`, color: l.color || "#2563eb" }));
+      lessonsOn(iso).forEach(l => {
+        const ex = lessonExOf(l, iso) || {};
+        const subj = ex.subject || l.subject, room = ex.room || l.room;
+        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l,
+                     cls: ex.cancel ? "cx" : (ex.subject || ex.room) ? "sub" : "",
+                     text: `${subj}${room ? " · " + room : ""}`, color: l.color || "#2563eb" });
+      });
     }
     if (feat("extCal")) eventsOn(iso).forEach(e => chips.push({ time: e.time || "", text: e.title, color: e.color || "#9333ea" }));
     if (chips.length) {
       const row = el("div","wd-lessons");
-      chips.sort((x, y) => x.time.localeCompare(y.time))
-           .forEach(c => { const s = el("span","wd-lesson", (c.time ? c.time + " " : "") + c.text); s.style.background = c.color; row.append(s); });
+      chips.sort((x, y) => x.time.localeCompare(y.time)).forEach(c => {
+        const s = el("span","wd-lesson" + (c.cls ? " " + c.cls : "") + (c.lesson ? " tap" : ""), (c.time ? c.time + " " : "") + c.text);
+        s.style.background = c.color;
+        if (c.lesson) {
+          s.setAttribute("role", "button"); s.tabIndex = 0;
+          s.onclick = () => openLessonDay(c.lesson, iso);
+        }
+        row.append(s);
+      });
       body.append(row);
     }
     if (tasks.length) tasks.forEach(t => body.append(weekTaskRow(t, false)));
@@ -2444,6 +2795,8 @@ $("e-save").onclick = () => {
   const title = $("e-title").value.trim();
   if (!title) return toast("Titel darf nicht leer sein.");
   const rec = $("e-recurrence").value;
+  const recChanged = rec !== t.recurrence || ($("e-date").value || null) !== t.dueDate
+    || Math.max(1, parseInt($("e-rec-every").value, 10) || 1) !== t.recurEvery || $("e-rec-unit").value !== t.recurUnit;
   Object.assign(t, {
     title, categoryId: $("e-category").value || null,
     prio: $("e-prio").value,
@@ -2460,8 +2813,9 @@ $("e-save").onclick = () => {
     subtasks: draftSubs,
     note: $("e-note").value.trim()
   });
-  // Wiederholung geändert: der Durchgang darf wieder einen Nachfolger bilden.
-  t.spawned = false;
+  // Nur wenn sich Wiederholung oder Datum ändern, darf der Durchgang wieder
+  // einen Nachfolger bilden – sonst entstünde nach Öffnen/Abhaken ein zweiter.
+  if (recChanged) t.spawned = false;
   save(); $("dlg-task").close(); renderTasks(); renderCalendar(); toast("Gespeichert.");
 };
 $("e-cancel").onclick = () => $("dlg-task").close();
@@ -2603,6 +2957,7 @@ async function importImages(map) {
 
 /* ---------- Vorlagen ---------- */
 function renderTemplates() {
+  $("tpl-exam").hidden = state.settings.profile === "everyday" && !state.lessons.length;
   const box = $("tpl-list"); box.replaceChildren();
   if (!state.templates.length) { box.append(el("p", "empty", "Noch keine Vorlagen.")); return; }
   for (const tp of state.templates) {
@@ -2768,10 +3123,13 @@ function renderCalendar() {
   for (let i = 0; i < 42; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const iso = isoOf(d);
+    const off = dayInfo(iso);
     const cell = el("div","cal-c"
       + (d.getMonth() !== calCursor.getMonth() ? " out" : "")
       + (iso === today ? " today" : "")
-      + (iso === calSelected ? " sel" : ""));
+      + (iso === calSelected ? " sel" : "")
+      + (off.holiday ? " hol" : "") + (off.ferien ? " fer" : ""));
+    if (off.holiday || off.ferien) cell.title = off.holiday || off.ferien;
     cell.append(el("div","n", String(d.getDate())));
     const items = byDate[iso] || [];
     const extItems = extByDate[iso] || [];
@@ -2822,6 +3180,9 @@ function renderCalendarDay() {
     .sort((a,b) => (a.completed - b.completed) || (a.dueTime || "99").localeCompare(b.dueTime || "99") ||
       ((PRIO_RANK[a.prio] != null ? PRIO_RANK[a.prio] : 9) - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9)));
   const extItems = feat("extCal") ? eventsOn(iso) : [];
+  const off = dayInfo(iso);
+  if (off.holiday) box.append(el("p","cal-off hol","🎉 Feiertag: " + off.holiday));
+  if (off.ferien) box.append(el("p","cal-off fer","🏖 " + off.ferien));
   if (!items.length && !extItems.length) { box.append(el("p","empty","Keine Aufgaben an diesem Tag.")); return; }
   items.forEach(t => box.append(taskCard(t, todayISO())));
   extItems.forEach(e => box.append(extEventCard(e)));
@@ -2833,12 +3194,96 @@ function renderCalendarDay() {
    Raster. Einträge mit Schulstunde bekommen ihre Uhrzeit aus den Zeiten. */
 const planVisible = l => !!(l && l.subject);
 const isSchool = () => state.settings.planMode === "school";
+
+/* ---- Feiertage, Ferien, A/B-Wochen, Ausnahmen ----
+   Feiertage zeigt die App, sobald ein Bundesland gewählt ist, Ferien nur mit
+   „Schulferien anzeigen“. Im Stundenplan (Schulstunden) fallen Stunden an
+   Feiertagen und in den Ferien weg; der Wochenplan (Uhrzeiten) läuft weiter –
+   Training findet oft auch in den Ferien statt. */
+const ferienList = () => state.settings.region && state.settings.showFerien ? (FERIEN[state.settings.region] || null) : null;
+function dayInfo(iso) {
+  return dayOff(iso, state.settings.region, ferienList(), FERIEN_NAMES);
+}
+let abMemo = {};
+function abOf(iso) {
+  const ab = state.settings.ab;
+  if (!ab.on || !ab.anchor) return null;
+  const m = mondayOf(iso);
+  if (!(m in abMemo)) abMemo[m] = abWeekOf(m, ab, w => isFerienWeek(w, state.settings.region, ferienList(), FERIEN_NAMES));
+  return abMemo[m];
+}
+function lessonCtx(iso) {
+  const o = dayInfo(iso);
+  return { week: abOf(iso), off: isSchool() && !!(o.holiday || o.ferien) };
+}
+const exKey = (l, iso) => l.id + "|" + iso;
+const lessonExOf = (l, iso) => state.lessonEx[exKey(l, iso)] || null;
+/* Plan-Einträge eines Tages, die tatsächlich stattfinden (ohne Ausfälle nicht gefiltert) */
+function lessonsOn(iso) {
+  const ctx = lessonCtx(iso), ttDays = activeDays(), dow = dowOf(iso);
+  return state.lessons.filter(l => planVisible(l) && lessonOn(l, iso, ctx)
+                                && (l.slot == null || !isSchool() || ttDays.indexOf(dow) > -1));
+}
+const nextLessonOpts = () => ({ ctx: lessonCtx, cancelled: (l, iso) => !!(lessonExOf(l, iso) || {}).cancel });
 function planEnd(l) {
   if (validTime(l.end)) return l.end;
   if (l.slot != null) { const e = ((state.settings.slots[l.slot] || "").split("-")[1] || "").trim(); if (validTime(e)) return e; }
   return null;
 }
+let abView = null;     // im Raster gezeigte Woche (A/B), Standard: aktuelle
+function applyAB() {
+  const ab = state.settings.ab;
+  $("ab-on").checked = ab.on;
+  $("ab-ctl").hidden = !ab.on;
+  document.querySelectorAll(".fld-week").forEach(x => x.hidden = !ab.on);
+  const now = abOf(todayISO());
+  if (!abView) abView = now || "A";
+  document.querySelectorAll("#ab-view button").forEach(b => b.classList.toggle("on", b.dataset.w === abView));
+  const hint = $("ab-hint");
+  hint.hidden = !ab.on;
+  if (ab.on) {
+    hint.replaceChildren(document.createTextNode(`Diese Woche ist Woche ${now || "A"}. `));
+    const flip = el("a", null, "Stimmt nicht? Umschalten");
+    flip.href = "#";
+    flip.onclick = e => {
+      e.preventDefault();
+      ab.anchor = mondayOf(todayISO()); ab.type = (now || "A") === "A" ? "B" : "A";
+      abView = ab.type;
+      save(); applyAB(); renderTimetable(); renderWeek();
+    };
+    hint.append(flip);
+    if (state.settings.region && state.settings.showFerien) {
+      const sk = el("label", null);
+      sk.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer";
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = ab.skip;
+      cb.style.cssText = "width:18px;height:18px";
+      cb.onchange = () => { ab.skip = cb.checked; save(); applyAB(); renderTimetable(); renderWeek(); };
+      sk.append(cb, document.createTextNode("Ferienwochen nicht mitzählen"));
+      hint.append(sk);
+    }
+  }
+}
+$("ab-on").onchange = e => {
+  if (!Lic.full()) { e.target.checked = false; return showProHint("timetable"); }
+  const ab = state.settings.ab;
+  ab.on = e.target.checked;
+  if (ab.on && !ab.anchor) { ab.anchor = mondayOf(todayISO()); ab.type = "A"; }
+  abView = null;
+  save(); applyAB(); renderTimetable(); renderWeek();
+  if (ab.on) toast("A/B-Wochen an. Einträge gelten in jeder Woche, bis du sie auf A oder B stellst.");
+};
+document.querySelectorAll("#ab-view button").forEach(b => b.onclick = () => { abView = b.dataset.w; applyAB(); renderTimetable(); });
+
+/* Überschneiden sich zwei Wochen-Angaben? (leer = jede Woche) */
+const weeksOverlap = (a, b) => !a || !b || a === b;
+/* Stunde im Raster für die gezeigte Woche */
+function cellLesson(d, si) {
+  const w = state.settings.ab.on ? abView : null;
+  return state.lessons.find(x => x.day === d && x.slot === si && (!w || weeksOverlap(x.week, w)));
+}
+
 function applyPlanMode() {
+  applyAB();
   const s = isSchool();
   $("nav-plan-label").textContent = s ? "Stundenplan" : "Wochenplan";
   $("plan-title").textContent = s ? "Stundenplan" : "Wochenplan";
@@ -2874,15 +3319,16 @@ $("btn-add-lesson").onclick = () => {
   if (!subject) return toast(isSchool() ? "Bitte ein Fach eingeben." : "Bitte eine Bezeichnung eingeben.");
   const day = +$("tt-day").value;
   const room = $("tt-room").value.trim() || null, color = $("tt-color").value;
+  const week = state.settings.ab.on ? ($("tt-week").value || null) : null;
   if (isSchool()) {
     const slot = +$("tt-slot").value;
-    state.lessons = state.lessons.filter(l => !(l.day === day && l.slot === slot));
-    state.lessons.push({ id: uid(), day, slot, start: null, end: null, subject, room, color });
+    state.lessons = state.lessons.filter(l => !(l.day === day && l.slot === slot && weeksOverlap(l.week, week)));
+    state.lessons.push({ id: uid(), day, slot, start: null, end: null, subject, room, color, week });
   } else {
     const start = $("tt-start").value, end = $("tt-end").value;
     if (!validTime(start)) return toast("Bitte eine Anfangszeit wählen.");
     if (end && end <= start) return toast("Das Ende muss nach dem Anfang liegen.");
-    state.lessons.push({ id: uid(), day, slot: null, start, end: end || null, subject, room, color });
+    state.lessons.push({ id: uid(), day, slot: null, start, end: end || null, subject, room, color, week });
   }
   save(); renderTimetable(); fillSubjectSelects(); updateStorageInfo(); renderWeek();
   $("tt-subject").value = ""; $("tt-room").value = "";
@@ -2893,7 +3339,9 @@ function planItem(l) {
   const it = el("div", "plan-item");
   it.style.background = l.color || "#2563eb";
   const s = lessonStart(l, state.settings.slots), e = planEnd(l);
-  it.append(el("span", "t", s + (e ? "–" + e : "")), el("span", null, l.subject));
+  const name = el("span", null, l.subject);
+  if (l.week && state.settings.ab.on) name.append(el("span", "ab-tag", l.week));
+  it.append(el("span", "t", s + (e ? "–" + e : "")), name);
   if (l.room) it.append(el("span", "p", l.room));
   it.onclick = () => openLessonDialog(l, l.day, l.slot);
   return it;
@@ -2935,12 +3383,14 @@ function renderTimetable() {
 
     for (const d of days) {
       const cell = el("div","tt-s");
-      const l = state.lessons.find(x => x.day === d && x.slot === si);
+      const l = cellLesson(d, si);
       if (l) {
         cell.classList.add("full");
         cell.style.background = l.color || "#2563eb";
         cell.style.borderColor = l.color || "#2563eb";
-        cell.append(el("div","subj", l.subject));
+        const sj = el("div","subj", l.subject);
+        if (l.week && state.settings.ab.on) sj.append(el("span", "ab-tag", l.week));
+        cell.append(sj);
         if (l.room) cell.append(el("div","room", l.room));
         cell.onclick = () => openLessonDialog(l, d, si);
       } else {
@@ -2971,6 +3421,9 @@ function openLessonDialog(lesson, day, slot) {
   $("l-subject").value = lesson ? lesson.subject : "";
   $("l-room").value    = lesson && lesson.room ? lesson.room : "";
   $("l-color").value   = lesson && lesson.color ? lesson.color : "#2563eb";
+  // A/B: neue Stunde in einer Zelle, deren andere Woche belegt ist → nur diese Woche
+  const other = !lesson && slot != null && state.lessons.some(x => x.day === day && x.slot === slot);
+  $("l-week").value = lesson ? (lesson.week || "") : (state.settings.ab.on && other ? abView || "" : "");
   $("l-del").style.display = lesson ? "" : "none";
   $("dlg-lesson").showModal();
   setTimeout(() => $("l-subject").focus(), 60);
@@ -2987,8 +3440,12 @@ $("l-save").onclick = () => {
     if (!validTime(start)) return toast("Bitte eine Anfangszeit wählen.");
     if (end && end <= start) return toast("Das Ende muss nach dem Anfang liegen.");
   }
-  if (lesson) Object.assign(lesson, { subject, room, color, ...(timed ? { start, end } : {}) });
-  else state.lessons.push({ id: uid(), day, slot: timed ? null : slot, start, end, subject, room, color });
+  const week = state.settings.ab.on ? ($("l-week").value || null) : (lesson ? lesson.week || null : null);
+  // Im Raster: andere Stunden derselben Zelle und Woche ersetzen
+  if (!timed && slot != null)
+    state.lessons = state.lessons.filter(x => x === lesson || !(x.day === day && x.slot === slot && weeksOverlap(x.week, week)));
+  if (lesson) Object.assign(lesson, { subject, room, color, week, ...(timed ? { start, end } : {}) });
+  else state.lessons.push({ id: uid(), day, slot: timed ? null : slot, start, end, subject, room, color, week });
   save(); $("dlg-lesson").close(); renderTimetable(); fillSubjectSelects(); updateStorageInfo(); renderWeek();
 };
 $("l-cancel").onclick = () => $("dlg-lesson").close();
@@ -3000,6 +3457,125 @@ $("l-del").onclick = () => {
   save(); $("dlg-lesson").close(); renderTimetable(); fillSubjectSelects(); updateStorageInfo(); renderWeek();
   toast("Gelöscht.", () => restore(snap));
 };
+
+/* ---------- Stunde an einem Tag: Ausfall, Vertretung, Hausaufgabe ---------- */
+let ldEdit = null;    // { lesson, iso }
+function schoolCatId() {
+  const c = state.categories.find(x => /schule|unterricht|studium|uni/i.test(x.name));
+  return c ? c.id : null;
+}
+function openLessonDay(l, iso) {
+  if (!Lic.full()) return showProHint("timetable");
+  ldEdit = { lesson: l, iso };
+  const ex = lessonExOf(l, iso) || {};
+  const s = isSchool(), w = abOf(iso);
+  $("ld-head").textContent = l.subject + " · " + parseISO(iso).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit" });
+  $("ld-sub").textContent = lessonStart(l, state.settings.slots) + (planEnd(l) ? "–" + planEnd(l) : "")
+    + (l.room ? " · " + l.room : "") + (w ? " · Woche " + w : "");
+  $("ld-cancel").checked = !!ex.cancel;
+  $("ld-subject").value = ex.subject || ""; $("ld-room").value = ex.room || "";
+  $("ld-lbl-subject").textContent = s ? "Vertretung / anderes Fach" : "Geändert zu";
+  $("ld-subfields").hidden = !!ex.cancel;
+  $("ld-hw-box").hidden = !s;
+  $("ld-exam").hidden = !s;
+  $("ld-hw").value = "";
+  const n = nextLesson(state.lessons, state.settings.slots, l.subject, new Date(iso + "T23:59:00"), nextLessonOpts());
+  $("ld-hw-hint").textContent = n ? "Fällig zur nächsten Stunde: " + humanDate(n.iso, n.start) + "." : "Keine weitere Stunde in den nächsten Wochen.";
+  $("ld-reset").hidden = !lessonExOf(l, iso);
+  $("dlg-lday").showModal();
+}
+$("ld-cancel").onchange = e => { $("ld-subfields").hidden = e.target.checked; };
+$("ld-save").onclick = () => {
+  const { lesson, iso } = ldEdit, k = exKey(lesson, iso);
+  const subject = $("ld-subject").value.trim(), room = $("ld-room").value.trim();
+  if ($("ld-cancel").checked) state.lessonEx[k] = { cancel: true };
+  else if (subject || room) state.lessonEx[k] = { subject: subject || null, room: room || null };
+  else delete state.lessonEx[k];
+  save(); $("dlg-lday").close(); renderWeek();
+  toast($("ld-cancel").checked ? "Als Ausfall markiert." : "Gespeichert.");
+};
+$("ld-reset").onclick = () => {
+  delete state.lessonEx[exKey(ldEdit.lesson, ldEdit.iso)];
+  save(); $("dlg-lday").close(); renderWeek(); toast("Wie geplant.");
+};
+$("ld-close").onclick = () => $("dlg-lday").close();
+function addHomework() {
+  const title = $("ld-hw").value.trim();
+  if (!title) { $("ld-hw").focus(); return toast("Bitte die Hausaufgabe eingeben."); }
+  const { lesson, iso } = ldEdit;
+  const n = nextLesson(state.lessons, state.settings.slots, lesson.subject, new Date(iso + "T23:59:00"), nextLessonOpts());
+  state.tasks.push({ id: uid(), title, categoryId: schoolCatId(), prio: "mittel",
+    dueDate: n ? n.iso : addDays(iso, 7), dueTime: null, remind: "due", recurrence: "none",
+    recurEvery: 1, recurUnit: "d", recurFromDone: false, assignee: null, subject: lesson.subject,
+    subtasks: [], images: [], note: "", completed: false, createdAt: Date.now() });
+  save(); $("ld-hw").value = ""; renderWeek(); renderTasks(); renderCalendar();
+  toast("Hausaufgabe eingetragen · " + humanDate(n ? n.iso : addDays(iso, 7)) + ".");
+}
+$("ld-hw-add").onclick = addHomework;
+$("ld-hw").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) addHomework(); };
+$("ld-exam").onclick = () => { $("dlg-lday").close(); openExamDialog(ldEdit.iso, ldEdit.lesson.subject); };
+
+/* ---------- Klassenarbeit / Klausur planen ---------- */
+let exKind = "teacher";
+function openExamDialog(date, subject) {
+  if (!Lic.full()) return showProHint("exam");
+  exKind = state.settings.profile === "school" ? "student" : "teacher";
+  const sel = $("ex-subject"); sel.replaceChildren(new Option("ohne Fach", ""));
+  subjectList().forEach(s => sel.append(new Option(s, s)));
+  sel.value = subject && subjectList().indexOf(subject) > -1 ? subject : "";
+  $("ex-fld-subject").hidden = !subjectList().length;
+  $("ex-title").value = subject || "";
+  $("ex-date").value = date || addDays(todayISO(), 7);
+  renderExamPreview();
+  $("dlg-exam").showModal();
+  setTimeout(() => $("ex-title").focus(), 60);
+}
+function examPlan() {
+  const date = $("ex-date").value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+  const title = $("ex-title").value.trim() || $("ex-subject").value || "";
+  return planExam({ kind: exKind, title, date, today: todayISO(),
+                    prep: +$("ex-prep").value, corr: +$("ex-corr").value, sessions: +$("ex-sessions").value });
+}
+function renderExamPreview() {
+  document.querySelectorAll("#ex-kind button").forEach(b => b.classList.toggle("on", b.dataset.k === exKind));
+  document.querySelectorAll("#dlg-exam .ex-t").forEach(x => x.hidden = exKind !== "teacher");
+  document.querySelectorAll("#dlg-exam .ex-s").forEach(x => x.hidden = exKind !== "student");
+  const box = $("ex-preview"); box.replaceChildren();
+  const list = examPlan();
+  if (!list.length) { box.append(el("p", "hint", "Bitte einen Termin wählen.")); return; }
+  if ($("ex-date").value < todayISO()) { box.append(el("p", "hint", "Der Termin liegt in der Vergangenheit.")); return; }
+  for (const x of list) {
+    const r = el("div");
+    r.append(el("span", null, x.title + (x.subtasks.length ? ` (${x.subtasks.length} Schritte)` : "")), el("span", "d", humanDate(x.dueDate)));
+    box.append(r);
+  }
+}
+document.querySelectorAll("#ex-kind button").forEach(b => b.onclick = () => { exKind = b.dataset.k; renderExamPreview(); });
+["ex-title", "ex-subject", "ex-date", "ex-prep", "ex-corr", "ex-sessions"].forEach(id => $(id).addEventListener("input", renderExamPreview));
+["ex-subject", "ex-prep", "ex-corr", "ex-sessions"].forEach(id => $(id).addEventListener("change", renderExamPreview));
+$("ex-cancel").onclick = () => $("dlg-exam").close();
+$("ex-save").onclick = () => {
+  const list = examPlan();
+  if (!list.length || $("ex-date").value < todayISO()) return toast("Bitte einen Termin ab heute wählen.");
+  if (!$("ex-title").value.trim() && !$("ex-subject").value) { $("ex-title").focus(); return toast("Bitte einen Titel eingeben."); }
+  const snap = snapshot();
+  const subject = $("ex-subject").value || null, cat = schoolCatId();
+  // Uhrzeit der Arbeit: Stunde des Fachs an dem Tag, falls vorhanden
+  const at = subject ? lessonsOn($("ex-date").value).find(l => l.subject === subject) : null;
+  for (const x of list) {
+    state.tasks.push({ id: uid(), title: x.title, categoryId: cat, prio: x.prio, dueDate: x.dueDate,
+      dueTime: x.role === "exam" && at ? lessonStart(at, state.settings.slots) : null,
+      remind: x.role === "exam" ? "1d" : "due", recurrence: "none", recurEvery: 1, recurUnit: "d", recurFromDone: false,
+      assignee: null, subject, subtasks: x.subtasks.map(t => ({ id: uid(), text: t, done: false })),
+      images: [], note: "", completed: false, createdAt: Date.now() });
+  }
+  save(); $("dlg-exam").close();
+  if ($("dlg-templates").open) $("dlg-templates").close();
+  renderTasks(); renderWeek(); renderCalendar(); updateStorageInfo();
+  toast(list.length + " Aufgaben angelegt.", () => restore(snap));
+};
+$("tpl-exam").onclick = () => { $("dlg-templates").close(); openExamDialog(null, null); };
 
 /* ---------- Einkaufslisten ---------- */
 const curList = () => state.shopLists.find(l => l.id === state.settings.shopListId) || state.shopLists[0];
@@ -3826,6 +4402,7 @@ function applyProfile(profile, fresh) {
   const school = profile !== "everyday";
   state.settings.planMode = school ? "school" : "week";
   state.settings.features.timetable = school;
+  if (school && state.settings.region) state.settings.showFerien = true;
   if (fresh) {
     state.categories = PROFILE_CATS[profile].map(([name, color], i) => ({ id: "c" + (i + 1), name, color }));
   }
@@ -3835,6 +4412,30 @@ $("set-profile").onchange = e => {
   applyProfile(e.target.value, false);
   toast(e.target.value === "everyday" ? "Wochenplan mit Uhrzeiten eingestellt." : "Stundenplan mit Schulstunden eingestellt.");
 };
+function fillRegionSelects() {
+  for (const id of ["set-region", "ob-region"]) {
+    const sel = $(id); if (!sel) continue;
+    sel.replaceChildren(new Option("– keins –", ""));
+    Object.entries(REGIONS).sort((a, b) => a[1].localeCompare(b[1], "de")).forEach(([k, v]) => sel.append(new Option(v, k)));
+    sel.value = state.settings.region || "";
+  }
+  $("set-ferien").checked = !!state.settings.showFerien;
+  $("set-ferien").disabled = !state.settings.region;
+  const fl = FERIEN[state.settings.region] || [];
+  const last = fl.length ? fl[fl.length - 1][1] : FERIEN_BIS;
+  const bis = parseISO(last).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  $("region-hint").textContent = state.settings.region
+    ? `Feiertage werden berechnet, Schulferien sind bis ${bis} hinterlegt (Quelle: OpenHolidays, Lizenz ODbL) – ohne Gewähr, bei der Schule gegenprüfen. Im Stundenplan fallen Stunden an diesen Tagen weg.`
+    : "Mit Bundesland zeigt die App Feiertage und auf Wunsch Schulferien in Woche und Kalender. Alles ist in der App gespeichert, es wird nichts abgerufen.";
+}
+$("set-region").onchange = e => {
+  state.settings.region = e.target.value;
+  save(); fillRegionSelects(); renderAll();
+};
+$("set-ferien").onchange = e => {
+  state.settings.showFerien = e.target.checked;
+  save(); renderAll();
+};
 function maybeOnboard() {
   if (state.settings.profile) return false;
   const d = $("dlg-onboard");
@@ -3842,6 +4443,7 @@ function maybeOnboard() {
   d.addEventListener("cancel", e => e.preventDefault());
   d.querySelectorAll(".choice").forEach(b => b.onclick = () => {
     const fresh = !state.tasks.length && state.categories.length <= 1;
+    state.settings.region = $("ob-region").value || "";
     applyProfile(b.dataset.profile, fresh);
     d.close();
     maybeWelcome();
@@ -3861,6 +4463,7 @@ function initUI() {
   fillCategorySelects();
   fillSlotSelects();
   fillSubjectSelects();
+  fillRegionSelects();
   renderCategoryChips();
   renderSwitches();
   $("slot-editor").value = state.settings.slots.join("\n");
