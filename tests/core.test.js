@@ -12,7 +12,9 @@ const file = process.argv[2] || path.join(__dirname, '..', 'index.html');
 const src = fs.readFileSync(file, 'utf8');
 const a = src.indexOf('/* ==CORE-BEGIN=='), b = src.indexOf('/* ==CORE-END== */');
 if (a < 0 || b < 0) { console.error('CORE-Block nicht gefunden'); process.exit(1); }
-const code = src.slice(a, b);
+const fa = src.indexOf('/* ==FERIEN-BEGIN=='), fb = src.indexOf('/* ==FERIEN-END== */');
+if (fa < 0 || fb < 0) { console.error('FERIEN-Block nicht gefunden (tools/make-ferien.js)'); process.exit(1); }
+const code = src.slice(a, b) + '\n' + src.slice(fa, fb);
 
 let fails = 0, n = 0;
 function eq(got, exp, msg) {
@@ -33,14 +35,14 @@ function load(nowStr) {
   }
   const ctx = { Date: FakeDate, console };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO };', ctx);
+  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
   return { ...ctx.__, now: new FakeDate() };
 }
 
 const C = load('2026-11-03T10:15:00');      // Dienstag
 const cats = [{ id: 'c1', name: 'Privat' }, { id: 'c2', name: 'Arbeit' }, { id: 'c3', name: 'Haus und Garten' }];
 const P = t => { const r = C.parseQuick(t, { now: C.now, categories: cats }); delete r.hits; return r; };
-const base = { date: null, time: null, catId: null, prio: null, rec: null, every: null, unit: null };
+const base = { date: null, time: null, catId: null, prio: null, rec: null, every: null, unit: null, subject: null };
 const exp = o => Object.assign({}, base, o);
 
 console.log('Datumshelfer');
@@ -157,11 +159,120 @@ const lessons = [{ day: 2, slot: 0, subject: 'Mathe' }, { day: 2, slot: 4, subje
                  { day: 3, start: '18:00', subject: 'Training' }];
 eq(C.lessonStart(lessons[3], slots), '18:00', 'Uhrzeit vor Stunde');
 eq(C.lessonStart(lessons[1], slots), '11:50', 'Startzeit aus Stunde');
-eq(C.nextLesson(lessons, slots, 'Mathe', C.now), { iso: '2026-11-03', start: '11:50', diff: 0, day: 2 }, 'nächste Mathe heute 11:50');
-eq(C.nextLesson(lessons, slots, 'Training', C.now), { iso: '2026-11-04', start: '18:00', diff: 1, day: 3 }, 'Training morgen');
+const NL = (...a) => { const r = C.nextLesson(...a); if (r) delete r.lesson; return r; };
+eq(NL(lessons, slots, 'Mathe', C.now), { iso: '2026-11-03', start: '11:50', diff: 0, day: 2 }, 'nächste Mathe heute 11:50');
+eq(NL(lessons, slots, 'Training', C.now), { iso: '2026-11-04', start: '18:00', diff: 1, day: 3 }, 'Training morgen');
 const C2 = load('2026-11-03T13:00:00');
 eq(C2.nextLesson(lessons, slots, 'Mathe', C2.now).iso, '2026-11-05', 'nach der letzten Stunde → Donnerstag');
 eq(C.nextLesson(lessons, slots, 'Kunst', C.now), null, 'unbekanntes Fach');
+
+
+console.log('Feiertage');
+eq(C.easterSunday(2026), '2026-04-05', 'Ostern 2026');
+eq(C.easterSunday(2027), '2027-03-28', 'Ostern 2027');
+eq(C.easterSunday(2038), '2038-04-25', 'Ostern 2038 (spät)');
+eq(C.holidayName('2026-10-31', 'NI'), 'Reformationstag', 'Reformationstag in NI');
+eq(C.holidayName('2026-10-31', 'NW'), null, 'nicht in NW');
+eq(C.holidayName('2026-11-01', 'NW'), 'Allerheiligen', 'Allerheiligen in NW');
+eq(C.holidayName('2026-11-18', 'SN'), 'Buß- und Bettag', 'Buß- und Bettag 2026 (Mi vor dem 23.11.)');
+eq(C.holidayName('2027-11-17', 'SN'), 'Buß- und Bettag', 'Buß- und Bettag 2027');
+eq(C.holidayName('2026-06-04', 'BY'), 'Fronleichnam', 'Fronleichnam 2026');
+eq(C.holidayName('2026-09-20', 'TH'), 'Weltkindertag', 'Weltkindertag TH');
+eq(C.holidayName('2026-03-08', 'MV'), 'Internationaler Frauentag', 'Frauentag MV');
+eq(C.holidayName('2026-10-03', 'BW'), 'Tag der Deutschen Einheit', 'bundesweit');
+eq(C.holidayName('2026-10-03', ''), null, 'ohne Bundesland keine Feiertage');
+eq(C.holidayName('2025-05-08', 'BE'), '80. Jahrestag des Kriegsendes', 'einmaliger Feiertag Berlin');
+eq(Object.keys(C.publicHolidays(2026, 'BE')).every(k => k.startsWith('2026')), true, 'nur Tage des Jahres');
+
+console.log('Ferien');
+eq(Object.keys(C.FERIEN).length, 16, '16 Länder');
+eq(C.FERIEN_BIS >= '2029-08-01', true, 'Daten reichen mindestens bis Sommer 2029');
+const F = r => (iso => C.dayOff(iso, r, C.FERIEN[r], C.FERIEN_NAMES));
+eq(F('NI')('2026-10-20').ferien, 'Herbstferien', 'NI Herbstferien 2026');
+eq(F('NI')('2026-10-26').ferien, null, 'NI danach Schule');
+eq(F('NI')('2026-12-23').ferien, 'Weihnachtsferien', 'NI Weihnachtsferien Beginn');
+eq(F('NI')('2027-01-09').ferien, 'Weihnachtsferien', 'Ende einschließlich');
+eq(F('BY')('2026-11-04').ferien != null, true, 'BY Herbstferien (Allerheiligen-Woche)');
+eq(C.isFerienWeek('2026-10-12', 'NI', C.FERIEN.NI, C.FERIEN_NAMES), true, 'Ferienwoche');
+eq(C.isFerienWeek('2026-11-02', 'NI', C.FERIEN.NI, C.FERIEN_NAMES), false, 'Schulwoche');
+eq(C.isFerienWeek('2026-11-02', '', null, null), false, 'ohne Land nie Ferien');
+for (const r of Object.keys(C.FERIEN)) {
+  const ok = C.FERIEN[r].every(x => /^\d{4}-\d{2}-\d{2}$/.test(x[0]) && x[1] >= x[0] && C.FERIEN_NAMES[x[2]]);
+  const sommer = C.FERIEN[r].some(x => C.FERIEN_NAMES[x[2]] === 'Sommerferien' && x[0].startsWith('2027'));
+  eq(ok && sommer, true, r + ': Daten gültig, Sommerferien 2027 vorhanden');
+  eq(C.FERIEN[r].every((x, i, l) => !i || x[0] > l[i - 1][1]), true, r + ': keine doppelten oder überlappenden Zeiträume');
+}
+
+console.log('A/B-Wochen');
+const ab = { anchor: '2026-11-02', type: 'A', skip: false };
+eq(C.abWeekOf('2026-11-04', ab), 'A', 'Ankerwoche A');
+eq(C.abWeekOf('2026-11-10', ab), 'B', 'nächste Woche B');
+eq(C.abWeekOf('2026-11-17', ab), 'A', 'übernächste A');
+eq(C.abWeekOf('2026-10-28', ab), 'B', 'Vorwoche B');
+eq(C.abWeekOf('2026-11-10', { ...ab, type: 'B' }), 'A', 'Anker B → nächste A');
+const oneFree = m => m === '2026-11-09';                          // eine freie Woche dazwischen
+eq(C.abWeekOf('2026-11-16', { ...ab, skip: true }, oneFree), 'B', 'freie Woche zählt nicht: danach B');
+eq(C.abWeekOf('2026-11-16', ab, oneFree), 'A', 'ohne Überspringen: A');
+eq(C.abWeekOf('2026-11-02', { anchor: '2026-11-16', type: 'A', skip: true }, oneFree), 'B', 'rückwärts über die freie Woche');
+eq(C.abWeekOf('2026-11-02', { anchor: '2026-11-16', type: 'A', skip: false }, oneFree), 'A', 'rückwärts ohne Überspringen');
+const free = m => C.isFerienWeek(m, 'NI', C.FERIEN.NI, C.FERIEN_NAMES);
+eq(C.abWeekOf('2027-01-11', { anchor: '2026-12-21', type: 'A', skip: true }, free), 'B', 'NI: über die Weihnachtsferien');
+eq(C.abWeekOf('2026-11-04', {}), null, 'ohne Anker null');
+
+console.log('Stunde an einem Tag');
+const ctxA = { week: 'A', off: false }, ctxOff = { week: 'A', off: true };
+eq(C.lessonOn({ day: 2, week: null }, '2026-11-03', ctxA), true, 'jede Woche');
+eq(C.lessonOn({ day: 2, week: 'B' }, '2026-11-03', ctxA), false, 'nur B in Woche A');
+eq(C.lessonOn({ day: 2 }, '2026-11-03', ctxOff), false, 'schulfrei');
+eq(C.lessonOn({ day: 3 }, '2026-11-03', ctxA), false, 'falscher Tag');
+const abL = [{ id: 'x', day: 2, slot: 4, subject: 'Physik', week: 'B' }, { id: 'y', day: 4, slot: 0, subject: 'Physik', week: 'A' }];
+const ctxF = iso => ({ week: C.abWeekOf(iso, ab), off: !!(C.dayOff(iso, 'NI', C.FERIEN.NI, C.FERIEN_NAMES).ferien) });
+eq(C.nextLesson(abL, slots, 'Physik', C.now, { ctx: ctxF }).iso, '2026-11-05', 'A-Woche: nächste Physik Do (A)');
+const C3 = load('2026-11-06T10:00:00');
+eq(C3.nextLesson(abL, slots, 'Physik', C3.now, { ctx: ctxF }).iso, '2026-11-10', 'dann Di der B-Woche');
+const C4 = load('2026-12-21T09:00:00');   // NI: Weihnachtsferien ab 23.12.
+const wk = [{ id: 'm', day: 3, slot: 0, subject: 'Mathe' }];
+const ctxN = iso => ({ week: null, off: !!(C.dayOff(iso, 'NI', C.FERIEN.NI, C.FERIEN_NAMES).ferien || C.holidayName(iso, 'NI')) });
+eq(C4.nextLesson(wk, slots, 'Mathe', C4.now, { ctx: ctxN }).iso, '2027-01-13', 'über die Weihnachtsferien hinweg');
+eq(C4.nextLesson(wk, slots, 'Mathe', C4.now).iso, '2026-12-23', 'ohne Ferienwissen: 23.12.');
+eq(C.nextLesson([{ id: 'z', day: 2, slot: 4, subject: 'Deutsch' }], slots, 'Deutsch', C.now,
+   { cancelled: (l, iso) => iso === '2026-11-03' }).iso, '2026-11-10', 'Ausfall heute → nächste Woche');
+
+console.log('Schnelleingabe mit Fach');
+const subs = ['Mathematik', 'Deutsch', 'Bio', 'Mathe 7b'];
+const ld = sub => ({ Mathematik: { iso: '2026-11-05' }, Deutsch: { iso: '2026-11-04' }, Bio: { iso: '2026-11-09' }, 'Mathe 7b': { iso: '2026-11-06' } })[sub] || null;
+const PS = t => { const r = C.parseQuick(t, { now: C.now, categories: cats, subjects: subs, lessonDate: ld }); delete r.hits; return r; };
+eq(PS('S. 34 Nr. 5 bis nächste Mathe'), exp({ title: 'S. 34 Nr. 5', date: '2026-11-05', subject: 'Mathematik' }), 'bis nächste Mathe');
+eq(PS('Gedicht lernen zur nächsten Stunde Deutsch'), exp({ title: 'Gedicht lernen', date: '2026-11-04', subject: 'Deutsch' }), 'zur nächsten Stunde Deutsch');
+eq(PS('Referat bis Bio'), exp({ title: 'Referat', date: '2026-11-09', subject: 'Bio' }), 'bis Bio');
+eq(PS('Test zurückgeben nächste Mathe 7b'), exp({ title: 'Test zurückgeben', date: '2026-11-06', subject: 'Mathe 7b' }), 'zwei Wörter: Mathe 7b');
+eq(PS('Bericht bis Freitag'), exp({ title: 'Bericht', date: '2026-11-06' }), '„bis Freitag“ ist kein Fach');
+eq(PS('Vokabeln bis nächste Woche'), exp({ title: 'Vokabeln', date: '2026-11-09' }), '„nächste Woche“ bleibt Datum');
+eq(PS('Aufsatz bis Deutsch am 12.11.'), exp({ title: 'Aufsatz', date: '2026-11-12', subject: 'Deutsch' }), 'genanntes Datum hat Vorrang');
+eq(PS('Bis Freitag Bio-Buch kaufen'), exp({ title: 'Bio-Buch kaufen', date: '2026-11-06' }), 'Bio im Wort zählt nicht');
+eq(C.parseQuick('bis nächste Mathe', { now: C.now }).subject, null, 'ohne Fächerliste kein Fach');
+eq(C.matchSubject(subs, 'ma', null), null, 'zu kurz für Anfang');
+eq(C.matchSubject(subs, 'MATHE', null), { subject: 'Mathematik', words: 1 }, 'Anfang, Groß/klein egal');
+
+console.log('Klassenarbeit und Lernplan');
+const T = C.planExam({ kind: 'teacher', title: '7b Bruchrechnung', date: '2026-11-12', today: '2026-11-03', prep: 3, corr: 14 });
+eq(T.map(x => [x.role, x.dueDate]), [['prep', '2026-11-09'], ['exam', '2026-11-12'], ['corr', '2026-11-26']], 'Lehrkraft: vorbereiten, schreiben, korrigieren');
+eq(T[2].subtasks.length, 4, 'Korrektur mit Teilschritten');
+eq(T[1].prio, 'hoch', 'Klassenarbeit wichtig');
+const T2 = C.planExam({ kind: 'teacher', title: 'X', date: '2026-11-04', today: '2026-11-03', prep: 3, corr: 14 });
+eq(T2[0].dueDate, '2026-11-03', 'Vorbereitung nicht in der Vergangenheit');
+const T4 = C.planExam({ kind: 'teacher', title: 'X', date: '2026-11-17', today: '2026-11-03', prep: 3, corr: 12 });
+eq([T4[0].dueDate, T4[2].dueDate], ['2026-11-13', '2026-11-30'], 'Wochenende: Vorbereitung Fr davor, Rückgabe Mo danach');
+const T3 = C.planExam({ kind: 'teacher', title: 'X', date: '2026-11-03', today: '2026-11-03' });
+eq(T3.map(x => x.role), ['exam', 'corr'], 'heute: keine Vorbereitung mehr');
+const S = C.planExam({ kind: 'student', title: 'Mathe', date: '2026-11-12', today: '2026-11-03', sessions: 3 });
+eq(S.map(x => x.dueDate), ['2026-11-07', '2026-11-09', '2026-11-11', '2026-11-12'], 'Lernplan: 5, 3, 1 Tag vorher');
+eq(S[0].title, 'Mathe: lernen (1/3)', 'Titel mit Nummer');
+const S2 = C.planExam({ kind: 'student', title: 'Bio', date: '2026-11-05', today: '2026-11-03', sessions: 3 });
+eq(S2.map(x => x.dueDate), ['2026-11-03', '2026-11-04', '2026-11-05'], 'knapp: 2 Tage → 2 Einheiten');
+eq(S2.every(x => x.dueDate >= '2026-11-03'), true, 'nie in der Vergangenheit');
+const S3 = C.planExam({ kind: 'student', title: 'Bio', date: '2026-11-03', today: '2026-11-03', sessions: 3 });
+eq(S3.map(x => x.role), ['exam'], 'Klausur heute: nur die Klausur');
 
 console.log(fails ? `\n${fails} von ${n} Prüfungen fehlgeschlagen` : `\nAlle ${n} Prüfungen bestanden.`);
 process.exit(fails ? 1 : 0);

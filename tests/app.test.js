@@ -451,6 +451,129 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     await ctx.close();
   }
 
+  console.log('15 · Schule: Ferien, Feiertage, A/B-Wochen, Ausfall, Hausaufgabe, Klassenarbeit');
+  {
+    const lessons = [
+      { id: 'lm', day: 2, slot: 1, subject: 'Mathe', room: '7b', color: '#2563eb' },
+      { id: 'ld', day: 3, slot: 2, subject: 'Deutsch', room: '7b', color: '#059669' },
+      { id: 'lp', day: 4, slot: 0, subject: 'Physik', room: 'R12', color: '#d97706', week: 'B' }
+    ];
+    const st = { version: 3, lessons, categories: [{ id: 'c1', name: 'Unterricht', color: '#2563eb' }],
+      settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true,
+                  features: { timetable: true, calendar: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await go(p, 'settings');
+    ok(await p.$eval('#set-region', e => e.value) === 'NI' && await p.isChecked('#set-ferien'), 'Bundesland und Ferien übernommen');
+    ok(/Schulferien sind bis/.test(await p.textContent('#region-hint')), 'Hinweis mit Datenstand');
+    await go(p, 'week');
+    let wk = await p.textContent('#wk-days');
+    ok(/Mathe · 7b/.test(wk) && /Deutsch · 7b/.test(wk), 'Stunden in der Schulwoche');
+    await S(p, () => { weekOffset = -3; renderWeek(); });          // 12.–18.10.: Herbstferien NI
+    wk = await p.textContent('#wk-days');
+    ok((wk.match(/Herbstferien/g) || []).length >= 5 && !/Mathe/.test(wk), 'Herbstferien markiert, keine Stunden');
+    await S(p, () => { weekOffset = -1; renderWeek(); });          // Sa 31.10. Reformationstag
+    ok(/Reformationstag/.test(await p.textContent('#wk-days')), 'Feiertag in der Woche');
+    await S(p, () => { weekOffset = 0; renderWeek(); });
+    ok(await S(p, () => nextLesson(state.lessons, state.settings.slots, 'Mathe', new Date('2026-10-09T12:00'), nextLessonOpts()).iso) === '2026-10-27',
+       'nächste Mathe überspringt die Herbstferien');
+
+    // A/B-Wochen
+    await go(p, 'timetable');
+    await p.click('#ab-on'); await p.waitForTimeout(100);
+    ok(await S(p, () => state.settings.ab.on && state.settings.ab.anchor === '2026-11-02'), 'A/B an, diese Woche als Anker');
+    ok(/Diese Woche ist Woche A/.test(await p.textContent('#ab-hint')), 'Hinweis: Woche A');
+    ok(!(await p.textContent('#tt-grid')).includes('Physik'), 'Raster Woche A ohne Physik (B)');
+    await p.click('#ab-view button[data-w="B"]');
+    ok((await p.textContent('#tt-grid')).includes('Physik'), 'Raster Woche B mit Physik');
+    await go(p, 'week');
+    ok(/Woche A/.test(await p.textContent('#wk-title')) && !/Physik/.test(await p.textContent('#wk-days')), 'Woche A: kein Physik');
+    await S(p, () => { weekOffset = 1; renderWeek(); });
+    ok(/Woche B/.test(await p.textContent('#wk-title')) && /Physik/.test(await p.textContent('#wk-days')), 'Woche B: Physik am Donnerstag');
+    await S(p, () => { weekOffset = 0; renderWeek(); });
+    // Zelle mit B-Stunde: neue A-Stunde ersetzt sie nicht
+    await go(p, 'timetable');
+    await p.click('#ab-view button[data-w="A"]');
+    await S(p, () => openLessonDialog(null, 4, 0));
+    ok(await p.$eval('#l-week', e => e.value) === 'A', 'leere Zelle neben B-Stunde: Vorschlag „nur Woche A“');
+    await p.fill('#l-subject', 'Chemie'); await p.click('#l-save');
+    ok(await S(p, () => state.lessons.filter(l => l.day === 4 && l.slot === 0).map(l => l.subject + l.week).sort().join()) === 'ChemieA,PhysikB',
+       'A- und B-Stunde teilen sich die Zelle');
+
+    // Ausfall und Vertretung
+    await go(p, 'week');
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe' }).first().click();
+    ok(await p.$eval('#dlg-lday', d => d.open) && /Mathe · Dienstag/.test(await p.textContent('#ld-head')), 'Stunde antippen öffnet den Tag-Dialog');
+    await p.check('#ld-cancel'); await p.click('#ld-save');
+    ok(await S(p, () => !!(state.lessonEx['lm|2026-11-03'] || {}).cancel), 'Ausfall gespeichert');
+    ok(await p.locator('#wk-days .wd-lesson.cx', { hasText: 'Mathe' }).count() === 1, 'durchgestrichen');
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Deutsch' }).first().click();
+    await p.fill('#ld-subject', 'Vertretung Bio'); await p.fill('#ld-room', 'R3'); await p.click('#ld-save');
+    ok(/Vertretung Bio · R3/.test(await p.textContent('#wk-days')), 'Vertretung angezeigt');
+    // Hausaufgabe aus dem Dialog
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Vertretung Bio' }).first().click();
+    await p.fill('#ld-hw', 'Gedicht lernen'); await p.click('#ld-hw-add');
+    let t = await lastTask(p);
+    ok(t.title === 'Gedicht lernen' && t.subject === 'Deutsch' && t.dueDate === '2026-11-11' && t.categoryId === 'c1', 'Hausaufgabe zur nächsten Deutschstunde');
+    await p.click('#ld-close');
+
+    // Schnelleingabe „bis nächste Mathe“ (heute fällt Mathe aus, Stunde ohnehin vorbei)
+    await go(p, 'tasks');
+    await p.fill('#t-title', 'S. 34 Nr. 5 bis nächste Mathe');
+    ok(/📚 Mathe/.test(await p.textContent('#qa-preview')), 'Vorschau zeigt das Fach');
+    await p.press('#t-title', 'Enter');
+    t = await lastTask(p);
+    ok(t.title === 'S. 34 Nr. 5' && t.subject === 'Mathe' && t.dueDate === '2026-11-10', 'bis nächste Mathe → Di 10.11.');
+
+    // Klassenarbeit planen
+    await p.click('#btn-templates');
+    await p.click('#tpl-exam');
+    ok(await p.$eval('#dlg-exam', d => d.open) && await p.$eval('#ex-kind button.on', b => b.dataset.k) === 'teacher', 'Planung öffnet als Lehrkraft');
+    await p.fill('#ex-title', '7b Bruchrechnung');
+    await p.selectOption('#ex-subject', 'Mathe');
+    await p.fill('#ex-date', '2026-11-17');
+    ok((await p.$$('#ex-preview > div')).length === 3, 'Vorschau: drei Aufgaben');
+    const before = await S(p, () => state.tasks.length);
+    await p.click('#ex-save');
+    const made = await S(p, n => state.tasks.slice(n).map(x => [x.title, x.dueDate, x.dueTime, x.subtasks.length]), before);
+    ok(made.length === 3 && made[1][0] === '7b Bruchrechnung: Klassenarbeit' && made[1][2] === '08:45'
+       && made[0][1] === '2026-11-13' && made[2][1] === '2026-12-01' && made[2][3] === 4,
+       'vorbereiten, schreiben (08:45), korrigieren: ' + JSON.stringify(made));
+    // Lernplan
+    await S(p, () => openExamDialog('2026-11-12', null));
+    await p.click('#ex-kind button[data-k="student"]');
+    ok((await p.$$('#ex-preview > div')).length === 4, 'Lernplan: drei Einheiten plus Klausur');
+    await p.click('#ex-cancel');
+
+    // Kalender
+    await go(p, 'calendar');
+    await S(p, () => { calCursor = new Date(2026, 9, 1); renderCalendar(); });
+    ok(await p.locator('#cal-grid .cal-c.hol').count() >= 1 && await p.locator('#cal-grid .cal-c.fer').count() >= 10, 'Kalender: Feiertag und Ferien markiert');
+    await S(p, () => { calSelected = '2026-10-31'; renderCalendarDay(); });
+    ok(/Reformationstag/.test(await p.textContent('#cal-day-list')), 'Tagesliste nennt den Feiertag');
+
+    // Sicherung: Daten überstehen Export/Import
+    const back = await S(p, () => { const n = normalizeState(JSON.parse(JSON.stringify(state)));
+      return [n.settings.region, n.settings.ab.on, n.lessons.find(l => l.id === 'lp').week, !!n.lessonEx['lm|2026-11-03']]; });
+    ok(JSON.stringify(back) === '["NI",true,"B",true]', 'Bundesland, A/B, Ausnahmen bleiben beim Import erhalten');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('16 · Schule ohne Vollversion');
+  {
+    const st = { version: 3, lessons: [{ id: 'lm', day: 2, slot: 1, subject: 'Mathe' }],
+      settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true } };
+    const { ctx, p } = await open(browser, { ios: {}, state: st });
+    await S(p, () => { Lic.trialStart = Date.now() - 40 * 864e5; Lic.save(); licenseChanged(); });
+    await go(p, 'week');
+    await S(p, () => { weekOffset = -1; renderWeek(); });
+    ok(/Reformationstag/.test(await p.textContent('#wk-days')), 'Feiertage auch in der Grundversion');
+    await S(p, () => openExamDialog(null, null));
+    ok(!(await p.$eval('#dlg-exam', d => d.open)), 'Klassenarbeit planen gesperrt');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} von ${n} Prüfungen fehlgeschlagen` : `\nAlle ${n} Prüfungen bestanden.`);
   process.exit(fails ? 1 : 0);
