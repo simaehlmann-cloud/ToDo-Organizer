@@ -35,7 +35,7 @@ function load(nowStr) {
   }
   const ctx = { Date: FakeDate, console };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
+  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
   return { ...ctx.__, now: new FakeDate() };
 }
 
@@ -273,6 +273,34 @@ eq(S2.map(x => x.dueDate), ['2026-11-03', '2026-11-04', '2026-11-05'], 'knapp: 2
 eq(S2.every(x => x.dueDate >= '2026-11-03'), true, 'nie in der Vergangenheit');
 const S3 = C.planExam({ kind: 'student', title: 'Bio', date: '2026-11-03', today: '2026-11-03', sessions: 3 });
 eq(S3.map(x => x.role), ['exam'], 'Klausur heute: nur die Klausur');
+
+console.log('Plus-/Minusstunden');
+const log2 = [
+  { date: '2026-09-10', type: 'plus', hours: 2 }, { date: '2026-11-03', type: 'minus', hours: 1 },
+  { date: '2026-11-04', type: 'aufsicht', hours: 1 }, { date: '2026-11-05', type: 'plus', hours: 1 },
+  { date: '2027-03-01', type: 'minus', hours: 2 }, { date: '2026-07-20', type: 'plus', hours: 1 }];
+eq(C.subValue(log2[0]), 2, 'Vertretung zählt plus');
+eq(C.subValue(log2[1]), -1, 'Ausfall zählt minus');
+eq(C.subValue(log2[2]), 0, 'Aufsicht zählt nicht');
+eq(C.subSummary(log2), { plus: 4, minus: 3, saldo: 1, aufsicht: 1, aufsichtStd: 1, count: 6 }, 'Summe über alles');
+const yr = C.schoolPeriod('year', '2026-11-03');
+eq([yr.from, yr.to, yr.label], ['2026-08-01', '2027-07-31', 'Schuljahr 2026/27'], 'Schuljahr ab August');
+eq(C.subSummary(log2, yr.from, yr.to).saldo, 0, 'Schuljahr: +3 −3 = 0');
+const hj = C.schoolPeriod('half', '2026-11-03');
+eq([hj.from, hj.to], ['2026-08-01', '2027-01-31'], '1. Halbjahr');
+eq(C.schoolPeriod('half', '2027-03-15').from, '2027-02-01', '2. Halbjahr');
+eq(C.schoolPeriod('half', '2027-01-20').label, '1. Halbjahr 2026/27', 'Januar gehört zum 1. Halbjahr');
+eq(C.schoolPeriod('year', '2027-07-31').label, 'Schuljahr 2026/27', 'Juli gehört zum laufenden Schuljahr');
+const mo = C.schoolPeriod('month', '2026-02-10');
+eq([mo.from, mo.to], ['2026-02-01', '2026-02-28'], 'Monat Februar');
+eq(C.schoolPeriod('all', '2026-11-03').from, null, 'alles');
+eq(C.slotLabel(2, 2), '3./4. Std', 'Doppelstunde');
+eq(C.slotLabel(0, 1), '1. Std', 'Einzelstunde');
+eq(C.slotLabel(null, 2), 'Doppelstunde', 'ohne Stunde');
+const blk = [{ day: 2, slot: 2, subject: 'Mathe', room: '7b' }, { day: 2, slot: 3, subject: 'Mathe', room: '7b' }, { day: 2, slot: 5, subject: 'Mathe', room: '9a' }];
+eq(C.lessonBlock(blk, blk[0]), { hours: 2, slot: 2 }, 'erste Stunde der Doppelstunde');
+eq(C.lessonBlock(blk, blk[1]), { hours: 2, slot: 2 }, 'zweite Stunde der Doppelstunde');
+eq(C.lessonBlock(blk, blk[2]), { hours: 1, slot: 5 }, 'Einzelstunde');
 
 console.log(fails ? `\n${fails} von ${n} Prüfungen fehlgeschlagen` : `\nAlle ${n} Prüfungen bestanden.`);
 process.exit(fails ? 1 : 0);

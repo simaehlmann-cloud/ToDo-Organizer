@@ -41,6 +41,7 @@ function iosMocks(o) {
     },
     StatusBar: { setStyle: async x => { window.__log.sb.push(x.style); } },
     WidgetData: { set: async x => { window.__log.widget.push(x.json); } },
+    Share: { share: async x => { window.__log.share = x.text; } },
     App: { addListener: () => {} },
     CapacitorCalendar: {
       checkPermission: async () => ({ result: o.calGranted ? 'granted' : 'prompt' }),
@@ -593,6 +594,77 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
     await ctx.close();
   }
+  console.log('18 · Plus- und Minusstunden');
+  {
+    const lessons = [
+      { id: 'm1', day: 2, slot: 2, subject: 'Mathe', room: '7b', color: '#2563eb' },
+      { id: 'm2', day: 2, slot: 3, subject: 'Mathe', room: '7b', color: '#2563eb' },
+      { id: 'd1', day: 3, slot: 0, subject: 'Deutsch', room: '9a', color: '#059669' }];
+    const st = { version: 3, lessons, settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true, features: { timetable: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await go(p, 'week');
+    ok(await p.locator('#wk-days .wd-add').count() === 5, '„＋ Vertretung“ an fünf Schultagen');
+    // Vertretung am Mittwoch: Doppelstunde
+    await p.locator('#wk-days .week-day').nth(2).locator('.wd-add').click();
+    ok(await p.$eval('#dlg-sub', d => d.open) && await p.$eval('#sb-date', e => e.value) === '2026-11-04', 'Dialog mit Datum des Tages');
+    await p.click('#sb-hours button[data-h="2"]');
+    await p.selectOption('#sb-slot', '4');
+    await p.fill('#sb-klass', '8c'); await p.fill('#sb-subject', 'Bio'); await p.fill('#sb-note', 'Arbeitsblatt Zelle');
+    await p.click('#sb-save');
+    let log = await S(p, () => state.subLog);
+    ok(log.length === 1 && log[0].type === 'plus' && log[0].hours === 2 && log[0].slot === 4 && log[0].klass === '8c', 'Vertretung gespeichert');
+    ok(/\+ Vertretung · 8c Bio/.test(await p.textContent('#wk-days')) && /11:50/.test(await p.locator('#wk-days .wd-lesson.sp').textContent()), 'in der Woche mit Uhrzeit der Stunde');
+    // Aufsicht am Donnerstag
+    await p.locator('#wk-days .week-day').nth(3).locator('.wd-add').click();
+    await p.click('#sb-type button[data-t="aufsicht"]');
+    await p.click('#sb-save');
+    // Ausfall: Mathe-Doppelstunde am Dienstag
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe' }).first().click();
+    await p.check('#ld-cancel');
+    ok(await p.isVisible('#ld-minus') && await p.isChecked('#ld-minus-on') && await p.$eval('#ld-minus-h button.on', b => b.dataset.h) === '2', 'Ausfall: Minusstunde, Doppelstunde erkannt');
+    await p.click('#ld-save');
+    log = await S(p, () => state.subLog.filter(e => e.type === 'minus'));
+    ok(log.length === 1 && log[0].hours === 2 && log[0].slot === 2 && log[0].pairId === 'm2', 'eine Minus-Doppelstunde');
+    ok(await p.locator('#wk-days .wd-lesson.cx').count() === 2, 'beide Mathestunden durchgestrichen');
+    // Zweite Stunde öffnen: kein zweiter Eintrag
+    await p.locator('#wk-days .wd-lesson.cx').nth(1).click();
+    ok(await p.isChecked('#ld-minus-on'), 'zweite Stunde kennt den Eintrag');
+    await p.click('#ld-save');
+    ok((await S(p, () => state.subLog.filter(e => e.type === 'minus').length)) === 1, 'keine doppelte Minusstunde');
+    // Übersicht
+    await go(p, 'timetable');
+    ok(await p.isVisible('#card-subs'), 'Übersicht im Stundenplan');
+    const tiles = await p.$$eval('#sub-tiles .v', x => x.map(e => e.textContent));
+    ok(tiles.join(' ') === '+2 −2 ±0 1', 'Plus 2, Minus 2, Saldo 0, 1 Aufsicht: ' + tiles.join(' '));
+    ok((await p.$$('#sub-list .sub-row')).length === 3, 'drei Einträge in der Liste');
+    // Details nachtragen
+    await p.locator('#sub-list .sub-row.minus').click();
+    ok(await p.$eval('#sb-head', e => e.textContent) === 'Ausfall bearbeiten', 'Eintrag antippen öffnet Details');
+    await p.fill('#sb-note', 'Wandertag'); await p.click('#sb-save');
+    ok((await S(p, () => state.subLog.find(e => e.type === 'minus').note)) === 'Wandertag', 'Notiz gespeichert');
+    await p.click('#sub-share');
+    const share = await S(p, () => window.__log.share || '');
+    ok(/Saldo: 0 Std/.test(share) && /03\.11\.2026 · 3\.\/4\. Std · Ausfall · 7b Mathe · −2 – Wandertag/.test(share), 'Liste teilen');
+    await p.click('#sub-period button[data-p="month"]');
+    ok(/November 2026/.test(await p.textContent('#sub-period-label')), 'Zeitraum Monat');
+    // Ausfall zurücksetzen → Minus weg, beide Stunden wieder da
+    await go(p, 'week');
+    await p.locator('#wk-days .wd-lesson.cx').first().click();
+    await p.click('#ld-reset');
+    ok((await S(p, () => state.subLog.filter(e => e.type === 'minus').length)) === 0 && await p.locator('#wk-days .wd-lesson.cx').count() === 0, 'Zurücksetzen entfernt Minus und Ausfall');
+    // Sicherung
+    const back = await S(p, () => normalizeState(JSON.parse(JSON.stringify(state))).subLog.map(e => e.type + e.hours).join());
+    ok(back === 'plus2,aufsicht1', 'Einträge überstehen Export/Import: ' + back);
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+  {
+    // Alltag: keine Vertretungs-Knöpfe
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } } });
+    ok(await p.locator('#wk-days .wd-add').count() === 0 && !(await p.isVisible('#card-subs')), 'im Alltagsprofil unsichtbar');
+    await ctx.close();
+  }
+
   console.log('16 · Schule ohne Vollversion');
   {
     const st = { version: 3, lessons: [{ id: 'lm', day: 2, slot: 1, subject: 'Mathe' }],
