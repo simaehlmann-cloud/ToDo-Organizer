@@ -34,11 +34,41 @@ struct WSnapshot: Decodable {
 
 enum WidgetStore {
     static let group = "group.de.maehlmann.todoorganizer"
+
+    /// Ergebnis des Lesens: Daten oder ein Grund, warum es keine gibt
+    enum Result {
+        case ok(WSnapshot)
+        case noGroup      // App-Gruppe fehlt (Signierung/Profil)
+        case noData       // App hat noch nichts abgelegt
+        case unreadable   // Daten da, aber nicht lesbar
+    }
+
+    /// Zuerst die Datei im gemeinsamen Ordner (zuverlässig zwischen App und
+    /// Widget), sonst UserDefaults der App-Gruppe.
+    static func read() -> Result {
+        guard let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else {
+            return .noGroup
+        }
+        var data = try? Data(contentsOf: dir.appendingPathComponent("widget.json"))
+        if data == nil, let text = UserDefaults(suiteName: group)?.string(forKey: "snapshot") {
+            data = text.data(using: .utf8)
+        }
+        guard let bytes = data else { return .noData }
+        guard let snap = try? JSONDecoder().decode(WSnapshot.self, from: bytes) else { return .unreadable }
+        return .ok(snap)
+    }
+
     static func load() -> WSnapshot? {
-        guard let defaults = UserDefaults(suiteName: group),
-              let text = defaults.string(forKey: "snapshot"),
-              let data = text.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(WSnapshot.self, from: data)
+        if case .ok(let s) = read() { return s }
+        return nil
+    }
+
+    static func hint() -> String {
+        switch read() {
+        case .noGroup: return "Widget ohne App-Gruppe – bitte dem Entwickler melden."
+        case .unreadable: return "Daten nicht lesbar – bitte die App einmal öffnen."
+        default: return "Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag."
+        }
     }
 }
 
@@ -67,9 +97,10 @@ struct DayEntry: TimelineEntry {
     let items: [WItem]
     let overdue: Int
     let hasData: Bool
+    var hint: String = ""
 
     static func empty(_ date: Date) -> DayEntry {
-        DayEntry(date: date, label: "Heute", off: nil, items: [], overdue: 0, hasData: false)
+        DayEntry(date: date, label: "Heute", off: nil, items: [], overdue: 0, hasData: false, hint: WidgetStore.hint())
     }
 
     static func sample(_ date: Date) -> DayEntry {
@@ -136,7 +167,8 @@ struct Provider: TimelineProvider {
             overdue += d.items.filter { $0.kind == "task" }.count
         }
         return DayEntry(date: date, label: day?.label ?? "Heute", off: day?.off,
-                        items: items, overdue: overdue, hasData: day != nil)
+                        items: items, overdue: overdue, hasData: day != nil,
+                        hint: day == nil ? "Öffne die App, um diesen Tag zu laden." : "")
     }
 }
 
@@ -220,7 +252,7 @@ struct TodayView: View {
                     .lineLimit(1)
             }
             if !entry.hasData {
-                Text("Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag.")
+                Text(entry.hint.isEmpty ? "Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag." : entry.hint)
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Spacer(minLength: 0)
