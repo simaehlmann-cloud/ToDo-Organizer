@@ -444,6 +444,16 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     await ctx.close();
   }
 
+  console.log('13b · Hinweise lesbar (hell und dunkel)');
+  for (const dark of [false, true]) {
+    const { ctx, p } = await open(browser, { dark });
+    await S(p, () => toast('Probe'));
+    const c = await p.$eval('#toast', e => { const s = getComputedStyle(e); return [s.backgroundColor, s.color]; });
+    const lum = rgb => { const [r, g, b] = rgb.match(/\d+/g).map(Number); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+    ok(Math.abs(lum(c[0]) - lum(c[1])) > 0.5, (dark ? 'dunkel' : 'hell') + ': Hinweis hat Kontrast (' + c.join(' / ') + ')');
+    await ctx.close();
+  }
+
   console.log('14 · iPad-Breite');
   {
     const { ctx, p } = await open(browser, { wide: true });
