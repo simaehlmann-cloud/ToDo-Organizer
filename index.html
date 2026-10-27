@@ -1823,8 +1823,8 @@ const Widget = {
     let json;
     try { json = JSON.stringify(widgetSnapshot()); } catch (e) { console.warn("Widget:", e && e.message); return; }
     if (json === this.last) return;
-    try { await p.set({ json }); this.last = json; }
-    catch (e) { console.warn("Widget:", e && e.message); }
+    try { await p.set({ json }); this.last = json; this.sentAt = Date.now(); this.error = null; }
+    catch (e) { this.error = (e && e.message) || String(e); console.warn("Widget:", this.error); }
   }
 };
 function widgetSnapshot() {
@@ -5112,7 +5112,14 @@ function renderPro() {
       "Store bereit: " + (Purchase.ready ? "ja" : "nein") + "\n" +
       "Vollversion: " + prod(PRODUCT_FULL) + "\n" +
       "Testphase: " + prod(PRODUCT_TRIAL) + "\n" +
-      "Letzter Fehler: " + (Purchase.lastError || "–")));
+      "Letzter Fehler: " + (Purchase.lastError || "–") + "\n" +
+      "Widget-Brücke: " + (Widget.plugin() ? "ja" : "nein") +
+      (Widget.sentAt ? ", gesendet " + fmtTime(Widget.sentAt) : "") + (Widget.error ? ", Fehler: " + Widget.error : "")));
+    const wp = Widget.plugin();
+    if (wp && wp.status) wp.status().then(r => {
+      const d = box.querySelector(".diag");
+      if (d) d.textContent += "\nApp-Gruppe: " + (r && r.group ? "ja" : "NEIN") + ", Widget-Daten: " + ((r && r.bytes) || 0) + " Bytes";
+    }).catch(e => { const d = box.querySelector(".diag"); if (d) d.textContent += "\nWidget-Status: " + (e && e.message); });
   }
 }
 

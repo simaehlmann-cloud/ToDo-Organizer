@@ -22,6 +22,17 @@
   nach Wiederöffnen und erneutem Abhaken entstand ein zweiter Folgetermin. Jetzt nur bei
   geänderter Wiederholung oder geändertem Datum.
 
+## Fehler im Kauf bis 3.1 (gefunden am 27.10.2026)
+
+- `tools/capacitor-core-shim.js` rief `window.Capacitor.registerPlugin` auf. Die iOS-Brücke
+  von Capacitor stellt diese Funktion **nicht** bereit (sie stammt aus `@capacitor/core`, das die
+  App ohne Bundler nicht lädt) – nur `window.Capacitor.Plugins[Name]`. purchase.js brach beim
+  Laden ab, `CdvPurchase` fehlte, jeder Kauf meldete „App Store nicht erreichbar“.
+- Jetzt nimmt der Ersatz das nativ angelegte Plugin. `tests/purchase.test.js` lädt das gebündelte
+  Modul im Build gegen eine Brücke ohne `registerPlugin`; validate.js prüft den Ersatz.
+- Dieselbe Falle gilt für alle Plugins: in index.html immer `window.Capacitor.Plugins.X`
+  verwenden, nie `registerPlugin`.
+
 ## Mehr- und Minderstunden (3.1, nur Profil „Unterricht“ im Stundenplan-Modus)
 
 - `state.subLog = [{ id, date, type: "plus"|"minus"|"aufsicht", hours: 1|2, slot, klass, subject, room, note, lessonId, pairId }]`.

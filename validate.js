@@ -151,6 +151,9 @@ if (gibt('res/ios/widget/TodayWidget.swift')) {
   if (!/jsName = "WidgetData"/.test(pl) || !html.includes('Plugins.WidgetData')) E('Widget-Brücke: Name in Swift und index.html passt nicht (WidgetData)');
   if (!/1C8F\.1/.test(lies('res/ios/PrivacyInfo.xcprivacy'))) E('PrivacyInfo der App: Grund 1C8F.1 (App-Gruppe) fehlt');
 }
+if (!wf.includes('node tests/purchase.test.js')) E('ios.yml: Ladeprüfung des Kaufmoduls fehlt (tests/purchase.test.js)');
+if (/^\s*return window\.Capacitor\.registerPlugin/m.test(lies('tools/capacitor-core-shim.js')))
+  E('capacitor-core-shim.js ruft registerPlugin ohne Prüfung auf – die iOS-Brücke hat diese Funktion nicht (Käufe gehen dann nicht)');
 if (!wf.includes('IOS_PROVISIONING_PROFILE_WIDGET') || !wf.includes('export WIDGET=1')) E('ios.yml: Heute-Widget nicht eingebunden');
 if (!wf.includes('CFBundleURLSchemes') || !html.includes('todoorganizer:')) E('Link-Schema todoorganizer fehlt (Widget öffnet sonst nur die App)');
 
