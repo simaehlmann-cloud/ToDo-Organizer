@@ -105,8 +105,11 @@ Mehrere Listen, etwa für Supermarkt und Drogerie. Die App schlägt vor, was du 
 ERINNERUNGEN
 Eine tägliche Übersicht zur gewünschten Uhrzeit und Erinnerungen zu jeder Aufgabe – auch bei geschlossener App. Direkt aus der Mitteilung verschieben oder abhaken.
 
+WIDGET „HEUTE“
+Dein Tag auf dem Home-Bildschirm: Aufgaben, Stunden und Termine nach Uhrzeit.
+
 HELL ODER DUNKEL
-Die App folgt der Darstellung deines Geräts oder bleibt hell bzw. dunkel, wie du willst.
+Die App folgt deinem Gerät oder bleibt hell bzw. dunkel.
 
 SICHERUNG
 Vollständige Sicherung als Datei, auf Wunsch mit Passwort verschlüsselt (AES-GCM). Ablegen, wo du willst: Dateien-App, iCloud Drive oder per Mail. Aufgaben mit Datum lassen sich als Kalenderdatei (.ics) exportieren.
