@@ -97,4 +97,32 @@ const STATE = {
   }
 };
 
-module.exports = { TODAY, STATE };
+/* Zweite Szene: Lehrkraft in Sachsen, Woche ab Mo 16.11. (Buß- und Bettag am Mi) */
+const SCHOOL = {
+  version: 3,
+  categories: [{ id: 'u1', name: 'Unterricht', color: '#2563eb' }, { id: 'u2', name: 'Privat', color: '#059669' }],
+  tasks: [
+    t('s1', 'Klassenarbeit 7b: vorbereiten', 'u1', 'mittel', '2026-11-16', { subject: 'Mathe',
+      subtasks: sub(['Aufgaben erstellen', 1], ['Erwartungshorizont'], ['Kopieren']) }),
+    t('s2', 'Elternbriefe einsammeln', 'u1', 'niedrig', '2026-11-17', { subject: 'Deutsch' }),
+    t('s3', 'Klassenarbeit 7b', 'u1', 'hoch', '2026-11-19', { dueTime: '08:00', subject: 'Mathe' }),
+    t('s4', 'Fachkonferenz', 'u1', 'mittel', '2026-11-20', { dueTime: '14:30' })
+  ],
+  lessons: [
+    { id: 'a1', day: 1, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
+    { id: 'a2', day: 1, slot: 2, subject: 'Deutsch', room: '9a', color: '#059669' },
+    { id: 'a3', day: 2, slot: 1, subject: 'Mathe', room: '9a', color: '#2563eb' },
+    { id: 'a4', day: 2, slot: 3, subject: 'Deutsch', room: '7b', color: '#059669' },
+    { id: 'a5', day: 3, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
+    { id: 'a6', day: 4, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
+    { id: 'a7', day: 4, slot: 4, subject: 'Physik', room: 'R12', color: '#d97706', week: 'A' },
+    { id: 'a8', day: 4, slot: 4, subject: 'Chemie', room: 'R12', color: '#7c3aed', week: 'B' },
+    { id: 'a9', day: 5, slot: 2, subject: 'Deutsch', room: '9a', color: '#059669' }
+  ],
+  lessonEx: { 'a3|2026-11-17': { cancel: true }, 'a9|2026-11-20': { subject: 'Vertretung 8c', room: 'R5' } },
+  settings: { features: { timetable: true, calendar: true, habits: false, extCal: false }, profile: 'teacher',
+              planMode: 'school', theme: 'light', region: 'SN', showFerien: true,
+              ab: { on: true, anchor: '2026-11-16', type: 'A', skip: true } }
+};
+
+module.exports = { TODAY, STATE, SCHOOL };

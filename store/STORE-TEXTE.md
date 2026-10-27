@@ -19,12 +19,12 @@ Falls der Name vergeben ist, Ausweichvorschlag: `ToDo Organizer – Wochenplan`
 
 ### Untertitel (max. 30)
 ```
-Aufgaben, Kalender, Wochenplan
+Planer für Schule und Alltag
 ```
 
 ### Kategorie
 - Primär: **Produktivität**
-- Sekundär: **Lifestyle** (Alltag, Einkauf, Gewohnheiten; kann auch leer bleiben)
+- Sekundär: **Bildung** (Stundenplan, Ferien, Klassenarbeiten)
 
 ### Altersfreigabe
 Fragebogen überall **Keine / Nein** → **4+**.
@@ -54,16 +54,25 @@ vom Gerät weg.
 
 ---
 
-## Version 3.0
+## Version 3.1
 
 ### Werbetext (max. 170)
 ```
-Neu in 3.0: Schnelleingabe in Alltagssprache, Uhrzeiten, Erinnerungen, Gewohnheiten, Dunkelmodus und deine Kalendertermine in der Woche. Ohne Konto, ohne Server.
+Stundenplan mit Ferien, A/B-Wochen und Vertretungen, Hausaufgaben „bis nächste Mathe“, dazu Aufgaben, Einkauf und Gewohnheiten. Ohne Konto, ohne Abo.
 ```
 
 ### Beschreibung (max. 4000)
 ```
-Aufgaben, Termine, Wochenplan, Gewohnheiten und Einkauf in einer App – für Alltag, Beruf, Sport, Schule und Unterricht. Der ToDo Organizer braucht kein Konto und keinen Server: Alle Daten bleiben auf deinem Gerät.
+Der private Planer für Schule und Alltag: Stundenplan, Hausaufgaben und Klassenarbeiten zusammen mit Aufgaben, Terminen, Einkauf und Gewohnheiten – für Schüler, Studierende, Lehrkräfte und alle, die ihre Woche im Griff haben wollen. Der ToDo Organizer braucht kein Konto und keinen Server: Alle Daten bleiben auf deinem Gerät.
+
+FÜR SCHULE UND UNTERRICHT
+• Stundenplan mit eigenen Zeiten, Fächern, Klassen und Räumen
+• Ferien und Feiertage aller 16 Bundesländer – Stunden fallen dort automatisch weg
+• A/B-Wochen, auf Wunsch ohne Ferienwochen gezählt
+• Ausfall und Vertretung für einzelne Tage
+• Hausaufgaben „bis nächste Mathe“: fällig zur nächsten Stunde, über Ferien hinweg
+• Klassenarbeiten planen: vorbereiten, schreiben, korrigieren mit Rückgabefrist
+• Klausuren: ein Lernplan mit verteilten Einheiten bis zum Termin
 
 SCHREIB EINFACH, WAS ZU TUN IST
 „Zahnarzt morgen 15 Uhr #Privat !“ oder „Müll rausbringen jeden Dienstag“ – die Schnelleingabe erkennt Datum, Uhrzeit, Kategorie, Priorität und Wiederholung von selbst.
@@ -84,8 +93,8 @@ AUFGABEN, WIE DU SIE BRAUCHST
 KALENDER
 Alle Aufgaben im Monatsraster. Auf Wunsch zeigt die App die Termine deiner Kalender auf dem iPhone oder iPad an und trägt Aufgaben als Termin ein. Alternativ lässt sich ein privater Kalender per Adresse (ICS) einbinden.
 
-WOCHENPLAN ODER STUNDENPLAN
-Feste Termine wie Training, Kurse oder Chorprobe mit Uhrzeit – oder für Schule, Studium und Unterricht ein Stundenplan mit Schulstunden, Fächern, Klassen und Räumen. Aufgaben lassen sich einem Fach zuordnen; die App zeigt, wann die nächste Stunde ist.
+WOCHENPLAN
+Ohne Schule? Dann wird daraus ein Wochenplan für feste Termine wie Training, Kurse oder Chorprobe – mit Uhrzeit.
 
 GEWOHNHEITEN
 Joggen, Lesen, Wasser trinken: Wochenziel festlegen, Tage abhaken und die Serie wachsen sehen.
@@ -108,23 +117,23 @@ PRIVAT VON ANFANG AN
 • Keine Werbung, kein Tracking, keine Analyse
 
 TESTEN UND VOLLVERSION
-Die App ist kostenlos. 30 Tage lang kannst du alle Funktionen kostenlos testen. Danach bleiben die Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen, Unterpunkten, Notizen und Sicherung dauerhaft kostenlos. Kalender samt Gerätekalender, Fotos, Vorlagen, Wochen- und Stundenplan, Gewohnheiten, Einkaufslisten, verschlüsselte Sicherung und Statistik gehören zur Vollversion: ein einmaliger Kauf, kein Abo, mit der Familienfreigabe teilbar. Die Testphase endet von selbst – es wird nichts berechnet und nichts verlängert. Deine Einträge bleiben immer gespeichert.
+Die App ist kostenlos. 30 Tage lang kannst du alle Funktionen kostenlos testen. Danach bleiben die Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen, Unterpunkten, Notizen und Sicherung dauerhaft kostenlos. Feiertage und Ferien sind ebenfalls frei. Kalender samt Gerätekalender, Fotos, Vorlagen, Wochen- und Stundenplan samt A/B-Wochen, Vertretungen und Klassenarbeiten, Gewohnheiten, Einkaufslisten, verschlüsselte Sicherung und Statistik gehören zur Vollversion: ein einmaliger Kauf, kein Abo, mit der Familienfreigabe teilbar. Die Testphase endet von selbst – es wird nichts berechnet und nichts verlängert. Deine Einträge bleiben immer gespeichert.
 
 Für iPhone und iPad.
 ```
 
 ### Schlüsselwörter (max. 100)
 ```
-todo,liste,planer,erinnerung,termine,gewohnheiten,einkaufsliste,stundenplan,checkliste,privat
+todo,aufgaben,stundenplan,hausaufgaben,ferien,lehrer,klassenarbeit,erinnerung,einkaufsliste,kalender
 ```
-Wörter aus Name und Untertitel (ToDo, Organizer, Aufgaben, Kalender, Wochenplan)
-zählt Apple ohnehin mit – sie stehen deshalb nicht noch einmal hier.
+Wörter aus Name und Untertitel (ToDo, Organizer, Planer, Schule, Alltag) zählt
+Apple ohnehin mit. „aufgaben“ steht trotzdem hier, weil es im Untertitel nicht mehr vorkommt.
 
 ### Neuerungen (nur bei späteren Versionen)
 Bei der ersten Version im Store bleibt das Feld leer. Für TestFlight-Tester
 („Was soll getestet werden?“):
 ```
-3.0: allgemeine To-do-App mit Schnelleingabe, Uhrzeiten, Vorab-Erinnerungen, Gewohnheiten, Vorlagen, Fotos, mehreren Einkaufslisten, Gerätekalender und Dunkelmodus. Bitte vor allem Erinnerungen, Kalenderzugriff und den Kauf testen.
+3.1: Ferien und Feiertage aller Bundesländer, A/B-Wochen, Ausfall und Vertretung, Hausaufgaben „bis nächste Mathe“, Klassenarbeiten und Lernpläne. 3.0: allgemeine To-do-App mit Schnelleingabe, Uhrzeiten, Vorab-Erinnerungen, Gewohnheiten, Vorlagen, Fotos, mehreren Einkaufslisten, Gerätekalender und Dunkelmodus. Bitte vor allem Erinnerungen, Kalenderzugriff und den Kauf testen.
 ```
 
 ### Hinweise für die Prüfung (App Review → Notizen)
@@ -137,13 +146,13 @@ In-app purchases (both non-consumable):
 
 Where to find them: on first launch a dialog offers the trial. Afterwards: Einstellungen (Settings tab, gear icon) → card "Vollversion" at the top, with buttons "30 Tage kostenlos testen", "Vollversion kaufen" and "Käufe wiederherstellen" (restore).
 
-What stays free after the trial: tasks with quick entry, due times, reminders, recurrence, subtasks, notes, week view and backup export/import. Calendar (incl. device calendar and ICS), photos, templates, week plan/timetable, habits, shopping lists, encrypted backup, .ics export and statistics require the full version. Locked areas show a lock and lead to the purchase card; no data is deleted.
+What stays free after the trial: tasks with quick entry, due times, reminders, recurrence, subtasks, notes, week view with public/school holidays and backup export/import. Calendar (incl. device calendar and ICS), photos, templates, week plan/timetable, habits, shopping lists, encrypted backup, .ics export and statistics require the full version. Locked areas show a lock and lead to the purchase card; no data is deleted.
 
 Permissions: calendar access is only requested when the user turns on "Gerätekalender anzeigen" in Settings (events are shown in the week view and never leave the device) or adds a task to the calendar. The Reminders permission strings exist only because the calendar plugin links EventKit; the app never reads or writes the Reminders app. Camera/photos are used only when the user adds a photo to a task.
 
-To test the end of the trial quickly: Settings → "Info, Datenschutz und Impressum" (on iPad: "Info" in the sidebar) → tap the line "Version 3.0" seven times. The trial then lasts 3 minutes instead of 30 days. Tapping seven times again switches back.
+To test the end of the trial quickly: Settings → "Info, Datenschutz und Impressum" (on iPad: "Info" in the sidebar) → tap the line "Version 3.1" seven times. The trial then lasts 3 minutes instead of 30 days. Tapping seven times again switches back.
 
-Network access happens only if the user enters their own ICS calendar URL in Settings, and for StoreKit.
+Network access happens only if the user enters their own ICS calendar URL in Settings, and for StoreKit. School holiday dates are bundled in the app (OpenHolidays API data, ODbL); nothing is fetched.
 ```
 
 ### Kontakt für die Prüfung

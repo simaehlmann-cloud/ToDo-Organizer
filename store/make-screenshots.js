@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium, DEVICES, openApp, germanInputs } = require('./device.js');
+const { SCHOOL } = require('./demo-data.js');
 
 const OUT = path.join(__dirname, 'out', 'screenshots');
 const TMP = path.join(__dirname, 'out', 'tmp');
@@ -19,7 +20,18 @@ const TMP = path.join(__dirname, 'out', 'tmp');
 const SCENES = [
   { id: '01-woche', title: 'Deine Woche auf einen Blick', sub: 'Aufgaben, Kalendertermine und Wochenplan – nach Uhrzeit',
     go: async p => { await nav(p, 'week'); await p.evaluate(() => { document.getElementById('card-habits').style.display = 'none'; }); } },
-  { id: '02-schnelleingabe', title: 'Schreib einfach, was zu tun ist', sub: 'Datum, Uhrzeit, Kategorie und Wiederholung erkennt die App',
+  { id: '02-schule', title: 'Stundenplan mit Ferien und Vertretung', sub: 'Feiertage aller Bundesländer, A/B-Wochen, Ausfall',
+    go: async p => {
+      await nav(p, 'week');
+      await p.evaluate(s => {
+        window.__saved = JSON.stringify(state);
+        state = normalizeState(s); abMemo = {}; weekOffset = 2;
+        initUI(); renderAll();
+        document.querySelectorAll('.view').forEach(x => x.style.animation = 'none');
+      }, SCHOOL);
+      await p.waitForTimeout(150);
+    } },
+  { id: '03-schnelleingabe', title: 'Schreib einfach, was zu tun ist', sub: 'Datum, Uhrzeit, Kategorie und Wiederholung erkennt die App',
     go: async p => {
       await nav(p, 'tasks');
       await p.fill('#t-title', 'Arzt Fr 15 Uhr #Privat');
@@ -27,19 +39,10 @@ const SCENES = [
       await p.evaluate(() => document.activeElement && document.activeElement.blur());
       await p.waitForTimeout(120);
     } },
-  { id: '03-aufgabe', title: 'Alles zu einer Aufgabe', sub: 'Uhrzeit, Erinnerung vorab, Unterpunkte und Notizen',
+  { id: '04-aufgabe', title: 'Alles zu einer Aufgabe', sub: 'Uhrzeit, Erinnerung vorab, Unterpunkte und Notizen',
     go: async p => { await nav(p, 'tasks'); await p.evaluate(() => openTaskDialog('t01')); await germanInputs(p); } },
-  { id: '04-kalender', title: 'Der Monat im Überblick', sub: 'Mit den Terminen aus deinen Kalendern',
+  { id: '05-kalender', title: 'Der Monat im Überblick', sub: 'Mit den Terminen aus deinen Kalendern',
     go: async p => { await nav(p, 'calendar'); } },
-  { id: '05-wochenplan', title: 'Wochenplan oder Stundenplan', sub: 'Für Training, Kurse, Schule und Unterricht',
-    go: async p => {
-      await nav(p, 'timetable');
-      if (p.viewportSize().width < 761) {
-        await p.evaluate(() => { document.getElementById('main').style.paddingBottom = '600px'; });
-        await scrollTo(p, '#plan-mode', 18, true);
-      }
-      await germanInputs(p);
-    } },
   { id: '06-gewohnheiten', title: 'Gute Gewohnheiten', sub: 'Wochenziel setzen, abhaken, Serie halten',
     go: async p => {
       await nav(p, 'week');
@@ -64,6 +67,10 @@ const SCENES = [
 
 async function nav(p, view) {
   await p.evaluate(v => {
+    if (window.__saved) {          // nach der Schul-Szene: Beispieldaten zurück
+      state = normalizeState(JSON.parse(window.__saved)); window.__saved = null;
+      abMemo = {}; weekOffset = 0; initUI(); renderAll();
+    }
     document.querySelectorAll('#view-week .card').forEach(c => c.style.display = '');
     document.getElementById('main').style.paddingBottom = '';
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
