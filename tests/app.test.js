@@ -40,7 +40,7 @@ function iosMocks(o) {
       schedule: async x => { window.__log.notif = x.notifications; }, registerActionTypes: async () => {}, addListener: () => {}
     },
     StatusBar: { setStyle: async x => { window.__log.sb.push(x.style); } },
-    WidgetData: { set: async x => { window.__log.widget.push(x.json); } },
+    WidgetData: { set: async x => { window.__log.widget.push(x.json); }, status: async () => ({ group: true, bytes: (window.__log.widget.slice(-1)[0] || '').length }) },
     Share: { share: async x => { window.__log.share = x.text; } },
     App: { addListener: () => {} },
     CapacitorCalendar: {
@@ -601,6 +601,11 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     ok(log.length === n0 + 1 && !JSON.parse(log[log.length - 1]).days[0].items.some(x => x.title === 'Wäsche'), 'Abhaken aktualisiert das Widget');
     await S(p, () => renderAll()); await p.waitForTimeout(1500);
     ok((await S(p, () => window.__log.widget.length)) === n0 + 1, 'unveränderter Stand wird nicht erneut geschickt');
+    await go(p, 'about');
+    await p.click('#tech-info summary'); await p.waitForTimeout(300);
+    const tech = await p.textContent('#tech-text');
+    ok(/Widget-Brücke: ja, zuletzt gesendet/.test(tech) && /App-Gruppe: ja, Widget-Daten: [1-9]\d* Bytes/.test(tech) && /Kaufmodul: geladen/.test(tech),
+       'Info-Seite zeigt Kauf- und Widget-Zustand: ' + tech.replace(/\n/g, ' | '));
     ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
     await ctx.close();
   }
