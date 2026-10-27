@@ -224,10 +224,12 @@ jobs:
           # Icon (randlos, ohne Alpha) und Privacy-Manifest
           cp res/ios/icon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
           cp res/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
-          # Heute-Widget: Swift-Dateien der App und die Erweiterung
+          # Brücke zu iOS (Widget-Daten, Schnellaktionen) und eigener SceneDelegate: immer
+          cp res/ios/app/WidgetDataPlugin.swift res/ios/app/SceneDelegate.swift ios/App/App/
+          # Heute-Widget: App-Gruppe und Erweiterung
           if [ "$WIDGET_AN" = "true" ]; then
             export WIDGET=1
-            cp res/ios/app/AppViewController.swift res/ios/app/WidgetDataPlugin.swift res/ios/app/App.entitlements ios/App/App/
+            cp res/ios/app/App.entitlements ios/App/App/
             mkdir -p ios/App/TodayWidget && cp res/ios/widget/* ios/App/TodayWidget/
           fi
           ruby tools/ios-setup.rb
@@ -240,6 +242,10 @@ jobs:
           # Nur Standard-Verschlüsselung (AES-GCM des Systems für das Backup):
           # ausgenommen, also false. Sonst fragt jeder Upload nach.
           setze ITSAppUsesNonExemptEncryption bool false
+          # Dokumente-Ordner der App in der Dateien-App zeigen („Auf meinem iPhone →
+          # ToDo Organizer“): dort liegt die wöchentliche automatische Sicherung
+          setze UIFileSharingEnabled bool true
+          setze LSSupportsOpeningDocumentsInPlace bool true
           # Eigenes Link-Schema: Ein Tipp aufs Widget öffnet todoorganizer://week
           /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$P" 2>/dev/null || true
           plutil -insert CFBundleURLTypes -json '[{"CFBundleURLName":"de.maehlmann.todoorganizer","CFBundleURLSchemes":["todoorganizer"]}]' "$P"
@@ -311,15 +317,20 @@ jobs:
           for p in local-notifications filesystem share app status-bar; do
             grep -q "@capacitor/$p\"" "$SPM" || { echo "::error::Plugin @capacitor/$p fehlt im Xcode-Projekt."; FEHLER=1; }
           done
+          # Brücke: muss in der Plugin-Liste stehen, sonst kommt sie nie in der Web-App an
+          jq -e '.packageClassList | index("WidgetDataPlugin")' ios/App/App/capacitor.config.json > /dev/null \
+            && echo "Brücke WidgetDataPlugin angemeldet." \
+            || { echo "::error::WidgetDataPlugin fehlt in packageClassList (capacitor.config.json)."; FEHLER=1; }
+          grep -q 'WidgetDataPlugin.swift in Sources' "$PBX" || { echo "::error::WidgetDataPlugin.swift nicht im App-Ziel."; FEHLER=1; }
+          grep -q 'shortcutItem' ios/App/App/SceneDelegate.swift || { echo "::error::SceneDelegate ohne Schnellaktionen."; FEHLER=1; }
           if grep -q 'TodayWidget.appex in Embed Foundation Extensions' "$PBX"; then
             echo "Heute-Widget eingebaut."
-            grep -q 'customClass="AppViewController"' ios/App/App/Base.lproj/Main.storyboard \
-              || { echo "::error::Main.storyboard nutzt nicht AppViewController – die Widget-Brücke fehlt."; FEHLER=1; }
             grep -q "PRODUCT_BUNDLE_IDENTIFIER = $APP_ID.widget;" "$PBX" || { echo "::error::Widget-Bundle-ID falsch."; FEHLER=1; }
           else
             echo "Heute-Widget nicht eingebaut."
           fi
           [ "$(holen CFBundleURLTypes:0:CFBundleURLSchemes:0)" = "todoorganizer" ] || { echo "::error::Link-Schema todoorganizer fehlt."; FEHLER=1; }
+          [ "$(holen UIFileSharingEnabled)" = "true" ] || { echo "::error::UIFileSharingEnabled fehlt – Sicherung wäre in der Dateien-App unsichtbar."; FEHLER=1; }
           echo "--- Package.swift ---"; cat "$SPM"
           exit $FEHLER
 
