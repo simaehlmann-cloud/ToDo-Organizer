@@ -27,6 +27,7 @@ try {
   /* Menü: im hellen Modus hell (seit 3.1), aktiver Punkt blau hinterlegt */
   --side:#ffffff; --side-text:#334155; --side-muted:#94a3b8; --side-line:#e5e7eb;
   --side-act:#eaf1ff; --side-act-text:#1d4ed8;
+  --toast:#1f2937;          /* Hinweise: immer dunkel mit weißer Schrift (nicht an das Menü koppeln) */
   --primary:#2563eb; --primary-h:#1d4ed8; --danger:#dc2626; --ok:#059669; --warn:#d97706;
   --border:#e5e7eb; --shadow:0 1px 3px rgba(0,0,0,.07);
   --input:#fff; --sel:#dbeafe; --soft:#eef4ff; --weekend:#fafafa; --tog:#cbd5e1;
@@ -38,6 +39,7 @@ try {
   --bg:#0f1115; --card:#191c23; --text:#e7e9ee; --muted:#9aa3b2;
   --side:#161a21; --side-text:#cbd5e1; --side-muted:#7c8696; --side-line:#262b35;
   --side-act:#1f2b45; --side-act-text:#8fb0ff;
+  --toast:#2f3747;
   --primary:#5b8cff; --primary-h:#477cff; --danger:#f87171; --ok:#34d399; --warn:#fbbf24;
   --border:#2a2f3a; --shadow:0 1px 3px rgba(0,0,0,.45);
   --input:#12151b; --sel:#1f3366; --soft:#17223b; --weekend:#15181e; --tog:#3a4150;
@@ -186,7 +188,7 @@ dialog .bd{padding:20px}
 dialog h3{margin-bottom:14px}
 dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;background:var(--bg);border-top:1px solid var(--border);flex-wrap:wrap}
 
-#toast{box-shadow:0 6px 20px rgba(0,0,0,.25);position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--side);color:#fff;padding:11px 16px;border-radius:9px;font-size:.87rem;z-index:99;transition:transform .26s;pointer-events:none;max-width:88%;text-align:center;display:flex;align-items:center;gap:12px}
+#toast{box-shadow:0 6px 20px rgba(0,0,0,.25);position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--toast);color:#fff;padding:11px 16px;border-radius:9px;font-size:.87rem;z-index:99;transition:transform .26s;pointer-events:none;max-width:88%;text-align:center;display:flex;align-items:center;gap:12px}
 #toast.show{transform:translateX(-50%) translateY(0)}
 #toast .undo{background:none;border:none;color:#93c5fd;font-weight:700;font-size:.84rem;cursor:pointer;padding:2px 4px;white-space:nowrap;text-decoration:underline}
 @media(max-width:760px){#toast{bottom:78px}}
