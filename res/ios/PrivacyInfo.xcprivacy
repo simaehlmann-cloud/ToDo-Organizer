@@ -14,6 +14,8 @@
   Meldepflichtige Zugriffe:
   - UserDefaults (CA92.1): Capacitor und das Kauf-Plugin legen dort eigene
     Einstellungen der App ab, nur im eigenen App-Container.
+  - UserDefaults der App-Gruppe (1C8F.1): Zusammenfassung für das Heute-Widget,
+    nur zwischen App und eigenem Widget, nur auf dem Gerät.
   - Dateizeitstempel (C617.1): Das Filesystem-Plugin liest beim Export
     Dateiinformationen im eigenen App-Container.
   Capacitor und seine Plugins bringen zusätzlich eigene Manifeste mit.
@@ -38,6 +40,7 @@
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>CA92.1</string>
+                <string>1C8F.1</string>
             </array>
         </dict>
         <dict>
