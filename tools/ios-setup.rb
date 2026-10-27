@@ -7,6 +7,11 @@
 #   MARKETING_VERSION        Version aus index.html (APP_VERSION), z. B. 2.4
 #   CURRENT_PROJECT_VERSION  Build-Nummer, muss bei jedem Upload steigen
 #   TEAM_ID, PROFILE_NAME    nur für den signierten Build
+#   WIDGET=1                 Heute-Widget mitbauen (Erweiterung + App-Gruppe)
+#   WIDGET_PROFILE_NAME      Profil des Widgets (de.maehlmann.todoorganizer.widget)
+#
+# Die Dateien des Widgets (res/ios/widget, res/ios/app) kopiert der Workflow
+# vorher nach ios/App/TodayWidget bzw. ios/App/App.
 #
 # Warum Ruby: Das Gem „xcodeproj“ (Teil von CocoaPods, auf den macOS-Läufern
 # vorhanden) ändert die Projektdatei sicher. Ein sed auf project.pbxproj
@@ -47,5 +52,73 @@ ziel.build_configurations.each do |c|
   end
 end
 
+# ---- Heute-Widget ---------------------------------------------------------------
+widget = ENV['WIDGET'] == '1'
+if widget
+  WIDGET_ID = APP_ID + '.widget'
+  # 1 · App: Brücke (Plugin) und eigener Startbildschirm, App-Gruppe
+  %w[AppViewController.swift WidgetDataPlugin.swift].each do |f|
+    r = gruppe.files.find { |x| x.path == f } || gruppe.new_reference(f)
+    ziel.source_build_phase.add_file_reference(r, true) unless ziel.source_build_phase.files_references.include?(r)
+  end
+  gruppe.files.find { |x| x.path == 'App.entitlements' } || gruppe.new_reference('App.entitlements')
+  ziel.build_configurations.each { |c| c.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements' }
+
+  # Main.storyboard: Capacitors Startbildschirm durch AppViewController ersetzen
+  sb = 'ios/App/App/Base.lproj/Main.storyboard'
+  text = File.read(sb)
+  neu = text.gsub(/customClass="CAPBridgeViewController" customModule="Capacitor"/,
+                  'customClass="AppViewController" customModule="App" customModuleProvider="target"')
+  abort('Main.storyboard: CAPBridgeViewController nicht gefunden') if neu == text && !text.include?('AppViewController')
+  File.write(sb, neu)
+
+  # 2 · Widget-Erweiterung als eigenes Ziel
+  wz = projekt.targets.find { |t| t.name == 'TodayWidget' } ||
+       projekt.new_target(:app_extension, 'TodayWidget', :ios, '15.0', nil, :swift)
+  wg = projekt.main_group.find_subpath('TodayWidget', true)
+  wg.set_source_tree('<group>'); wg.set_path('TodayWidget')
+  quelle = wg.files.find { |x| x.path == 'TodayWidget.swift' } || wg.new_reference('TodayWidget.swift')
+  wz.source_build_phase.add_file_reference(quelle, true) unless wz.source_build_phase.files_references.include?(quelle)
+  priv = wg.files.find { |x| x.path == 'PrivacyInfo.xcprivacy' } || wg.new_reference('PrivacyInfo.xcprivacy')
+  wz.resources_build_phase.add_file_reference(priv, true) unless wz.resources_build_phase.files_references.include?(priv)
+  %w[Info.plist TodayWidget.entitlements].each { |f| wg.files.find { |x| x.path == f } || wg.new_reference(f) }
+
+  wz.build_configurations.each do |c|
+    s = c.build_settings
+    s['PRODUCT_BUNDLE_IDENTIFIER'] = WIDGET_ID
+    s['PRODUCT_NAME'] = 'TodayWidget'
+    s['INFOPLIST_FILE'] = 'TodayWidget/Info.plist'
+    s['GENERATE_INFOPLIST_FILE'] = 'NO'
+    s['CODE_SIGN_ENTITLEMENTS'] = 'TodayWidget/TodayWidget.entitlements'
+    s['SWIFT_VERSION'] = '5.0'
+    s['TARGETED_DEVICE_FAMILY'] = '1,2'
+    s['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+    s['SKIP_INSTALL'] = 'YES'
+    s['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
+    s['LD_RUNPATH_SEARCH_PATHS'] = ['$(inherited)', '@executable_path/Frameworks', '@executable_path/../../Frameworks']
+    # Version und Build müssen exakt zur App passen, sonst lehnt der Upload ab
+    s['MARKETING_VERSION'] = ENV['MARKETING_VERSION'] if ENV['MARKETING_VERSION'].to_s != ''
+    s['CURRENT_PROJECT_VERSION'] = ENV['CURRENT_PROJECT_VERSION'] if ENV['CURRENT_PROJECT_VERSION'].to_s != ''
+    if signieren && c.name == 'Release'
+      abort('WIDGET_PROFILE_NAME fehlt') if ENV['WIDGET_PROFILE_NAME'].to_s == ''
+      s['CODE_SIGN_STYLE'] = 'Manual'
+      s['DEVELOPMENT_TEAM'] = ENV['TEAM_ID']
+      s['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
+      s['PROVISIONING_PROFILE_SPECIFIER'] = ENV['WIDGET_PROFILE_NAME']
+    end
+  end
+
+  # 3 · In die App einbetten (PlugIns) und vorher bauen
+  ziel.add_dependency(wz) unless ziel.dependencies.any? { |d| d.target == wz }
+  phase = ziel.copy_files_build_phases.find { |b| b.name == 'Embed Foundation Extensions' } ||
+          ziel.new_copy_files_build_phase('Embed Foundation Extensions')
+  phase.symbol_dst_subfolder_spec = :plug_ins
+  unless phase.files_references.include?(wz.product_reference)
+    bf = phase.add_file_reference(wz.product_reference, true)
+    bf.settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
+  end
+end
+
 projekt.save
+puts "Heute-Widget: #{widget ? 'eingebaut' : 'nicht eingebaut'}"
 puts "Xcode-Projekt angepasst (Version #{ENV['MARKETING_VERSION']}, Build #{ENV['CURRENT_PROJECT_VERSION']}, signiert: #{signieren})"
