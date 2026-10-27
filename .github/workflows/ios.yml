@@ -201,6 +201,8 @@ jobs:
           cp index.html manifest.json sw.js datenschutz.html impressum.html www/
           cp -R icons www/
           node tools/make-purchase-js.js www/purchase.js
+          # Kaufmodul so laden, wie die App es tut (Brücke ohne registerPlugin)
+          node tests/purchase.test.js www/purchase.js
           ls -la www
 
       - name: iOS-Projekt erzeugen
