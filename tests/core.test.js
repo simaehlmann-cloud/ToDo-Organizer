@@ -35,7 +35,7 @@ function load(nowStr) {
   }
   const ctx = { Date: FakeDate, console };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
+  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
   return { ...ctx.__, now: new FakeDate() };
 }
 
@@ -301,6 +301,14 @@ const blk = [{ day: 2, slot: 2, subject: 'Mathe', room: '7b' }, { day: 2, slot: 
 eq(C.lessonBlock(blk, blk[0]), { hours: 2, slot: 2 }, 'erste Stunde der Doppelstunde');
 eq(C.lessonBlock(blk, blk[1]), { hours: 2, slot: 2 }, 'zweite Stunde der Doppelstunde');
 eq(C.lessonBlock(blk, blk[2]), { hours: 1, slot: 5 }, 'Einzelstunde');
+
+console.log('Doppelstunden und Pausen');
+eq(C.lessonBlock([], { day: 2, slot: 4, span: 2 }), { hours: 2, slot: 4 }, 'als Doppelstunde eingetragen');
+eq([C.occupies({ slot: 4, span: 2 }, 4), C.occupies({ slot: 4, span: 2 }, 5), C.occupies({ slot: 4, span: 2 }, 6), C.occupies({ slot: 4 }, 5)], [true, true, false, false], 'belegte Stunden');
+eq(C.breaksOf(['08:00-08:45', '08:45-09:30', '09:55-10:40', '10:40-11:25', '11:50-12:35']),
+   [{ after: 1, start: '09:30', end: '09:55' }, { after: 3, start: '11:25', end: '11:50' }], 'Pausen aus den Zeiten');
+eq(C.breaksOf(['08:00-08:45', '08:47-09:30']), [], 'zwei Minuten sind keine Pause');
+eq(C.breaksOf([]), [], 'ohne Zeiten');
 
 console.log(fails ? `\n${fails} von ${n} Prüfungen fehlgeschlagen` : `\nAlle ${n} Prüfungen bestanden.`);
 process.exit(fails ? 1 : 0);

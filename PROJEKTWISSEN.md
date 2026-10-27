@@ -44,6 +44,16 @@
 - Übersicht im Stundenplan: Monat, Halbjahr (Aug–Jan, Feb–Jul), Schuljahr (ab 1. August), Alle;
   „Liste teilen“ als Text (Share-Plugin, sonst Zwischenablage/Mail).
 
+## Doppelstunden und Pausenaufsichten (3.1)
+
+- Stunde mit `span: 2` belegt `slot` und `slot + 1` (`occupies`). Das Raster setzt jede Zelle
+  explizit (`gridRow`), Doppelstunden laufen über zwei Zeilen – über eine Pause hinweg über drei.
+- Pausen ergeben sich aus Lücken ≥ 5 Min. zwischen den Stundenzeiten (`breaksOf`). Im Profil
+  „Unterricht“ bekommen sie eine Zeile im Raster; ein Tipp legt eine feste Aufsicht an:
+  `state.duties = [{ id, day, after, place, week }]`. Aufsichten folgen wie Stunden A/B-Woche,
+  Ferien und Feiertagen (`dutiesOn`) und erscheinen in Woche und Widget.
+- Vertretungsaufsichten an einzelnen Tagen bleiben Einträge in `subLog` (Typ „aufsicht“).
+
 ## Heute-Widget (3.1)
 
 - Swift-Widget (WidgetKit, iOS 15+, klein/mittel/groß) in `res/ios/widget/`. Die App

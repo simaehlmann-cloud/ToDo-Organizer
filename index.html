@@ -375,6 +375,12 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .sub-row .t small{display:block;color:var(--muted);font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sub-row .n{font-weight:800;font-size:.9rem;white-space:nowrap}
 .sub-row.plus .n{color:#059669}.sub-row.minus .n{color:#dc2626}.sub-row.aufsicht .n{color:var(--muted);font-size:.74rem}
+.tt-p{font-size:.62rem;color:var(--muted);text-align:right;padding-right:7px;align-self:center;line-height:1.2}
+.tt-b{border:1px dashed var(--border);border-radius:5px;min-height:24px;padding:3px 6px;font-size:.68rem;cursor:pointer;color:var(--muted);display:flex;align-items:center}
+.tt-b:hover{outline:2px solid var(--primary)}
+.tt-b.full{background:#64748b;border:none;color:#fff;font-weight:700}
+.tt-s.dbl{display:flex;flex-direction:column;justify-content:center}
+.wd-lesson.du{background:#64748b!important}
 .ab-tag{font-size:.6rem;font-weight:800;background:rgba(255,255,255,.3);border-radius:5px;padding:0 4px;margin-left:4px}
 .ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0 4px;font-size:.86rem}
 .ab-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
@@ -535,7 +541,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <h3 id="plan-form-title">Termin eintragen</h3>
       <div class="grid">
         <div><label class="fld" for="tt-day">Tag</label><select id="tt-day"></select></div>
-        <div id="fld-slot"><label class="fld" for="tt-slot">Stunde</label><select id="tt-slot"></select></div>
+        <div id="fld-slot"><label class="fld" for="tt-slot">Stunde</label><select id="tt-slot"></select>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.84rem;margin-top:8px;cursor:pointer"><input type="checkbox" id="tt-double" style="width:18px;height:18px"> Doppelstunde</label></div>
         <div id="fld-start"><label class="fld" for="tt-start">Von</label><input type="time" id="tt-start" value="18:00"></div>
         <div id="fld-end"><label class="fld" for="tt-end">Bis</label><input type="time" id="tt-end" value="19:30"></div>
         <div><label class="fld" for="tt-subject" id="lbl-subject">Termin</label><input type="text" id="tt-subject" placeholder="z. B. Training"></div>
@@ -876,6 +883,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div><label class="fld" for="l-subject" id="l-lbl-subject">Fach</label><input type="text" id="l-subject"></div>
       <div><label class="fld" for="l-room" id="l-lbl-room">Raum / Lehrkraft</label><input type="text" id="l-room"></div>
       <div><label class="fld" for="l-color">Farbe</label><input type="color" id="l-color" style="width:100%;height:42px;padding:3px"></div>
+      <label id="l-double-row" style="display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="l-double" style="width:18px;height:18px"> Doppelstunde (diese und die nächste Stunde)</label>
       <div class="fld-week" hidden><label class="fld" for="l-week">Gilt in</label><select id="l-week">
         <option value="">jeder Woche</option><option value="A">nur Woche A</option><option value="B">nur Woche B</option></select></div>
     </div>
@@ -912,6 +920,22 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <button class="btn-sm" id="ld-reset">Zurücksetzen</button>
     <button class="btn-sm" id="ld-close">Abbrechen</button>
     <button class="btn" id="ld-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-duty">
+  <div class="bd">
+    <h3 id="du-head">Pausenaufsicht</h3>
+    <p class="hint" id="du-sub" style="margin:-4px 0 12px"></p>
+    <label class="fld" for="du-place">Ort</label>
+    <input type="text" id="du-place" placeholder="z. B. Hof, Pausenhalle, Bus" enterkeyhint="done">
+    <div class="fld-week" hidden style="margin-top:12px"><label class="fld" for="du-week">Gilt in</label><select id="du-week">
+      <option value="">jeder Woche</option><option value="A">nur Woche A</option><option value="B">nur Woche B</option></select></div>
+  </div>
+  <div class="ft">
+    <button class="btn-sm danger" id="du-del">Löschen</button>
+    <button class="btn-sm" id="du-cancel">Abbrechen</button>
+    <button class="btn" id="du-save">Speichern</button>
   </div>
 </dialog>
 
@@ -1544,12 +1568,25 @@ function slotLabel(slot, hours) {
    → { hours, slot } mit der ersten Stunde des Blocks */
 function lessonBlock(lessons, l) {
   if (!l || l.slot == null) return { hours: 1, slot: l ? l.slot : null };
+  if (+l.span === 2) return { hours: 2, slot: l.slot };            // als Doppelstunde eingetragen
   const same = x => x && x !== l && x.day === l.day && x.subject === l.subject && (x.room || "") === (l.room || "")
                     && (!x.week || !l.week || x.week === l.week);
   if ((lessons || []).some(x => same(x) && x.slot === l.slot - 1)) return { hours: 2, slot: l.slot - 1 };
   if ((lessons || []).some(x => same(x) && x.slot === l.slot + 1)) return { hours: 2, slot: l.slot };
   return { hours: 1, slot: l.slot };
 }
+/* Pausen im Stundenplan: Lücken zwischen zwei Stunden (ab 5 Minuten)
+   → [{ after: i, start: "HH:MM", end: "HH:MM" }] – nach Stunde i (nullbasiert) */
+function breaksOf(slots) {
+  const out = [], min = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  for (let i = 0; i < (slots || []).length - 1; i++) {
+    const end = ((slots[i] || "").split("-")[1] || "").trim(), next = ((slots[i + 1] || "").split("-")[0] || "").trim();
+    if (validTime(end) && validTime(next) && min(next) - min(end) >= 5) out.push({ after: i, start: end, end: next });
+  }
+  return out;
+}
+/* Belegt ein Eintrag die Stunde si? (Doppelstunde: auch die nächste) */
+const occupies = (l, si) => l && l.slot != null && (l.slot === si || (+l.span === 2 && l.slot + 1 === si));
 /* ==CORE-END== */
 
 /* ==FERIEN-BEGIN== Schulferien je Land, erzeugt mit tools/make-ferien.js.
@@ -1628,6 +1665,8 @@ const DEFAULT_STATE = () => ({
   lessonEx: {},
   // Plus-/Minusstunden: Vertretung (+), Ausfall (−), Aufsicht (gezählt, ohne Wertung)
   subLog: [],
+  // Feste Pausenaufsichten: { id, day, after (Pause nach Stunde i), place, week }
+  duties: [],
   // Schreibgeschützte Termine aus einem abonnierten Kalender (ICS) – Anzeige-Cache.
   extEvents: [],
   categories: [ { id:"c3", name:"Privat", color:"#059669" } ],
@@ -1666,7 +1705,8 @@ function normalizeState(p) {
     slot: l.slot != null && l.slot !== "" && !isNaN(+l.slot) ? +l.slot : null,
     start: validTime(l.start) ? l.start : null, end: validTime(l.end) ? l.end : null,
     subject: String(l.subject || "").slice(0, 80), room: l.room || null, color: l.color || "#2563eb",
-    week: l.week === "A" || l.week === "B" ? l.week : null
+    week: l.week === "A" || l.week === "B" ? l.week : null,
+    span: +l.span === 2 && l.slot != null ? 2 : 1
   }));
   // Ausnahmen: nur gültige Schlüssel, nur zu vorhandenen Stunden, nicht älter als 60 Tage
   const lessonIds = new Set(lessons.map(l => l.id)), exFrom = addDays(todayISO(), -60);
@@ -1712,6 +1752,9 @@ function normalizeState(p) {
       id: x.id, name: String(x.name), perWeek: Math.min(7, Math.max(1, +x.perWeek || 3)), color: x.color || "#059669" })),
     habitLog: p.habitLog && typeof p.habitLog === "object" ? p.habitLog : {},
     lessonEx,
+    duties: arr(p.duties).filter(x => x && x.day >= 1 && x.day <= 7 && Number.isInteger(+x.after) && +x.after >= 0)
+      .map(x => ({ id: x.id || uid(), day: +x.day, after: +x.after, place: String(x.place || "").slice(0, 60),
+                   week: x.week === "A" || x.week === "B" ? x.week : null })),
     subLog: arr(p.subLog).filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && ["plus", "minus", "aufsicht"].indexOf(e.type) > -1)
       .map(e => ({ id: e.id || uid(), date: e.date, type: e.type, hours: +e.hours === 2 ? 2 : 1,
         slot: e.slot != null && e.slot !== "" && !isNaN(+e.slot) ? +e.slot : null,
@@ -1849,6 +1892,8 @@ function widgetSnapshot() {
       items.push({ id: "l" + l.id, kind: "lesson", time: lessonStart(l, state.settings.slots),
                    title: subj + (room ? " · " + room : ""), color: l.color || "#2563eb", cancelled: !!ex.cancel });
     });
+    if (feat("timetable")) dutiesOn(iso).forEach(du => items.push({ id: "d" + du.id, kind: "lesson",
+      time: dutyBreak(du).start, title: "Aufsicht" + (du.place ? " · " + du.place : ""), color: "#64748b" }));
     if (isTeacherPlan()) state.subLog.filter(e => e.date === iso && !e.lessonId && e.type !== "minus").forEach(e => items.push({
       id: "s" + e.id, kind: "lesson", time: subStart(e) || null, title: subTitle(e) + (e.room ? " · " + e.room : ""),
       color: e.type === "plus" ? "#059669" : "#64748b" }));
@@ -2897,24 +2942,26 @@ function renderWeek() {
       lessonsOn(iso).forEach(l => {
         const ex = lessonExOf(l, iso) || {};
         const subj = ex.subject || l.subject, room = ex.room || l.room;
-        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l,
+        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l, end: +l.span === 2 ? planEnd(l) : null,
                      cls: ex.cancel ? "cx" : (ex.subject || ex.room) ? "sub" : "",
                      text: `${subj}${room ? " · " + room : ""}`, color: l.color || "#2563eb" });
       });
     }
     if (feat("extCal")) eventsOn(iso).forEach(e => chips.push({ time: e.time || "", text: e.title, color: e.color || "#9333ea" }));
+    if (feat("timetable")) dutiesOn(iso).forEach(du => chips.push({ time: dutyBreak(du).start, cls: "du", duty: du,
+      text: "Aufsicht" + (du.place ? " · " + du.place : ""), color: "#64748b" }));
     if (isTeacherPlan()) state.subLog.filter(e => e.date === iso && !e.lessonId).forEach(e => chips.push({
       time: subStart(e), sub: e, cls: e.type === "plus" ? "sp" : e.type === "minus" ? "sm" : "sa",
       text: (e.type === "plus" ? "+ " : "") + subTitle(e) + (e.room ? " · " + e.room : ""), color: "#059669" }));
     if (chips.length) {
       const row = el("div","wd-lessons");
       chips.sort((x, y) => x.time.localeCompare(y.time)).forEach(c => {
-        const s = el("span","wd-lesson" + (c.cls ? " " + c.cls : "") + (c.lesson ? " tap" : ""), (c.time ? c.time + " " : "") + c.text);
+        const s = el("span","wd-lesson" + (c.cls ? " " + c.cls : "") + (c.lesson ? " tap" : ""), (c.time ? c.time + (c.end ? "–" + c.end : "") + " " : "") + c.text);
         s.style.background = c.color;
-        if (c.lesson || c.sub) {
+        if (c.lesson || c.sub || c.duty) {
           s.setAttribute("role", "button"); s.tabIndex = 0;
-          s.onclick = () => c.lesson ? openLessonDay(c.lesson, iso) : openSubDialog(c.sub);
-          if (c.sub) s.classList.add("tap");
+          s.onclick = () => c.lesson ? openLessonDay(c.lesson, iso) : c.sub ? openSubDialog(c.sub) : openDutyDialog(c.duty);
+          if (!c.lesson) s.classList.add("tap");
         }
         row.append(s);
       });
@@ -3427,7 +3474,10 @@ function lessonsOn(iso) {
 const nextLessonOpts = () => ({ ctx: lessonCtx, cancelled: (l, iso) => !!(lessonExOf(l, iso) || {}).cancel });
 function planEnd(l) {
   if (validTime(l.end)) return l.end;
-  if (l.slot != null) { const e = ((state.settings.slots[l.slot] || "").split("-")[1] || "").trim(); if (validTime(e)) return e; }
+  if (l.slot != null) {
+    const s = state.settings.slots[l.slot + (+l.span === 2 ? 1 : 0)] || state.settings.slots[l.slot] || "";
+    const e = (s.split("-")[1] || "").trim(); if (validTime(e)) return e;
+  }
   return null;
 }
 let abView = null;     // im Raster gezeigte Woche (A/B), Standard: aktuelle
@@ -3479,7 +3529,7 @@ const weeksOverlap = (a, b) => !a || !b || a === b;
 /* Stunde im Raster für die gezeigte Woche */
 function cellLesson(d, si) {
   const w = state.settings.ab.on ? abView : null;
-  return state.lessons.find(x => x.day === d && x.slot === si && (!w || weeksOverlap(x.week, w)));
+  return state.lessons.find(x => x.day === d && occupies(x, si) && (!w || weeksOverlap(x.week, w)));
 }
 
 function applyPlanMode() {
@@ -3522,8 +3572,10 @@ $("btn-add-lesson").onclick = () => {
   const week = state.settings.ab.on ? ($("tt-week").value || null) : null;
   if (isSchool()) {
     const slot = +$("tt-slot").value;
-    state.lessons = state.lessons.filter(l => !(l.day === day && l.slot === slot && weeksOverlap(l.week, week)));
-    state.lessons.push({ id: uid(), day, slot, start: null, end: null, subject, room, color, week });
+    const span = $("tt-double").checked && slot + 1 < state.settings.slots.length ? 2 : 1;
+    state.lessons = state.lessons.filter(l => !(l.day === day && weeksOverlap(l.week, week)
+                                                && (occupies(l, slot) || (span === 2 && occupies(l, slot + 1)))));
+    state.lessons.push({ id: uid(), day, slot, start: null, end: null, subject, room, color, week, span });
   } else {
     const start = $("tt-start").value, end = $("tt-end").value;
     if (!validTime(start)) return toast("Bitte eine Anfangszeit wählen.");
@@ -3531,7 +3583,7 @@ $("btn-add-lesson").onclick = () => {
     state.lessons.push({ id: uid(), day, slot: null, start, end: end || null, subject, room, color, week });
   }
   save(); renderTimetable(); fillSubjectSelects(); updateStorageInfo(); renderWeek();
-  $("tt-subject").value = ""; $("tt-room").value = "";
+  $("tt-subject").value = ""; $("tt-room").value = ""; $("tt-double").checked = false;
   toast("Eingetragen.");
 };
 
@@ -3572,19 +3624,29 @@ function renderTimetable() {
   const days = activeDays();
   g.style.setProperty("--cols", days.length);
 
-  g.append(el("div"));
-  days.forEach(d => g.append(el("div","tt-h" + (d === todayDow ? " today" : ""), DAY_SHORT[d])));
-
+  // Feste Plätze im Raster: Kopf, je Stunde eine Zeile, Pausen (nur Lehrkräfte) dazwischen
+  const place = (node, col, row, rows) => { node.style.gridColumn = String(col); node.style.gridRow = rows > 1 ? `${row} / span ${rows}` : String(row); g.append(node); };
+  place(el("div"), 1, 1);
+  days.forEach((d, i) => place(el("div","tt-h" + (d === todayDow ? " today" : ""), DAY_SHORT[d]), i + 2, 1));
+  const pauses = state.settings.profile === "teacher" ? breaksOf(state.settings.slots) : [];
+  const rowOf = [], breakRow = {};
+  let r = 2;
+  state.settings.slots.forEach((_, si) => {
+    rowOf[si] = r++;
+    const br = pauses.find(x => x.after === si);
+    if (br) breakRow[si] = r++;
+  });
+  const wView = state.settings.ab.on ? abView : null;
   state.settings.slots.forEach((time, si) => {
     const parts = time.split("-");
     const t = el("div","tt-t");
     t.append(el("div",null,parts[0] || time));
     if (parts[1]) t.append(el("div",null,parts[1]));
-    g.append(t);
-
-    for (const d of days) {
-      const cell = el("div","tt-s");
+    place(t, 1, rowOf[si]);
+    days.forEach((d, di) => {
       const l = cellLesson(d, si);
+      if (l && l.slot !== si) return;                         // zweite Stunde einer Doppelstunde
+      const cell = el("div","tt-s");
       if (l) {
         cell.classList.add("full");
         cell.style.background = l.color || "#2563eb";
@@ -3593,11 +3655,29 @@ function renderTimetable() {
         if (l.week && state.settings.ab.on) sj.append(el("span", "ab-tag", l.week));
         cell.append(sj);
         if (l.room) cell.append(el("div","room", l.room));
+        if (+l.span === 2) { cell.classList.add("dbl"); cell.append(el("div","room","Doppelstunde")); }
         cell.onclick = () => openLessonDialog(l, d, si);
       } else {
         cell.onclick = () => openLessonDialog(null, d, si);
       }
-      g.append(cell);
+      // Doppelstunde über die Pause hinweg: auch die Pausenzeile überdecken
+      const rows = l && +l.span === 2 ? rowOf[si + 1] - rowOf[si] + 1 : 1;
+      place(cell, di + 2, rowOf[si], rows);
+    });
+    const br = pauses.find(x => x.after === si);
+    if (br) {
+      const lab = el("div","tt-p"); lab.append(el("div", null, "Pause"), el("div", null, br.start));
+      place(lab, 1, breakRow[si]);
+      days.forEach((d, di) => {
+        const lAbove = cellLesson(d, si);
+        if (lAbove && +lAbove.span === 2 && lAbove.slot === si) return;   // von Doppelstunde überdeckt
+        const du = state.duties.find(x => x.day === d && x.after === si && (!wView || weeksOverlap(x.week, wView)));
+        const c = el("div", "tt-b" + (du ? " full" : ""), du ? "Aufsicht" + (du.place ? " · " + du.place : "") : "+ Aufsicht");
+        if (du && du.week && state.settings.ab.on) c.append(el("span", "ab-tag", du.week));
+        c.title = "Pausenaufsicht " + DAY_NAMES[d] + ", " + br.start + "–" + br.end;
+        c.onclick = () => openDutyDialog(du, d, si);
+        place(c, di + 2, breakRow[si]);
+      });
     }
   });
   // Einträge mit freier Uhrzeit (aus dem Wochenplan) unter dem Raster
@@ -3625,6 +3705,9 @@ function openLessonDialog(lesson, day, slot) {
   // A/B: neue Stunde in einer Zelle, deren andere Woche belegt ist → nur diese Woche
   const other = !lesson && slot != null && state.lessons.some(x => x.day === day && x.slot === slot);
   $("l-week").value = lesson ? (lesson.week || "") : (state.settings.ab.on && other ? abView || "" : "");
+  const gridSlot = lesson ? lesson.slot : slot;
+  $("l-double-row").hidden = timed || gridSlot == null || gridSlot + 1 >= state.settings.slots.length;
+  $("l-double").checked = !!(lesson && +lesson.span === 2);
   $("l-del").style.display = lesson ? "" : "none";
   $("dlg-lesson").showModal();
   setTimeout(() => $("l-subject").focus(), 60);
@@ -3642,11 +3725,14 @@ $("l-save").onclick = () => {
     if (end && end <= start) return toast("Das Ende muss nach dem Anfang liegen.");
   }
   const week = state.settings.ab.on ? ($("l-week").value || null) : (lesson ? lesson.week || null : null);
-  // Im Raster: andere Stunden derselben Zelle und Woche ersetzen
-  if (!timed && slot != null)
-    state.lessons = state.lessons.filter(x => x === lesson || !(x.day === day && x.slot === slot && weeksOverlap(x.week, week)));
-  if (lesson) Object.assign(lesson, { subject, room, color, week, ...(timed ? { start, end } : {}) });
-  else state.lessons.push({ id: uid(), day, slot: timed ? null : slot, start, end, subject, room, color, week });
+  // Im Raster: andere Stunden derselben Zelle(n) und Woche ersetzen
+  const s0 = lesson ? lesson.slot : slot;
+  const span = !timed && s0 != null && $("l-double").checked && s0 + 1 < state.settings.slots.length ? 2 : 1;
+  if (!timed && s0 != null)
+    state.lessons = state.lessons.filter(x => x === lesson || !(x.day === day && weeksOverlap(x.week, week)
+                                                && (occupies(x, s0) || (span === 2 && occupies(x, s0 + 1)))));
+  if (lesson) Object.assign(lesson, { subject, room, color, week, span: timed ? 1 : span, ...(timed ? { start, end } : {}) });
+  else state.lessons.push({ id: uid(), day, slot: timed ? null : slot, start, end, subject, room, color, week, span: timed ? 1 : span });
   save(); $("dlg-lesson").close(); renderTimetable(); fillSubjectSelects(); updateStorageInfo(); renderWeek();
 };
 $("l-cancel").onclick = () => $("dlg-lesson").close();
@@ -3752,6 +3838,43 @@ function addHomework() {
 $("ld-hw-add").onclick = addHomework;
 $("ld-hw").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) addHomework(); };
 $("ld-exam").onclick = () => { $("dlg-lday").close(); openExamDialog(ldEdit.iso, ldEdit.lesson.subject); };
+
+/* ---------- Feste Pausenaufsichten (Lehrkräfte) ---------- */
+let duEdit = null;
+const dutyBreak = du => breaksOf(state.settings.slots).find(x => x.after === du.after) || null;
+function openDutyDialog(du, day, after) {
+  if (!Lic.full()) return showProHint("timetable");
+  duEdit = du ? { du } : { day, after };
+  const br = breaksOf(state.settings.slots).find(x => x.after === (du ? du.after : after));
+  $("du-sub").textContent = DAY_NAMES[du ? du.day : day] + (br ? ", " + br.start + "–" + br.end : "") + ` (nach der ${(du ? du.after : after) + 1}. Stunde)`;
+  $("du-place").value = du ? du.place : "";
+  $("du-week").value = du ? (du.week || "") : (state.settings.ab.on && abView && state.duties.some(x => x.day === day && x.after === after) ? abView : "");
+  $("du-del").style.display = du ? "" : "none";
+  $("dlg-duty").showModal();
+  setTimeout(() => $("du-place").focus(), 60);
+}
+$("du-cancel").onclick = () => $("dlg-duty").close();
+$("du-save").onclick = () => {
+  const place = $("du-place").value.trim(), week = state.settings.ab.on ? ($("du-week").value || null) : null;
+  if (duEdit.du) Object.assign(duEdit.du, { place, week });
+  else {
+    state.duties = state.duties.filter(x => !(x.day === duEdit.day && x.after === duEdit.after && weeksOverlap(x.week, week)));
+    state.duties.push({ id: uid(), day: duEdit.day, after: duEdit.after, place, week });
+  }
+  save(); $("dlg-duty").close(); renderTimetable(); renderWeek(); toast("Aufsicht gespeichert.");
+};
+$("du-place").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) $("du-save").click(); };
+$("du-del").onclick = () => {
+  const snap = snapshot();
+  state.duties = state.duties.filter(x => x !== duEdit.du);
+  save(); $("dlg-duty").close(); renderTimetable(); renderWeek(); toast("Aufsicht gelöscht.", () => restore(snap));
+};
+/* Aufsichten eines Tages, die stattfinden (wie Stunden: A/B, Ferien, Feiertage) */
+function dutiesOn(iso) {
+  if (state.settings.profile !== "teacher" || !isSchool()) return [];
+  const ctx = lessonCtx(iso);
+  return state.duties.filter(du => lessonOn(du, iso, ctx) && dutyBreak(du));
+}
 
 /* ---------- Plus-/Minusstunden (Lehrkräfte) ---------- */
 const isTeacherPlan = () => state.settings.profile === "teacher" && isSchool() && feat("timetable");
@@ -4066,7 +4189,9 @@ $("btn-save-slots").onclick = () => {
   const removed = state.lessons.filter(l => l.slot != null && l.slot >= lines.length).length;
   if (removed && !confirm(`${removed} Eintrag/Einträge liegen außerhalb der neuen Zeiten und werden gelöscht. Fortfahren?`)) return;
   state.lessons = state.lessons.filter(l => l.slot == null || l.slot < lines.length);
+  state.lessons.forEach(l => { if (+l.span === 2 && l.slot + 1 >= lines.length) l.span = 1; });
   state.settings.slots = lines;
+  state.duties = state.duties.filter(du => breaksOf(lines).some(b => b.after === du.after));
   save(); fillSlotSelects(); renderTimetable(); toast("Zeiten gespeichert.");
 };
 $("tt-days").onchange = e => {

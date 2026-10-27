@@ -680,6 +680,63 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     await ctx.close();
   }
 
+  console.log('19 · Doppelstunden und Pausenaufsichten');
+  {
+    const st = { version: 3, lessons: [], settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true, features: { timetable: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await go(p, 'timetable');
+    // Doppelstunde über das Formular: Montag, 3./4. Stunde
+    await p.selectOption('#tt-day', '1'); await p.selectOption('#tt-slot', '2');
+    await p.check('#tt-double'); await p.fill('#tt-subject', 'Mathe'); await p.fill('#tt-room', '7b');
+    await p.click('#btn-add-lesson');
+    let L = await S(p, () => state.lessons);
+    ok(L.length === 1 && L[0].span === 2 && L[0].slot === 2, 'Doppelstunde als ein Eintrag');
+    const cell = p.locator('#tt-grid .tt-s.dbl');
+    ok(await cell.count() === 1 && /Doppelstunde/.test(await cell.textContent()), 'im Raster als Doppelstunde');
+    const rows = await cell.evaluate(e => e.style.gridRow);
+    ok(/span 2/.test(rows), 'über zwei Zeilen (' + rows + ')');
+    // Doppelstunde über eine Pause hinweg: Dienstag 2./3. Stunde (Pause nach der 2.)
+    await S(p, () => { state.lessons.push({ id: 'x', day: 2, slot: 1, span: 2, subject: 'Deutsch', room: '9a', color: '#059669' }); save(); renderTimetable(); });
+    const r2 = await p.locator('#tt-grid .tt-s.dbl', { hasText: 'Deutsch' }).evaluate(e => e.style.gridRow);
+    ok(/span 3/.test(r2), 'über die Pause hinweg drei Zeilen (' + r2 + ')');
+    ok(await p.locator('#tt-grid .tt-p').count() === 3, 'drei Pausenzeilen aus den Zeiten (inkl. Mittag)');
+    // Pausenaufsicht eintragen: Mittwoch nach der 2. Stunde
+    const wedBreak = p.locator('#tt-grid .tt-b[title^="Pausenaufsicht Mittwoch, 09:30"]');
+    await wedBreak.click();
+    ok(await p.$eval('#dlg-duty', d => d.open), 'Tipp auf die Pause öffnet die Aufsicht');
+    await p.fill('#du-place', 'Hof'); await p.click('#du-save');
+    ok((await S(p, () => state.duties.map(d => d.day + '/' + d.after + '/' + d.place).join())) === '3/1/Hof', 'Aufsicht gespeichert');
+    ok((await p.locator('#tt-grid .tt-b.full').textContent()).includes('Aufsicht · Hof'), 'im Raster sichtbar');
+    // Woche: Aufsicht um 09:30, Doppelstunde einmal
+    await go(p, 'week');
+    const wk = await p.textContent('#wk-days');
+    ok(/09:30 Aufsicht · Hof/.test(wk), 'Aufsicht in der Woche zur Pausenzeit');
+    ok((wk.match(/Mathe · 7b/g) || []).length === 1, 'Doppelstunde einmal in der Woche');
+    // Ausfall der Doppelstunde = 2 Minusstunden ohne Partner
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe' }).click();
+    await p.check('#ld-cancel');
+    ok(await p.$eval('#ld-minus-h button.on', b => b.dataset.h) === '2', 'Ausfall der Doppelstunde: Doppel vorgeschlagen');
+    await p.click('#ld-save');
+    ok((await S(p, () => state.subLog.map(e => e.type + e.hours + '@' + e.slot).join())) === 'minus2@2', 'eine Minus-Doppelstunde');
+    // In den Herbstferien keine Aufsicht
+    await S(p, () => { weekOffset = -3; renderWeek(); });
+    ok(!/Aufsicht · Hof/.test(await p.textContent('#wk-days')), 'keine Aufsicht in den Ferien');
+    await S(p, () => { weekOffset = 0; renderWeek(); });
+    // Doppelstunde wieder einfach machen
+    await go(p, 'timetable');
+    await p.locator('#tt-grid .tt-s.dbl', { hasText: 'Mathe' }).click();
+    ok(await p.isChecked('#l-double'), 'Dialog zeigt Doppelstunde');
+    await p.uncheck('#l-double'); await p.click('#l-save');
+    ok((await S(p, () => state.lessons.find(l => l.subject === 'Mathe').span)) === 1, 'zurück auf Einzelstunde');
+    // Widget enthält die Aufsicht (Mittwoch)
+    const w = await S(p, () => widgetSnapshot());
+    ok(w.days[1].items.some(x => /Aufsicht · Hof/.test(x.title)), 'Aufsicht im Widget');
+    const back = await S(p, () => { const n = normalizeState(JSON.parse(JSON.stringify(state))); return n.duties.length + '/' + n.lessons.find(l => l.id === 'x').span; });
+    ok(back === '1/2', 'Aufsichten und Doppelstunden überstehen Export/Import');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
   console.log('16 · Schule ohne Vollversion');
   {
     const st = { version: 3, lessons: [{ id: 'lm', day: 2, slot: 1, subject: 'Mathe' }],
