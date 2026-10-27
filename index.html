@@ -347,6 +347,22 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .ex-preview div{font-size:.84rem;padding:7px 10px;border-radius:9px;background:var(--bg,#f4f5f7);display:flex;justify-content:space-between;gap:10px}
 .ex-preview .d{color:var(--muted);white-space:nowrap}
 .ab-badge{display:inline-block;font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--primary);color:#fff;white-space:nowrap;vertical-align:2px}
+.wd-add{margin-top:8px;font-size:.74rem;padding:4px 10px}
+.wd-lesson.sp{background:#059669!important}
+.wd-lesson.sa{background:#64748b!important}
+.wd-lesson.sm{background:#dc2626!important;text-decoration:line-through}
+.sub-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.sub-tile{border-radius:12px;padding:10px 6px;text-align:center;background:var(--bg,#f4f5f7)}
+.sub-tile .v{font-size:1.25rem;font-weight:800}
+.sub-tile .l{font-size:.68rem;color:var(--muted);margin-top:2px}
+.sub-tile.p .v{color:#059669}.sub-tile.m .v{color:#dc2626}
+.sub-month{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px}
+.sub-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;background:var(--bg,#f4f5f7);margin-bottom:6px;cursor:pointer}
+.sub-row .d{font-weight:700;font-size:.82rem;white-space:nowrap}
+.sub-row .t{flex:1;min-width:0;font-size:.84rem}
+.sub-row .t small{display:block;color:var(--muted);font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub-row .n{font-weight:800;font-size:.9rem;white-space:nowrap}
+.sub-row.plus .n{color:#059669}.sub-row.minus .n{color:#dc2626}.sub-row.aufsicht .n{color:var(--muted);font-size:.74rem}
 .ab-tag{font-size:.6rem;font-weight:800;background:rgba(255,255,255,.3);border-radius:5px;padding:0 4px;margin-left:4px}
 .ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0 4px;font-size:.86rem}
 .ab-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
@@ -490,6 +506,18 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div class="tt" id="tt-grid"></div>
       <div id="plan-list"></div>
       <p class="hint" id="plan-hint" style="margin:13px 0 0">Eintrag antippen zum Bearbeiten oder Löschen.</p>
+    </div>
+    <div class="card" id="card-subs" hidden>
+      <h3>Mehr- und Minderstunden</h3>
+      <div class="seg" id="sub-period"><button data-p="month">Monat</button><button data-p="half">Halbjahr</button><button data-p="year">Schuljahr</button><button data-p="all">Alle</button></div>
+      <p class="hint" id="sub-period-label" style="margin:8px 0 0"></p>
+      <div class="sub-tiles" id="sub-tiles"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm" id="sub-add">＋ Eintrag</button>
+        <button class="btn-sm" id="sub-share">Liste teilen</button>
+      </div>
+      <div id="sub-list"></div>
+      <p class="hint" style="margin:12px 0 0">Vertretung zählt plus, Ausfall minus, Aufsichten werden nur erfasst. Schneller geht es in der Woche: „＋ Vertretung“ am Tag oder eigene Stunde antippen → „Fällt aus“.</p>
     </div>
     <div class="card">
       <h3 id="plan-form-title">Termin eintragen</h3>
@@ -719,6 +747,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div class="feat"><div class="i">📅</div><div><div class="t">Wochenplan und Stundenplan</div><div class="d">Feste Wochentermine wie Training oder Kurse – oder als Stundenplan mit Schulstunden, A/B-Wochen, Ausfall und Vertretung. Hausaufgaben „bis nächste Mathe“ landen bei der nächsten Stunde – Ferien und Feiertage werden übersprungen.</div></div></div>
       <div class="feat"><div class="i">🏖</div><div><div class="t">Feiertage und Ferien</div><div class="d">Für alle 16 Bundesländer in Woche und Kalender. Feiertage werden berechnet, Schulferien sind in der App hinterlegt (Quelle: OpenHolidays API, Lizenz ODbL) – ohne Abruf aus dem Netz.</div></div></div>
       <div class="feat"><div class="i">📝</div><div><div class="t">Klassenarbeiten und Klausuren</div><div class="d">Für Lehrkräfte: Vorbereiten, Schreiben, Korrigieren mit Frist. Für Schüler: ein Lernplan mit verteilten Einheiten bis zur Klausur.</div></div></div>
+      <div class="feat"><div class="i">⚖️</div><div><div class="t">Mehr- und Minderstunden</div><div class="d">Für Lehrkräfte: Vertretungen (+), Ausfälle (−) und Aufsichten mit Datum, Einzel- oder Doppelstunde, Klasse und Notiz. Übersicht mit Saldo je Monat, Halbjahr oder Schuljahr, als Liste teilbar.</div></div></div>
       <div class="feat"><div class="i">✅</div><div><div class="t">Gewohnheiten</div><div class="d">Sport, Lesen, Wasser trinken: mit Wochenziel abhaken, Serien sehen.</div></div></div>
       <div class="feat"><div class="i">🧾</div><div><div class="t">Vorlagen</div><div class="d">Wiederkehrende Abläufe wie „Urlaub packen“ einmal anlegen und mit einem Tippen samt Unterpunkten einsetzen.</div></div></div>
       <div class="feat"><div class="i">🛒</div><div><div class="t">Einkaufslisten</div><div class="d">Mehrere Listen, Vorschläge aus früheren Einkäufen, abhaken, aufräumen, teilen.</div></div></div>
@@ -844,6 +873,10 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <p class="hint" id="ld-sub" style="margin:-4px 0 12px"></p>
     <label style="display:flex;align-items:center;gap:9px;font-size:.92rem;cursor:pointer;margin-bottom:12px">
       <input type="checkbox" id="ld-cancel" style="width:20px;height:20px"> Fällt an diesem Tag aus</label>
+    <div id="ld-minus" class="ab-row" hidden style="margin:-4px 0 12px">
+      <label><input type="checkbox" id="ld-minus-on"> als Minusstunde zählen</label>
+      <span class="seg" id="ld-minus-h" style="display:inline-flex;margin:0"><button data-h="1">Einzel</button><button data-h="2">Doppel</button></span>
+    </div>
     <div id="ld-subfields" class="grid" style="margin-bottom:6px">
       <div><label class="fld" for="ld-subject" id="ld-lbl-subject">Vertretung / anderes Fach</label><input type="text" id="ld-subject" placeholder="wie geplant"></div>
       <div><label class="fld" for="ld-room">Raum</label><input type="text" id="ld-room" placeholder="wie geplant"></div>
@@ -859,6 +892,29 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <button class="btn-sm" id="ld-reset">Zurücksetzen</button>
     <button class="btn-sm" id="ld-close">Abbrechen</button>
     <button class="btn" id="ld-save">Übernehmen</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-sub">
+  <div class="bd">
+    <h3 id="sb-head">Vertretung eintragen</h3>
+    <div class="seg" id="sb-type" style="margin-bottom:8px"><button data-t="plus">Vertretung +</button><button data-t="minus">Ausfall −</button><button data-t="aufsicht">Aufsicht</button></div>
+    <p class="hint" id="sb-type-hint" style="margin:0 0 10px"></p>
+    <div class="seg" id="sb-hours" style="margin-bottom:12px"><button data-h="1">Einzelstunde</button><button data-h="2">Doppelstunde</button></div>
+    <div class="grid" style="margin-bottom:6px">
+      <div><label class="fld" for="sb-date">Datum</label><input type="date" id="sb-date"></div>
+      <div><label class="fld" for="sb-slot">Stunde</label><select id="sb-slot"></select></div>
+      <div><label class="fld" for="sb-klass">Klasse</label><input type="text" id="sb-klass" placeholder="z. B. 8c"></div>
+      <div><label class="fld" for="sb-subject">Fach</label><input type="text" id="sb-subject" placeholder="z. B. Mathe"></div>
+      <div><label class="fld" for="sb-room">Raum</label><input type="text" id="sb-room" placeholder="optional"></div>
+    </div>
+    <label class="fld" for="sb-note">Was gemacht / Notiz</label>
+    <textarea id="sb-note" rows="3" placeholder="z. B. Arbeitsblatt Bruchrechnung, ins Klassenbuch eingetragen"></textarea>
+  </div>
+  <div class="ft">
+    <button class="btn-sm danger" id="sb-del">Löschen</button>
+    <button class="btn-sm" id="sb-cancel">Abbrechen</button>
+    <button class="btn" id="sb-save">Speichern</button>
   </div>
 </dialog>
 
@@ -1423,6 +1479,57 @@ function planExam(o) {
   out.push({ role: "exam", title: title + ": Klausur", dueDate: date, prio: "hoch", subtasks: [] });
   return out;
 }
+/* ---- Plus-/Minusstunden (Lehrkräfte) ----
+   Eintrag e = { date, type: "plus"|"minus"|"aufsicht", hours: 1|2, slot } –
+   Aufsichten werden gezählt, gehen aber nicht in den Saldo ein. */
+const subValue = e => !e ? 0 : e.type === "plus" ? (+e.hours || 1) : e.type === "minus" ? -(+e.hours || 1) : 0;
+function subSummary(list, from, to) {
+  const r = { plus: 0, minus: 0, saldo: 0, aufsicht: 0, aufsichtStd: 0, count: 0 };
+  for (const e of list || []) {
+    if (!e || (from && e.date < from) || (to && e.date > to)) continue;
+    r.count++;
+    const h = +e.hours || 1;
+    if (e.type === "plus") r.plus += h;
+    else if (e.type === "minus") r.minus += h;
+    else if (e.type === "aufsicht") { r.aufsicht++; r.aufsichtStd += h; }
+  }
+  r.saldo = r.plus - r.minus;
+  return r;
+}
+/* Zeitraum: "month" | "half" | "year" | "all" → { from, to, label } (Schuljahr ab 1. August) */
+function schoolPeriod(kind, today) {
+  const y = +today.slice(0, 4), m = +today.slice(5, 7);
+  const sy = m >= 8 ? y : y - 1;                       // Beginn des Schuljahres
+  if (kind === "month") {
+    const from = today.slice(0, 8) + "01";
+    const to = addDays(isoOf(addMonths(parseISO(from), 1)), -1);
+    return { from, to, label: parseISO(from).toLocaleDateString("de-DE", { month: "long", year: "numeric" }) };
+  }
+  if (kind === "half") {
+    const first = m >= 8 || m === 1;                   // 1. Halbjahr: August bis Januar
+    const from = first ? `${sy}-08-01` : `${sy + 1}-02-01`;
+    const to = first ? `${sy + 1}-01-31` : `${sy + 1}-07-31`;
+    return { from, to, label: (first ? "1." : "2.") + ` Halbjahr ${sy}/${String(sy + 1).slice(2)}` };
+  }
+  if (kind === "year") return { from: `${sy}-08-01`, to: `${sy + 1}-07-31`, label: `Schuljahr ${sy}/${String(sy + 1).slice(2)}` };
+  return { from: null, to: null, label: "Alle Einträge" };
+}
+/* „3. Std“ bzw. „3./4. Std“ (slot ist nullbasiert) */
+function slotLabel(slot, hours) {
+  if (slot == null || isNaN(+slot)) return (+hours === 2 ? "Doppelstunde" : "Einzelstunde");
+  const n = +slot + 1;
+  return +hours === 2 ? `${n}./${n + 1}. Std` : `${n}. Std`;
+}
+/* Doppelstunde? Gleiches Fach/gleicher Raum direkt davor oder danach am selben Tag
+   → { hours, slot } mit der ersten Stunde des Blocks */
+function lessonBlock(lessons, l) {
+  if (!l || l.slot == null) return { hours: 1, slot: l ? l.slot : null };
+  const same = x => x && x !== l && x.day === l.day && x.subject === l.subject && (x.room || "") === (l.room || "")
+                    && (!x.week || !l.week || x.week === l.week);
+  if ((lessons || []).some(x => same(x) && x.slot === l.slot - 1)) return { hours: 2, slot: l.slot - 1 };
+  if ((lessons || []).some(x => same(x) && x.slot === l.slot + 1)) return { hours: 2, slot: l.slot };
+  return { hours: 1, slot: l.slot };
+}
 /* ==CORE-END== */
 
 /* ==FERIEN-BEGIN== Schulferien je Land, erzeugt mit tools/make-ferien.js.
@@ -1499,6 +1606,8 @@ const DEFAULT_STATE = () => ({
   habits: [], habitLog: {},
   // Ausnahmen im Stundenplan an einem Tag: "stundenId|JJJJ-MM-TT" → { cancel } oder { subject, room }
   lessonEx: {},
+  // Plus-/Minusstunden: Vertretung (+), Ausfall (−), Aufsicht (gezählt, ohne Wertung)
+  subLog: [],
   // Schreibgeschützte Termine aus einem abonnierten Kalender (ICS) – Anzeige-Cache.
   extEvents: [],
   categories: [ { id:"c3", name:"Privat", color:"#059669" } ],
@@ -1583,6 +1692,12 @@ function normalizeState(p) {
       id: x.id, name: String(x.name), perWeek: Math.min(7, Math.max(1, +x.perWeek || 3)), color: x.color || "#059669" })),
     habitLog: p.habitLog && typeof p.habitLog === "object" ? p.habitLog : {},
     lessonEx,
+    subLog: arr(p.subLog).filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && ["plus", "minus", "aufsicht"].indexOf(e.type) > -1)
+      .map(e => ({ id: e.id || uid(), date: e.date, type: e.type, hours: +e.hours === 2 ? 2 : 1,
+        slot: e.slot != null && e.slot !== "" && !isNaN(+e.slot) ? +e.slot : null,
+        klass: String(e.klass || "").slice(0, 40), subject: String(e.subject || "").slice(0, 80),
+        room: String(e.room || "").slice(0, 40), note: String(e.note || "").slice(0, 2000),
+        lessonId: e.lessonId || null, pairId: e.pairId || null, createdAt: e.createdAt || Date.now() })),
     extEvents: arr(p.extEvents),
     categories: arr(p.categories).length ? p.categories : d.categories,
     settings: {
@@ -1714,6 +1829,9 @@ function widgetSnapshot() {
       items.push({ id: "l" + l.id, kind: "lesson", time: lessonStart(l, state.settings.slots),
                    title: subj + (room ? " · " + room : ""), color: l.color || "#2563eb", cancelled: !!ex.cancel });
     });
+    if (isTeacherPlan()) state.subLog.filter(e => e.date === iso && !e.lessonId && e.type !== "minus").forEach(e => items.push({
+      id: "s" + e.id, kind: "lesson", time: subStart(e) || null, title: subTitle(e) + (e.room ? " · " + e.room : ""),
+      color: e.type === "plus" ? "#059669" : "#64748b" }));
     if (feat("extCal")) eventsOn(iso).forEach((e, k) => items.push({ id: "e" + k, kind: "event",
       time: validTime(e.time) ? e.time : null, title: String(e.title || "Termin"), color: e.color || "#9333ea" }));
     state.tasks.filter(t => !t.completed && t.dueDate === iso).forEach(t => items.push({ id: "t" + t.id, kind: "task",
@@ -2765,14 +2883,18 @@ function renderWeek() {
       });
     }
     if (feat("extCal")) eventsOn(iso).forEach(e => chips.push({ time: e.time || "", text: e.title, color: e.color || "#9333ea" }));
+    if (isTeacherPlan()) state.subLog.filter(e => e.date === iso && !e.lessonId).forEach(e => chips.push({
+      time: subStart(e), sub: e, cls: e.type === "plus" ? "sp" : e.type === "minus" ? "sm" : "sa",
+      text: (e.type === "plus" ? "+ " : "") + subTitle(e) + (e.room ? " · " + e.room : ""), color: "#059669" }));
     if (chips.length) {
       const row = el("div","wd-lessons");
       chips.sort((x, y) => x.time.localeCompare(y.time)).forEach(c => {
         const s = el("span","wd-lesson" + (c.cls ? " " + c.cls : "") + (c.lesson ? " tap" : ""), (c.time ? c.time + " " : "") + c.text);
         s.style.background = c.color;
-        if (c.lesson) {
+        if (c.lesson || c.sub) {
           s.setAttribute("role", "button"); s.tabIndex = 0;
-          s.onclick = () => openLessonDay(c.lesson, iso);
+          s.onclick = () => c.lesson ? openLessonDay(c.lesson, iso) : openSubDialog(c.sub);
+          if (c.sub) s.classList.add("tap");
         }
         row.append(s);
       });
@@ -2780,6 +2902,11 @@ function renderWeek() {
     }
     if (tasks.length) tasks.forEach(t => body.append(weekTaskRow(t, false)));
     else if (!body.childNodes.length) body.append(el("p","hint","Keine fälligen Aufgaben."));
+    if (isTeacherPlan() && activeDays().indexOf(dow) > -1 && !off.holiday && !off.ferien) {
+      const add = el("button", "btn-sm wd-add", "＋ Vertretung");
+      add.onclick = () => openSubDialog(null, iso, "plus");
+      body.append(add);
+    }
     dayEl.append(body);
     box.append(dayEl);
   }
@@ -3402,6 +3529,7 @@ function planItem(l) {
 
 function renderTimetable() {
   applyPlanMode();
+  renderSubs();
   if (!feat("timetable")) return;
   const g = $("tt-grid"); g.replaceChildren();
   const list = $("plan-list"); list.replaceChildren();
@@ -3526,6 +3654,10 @@ function openLessonDay(l, iso) {
   $("ld-sub").textContent = lessonStart(l, state.settings.slots) + (planEnd(l) ? "–" + planEnd(l) : "")
     + (l.room ? " · " + l.room : "") + (w ? " · Woche " + w : "");
   $("ld-cancel").checked = !!ex.cancel;
+  // Lehrkraft: Ausfall als Minusstunde (Einzel/Doppel nach Stundenplan)
+  const linked = subOf(l, iso), blk = lessonBlock(state.lessons, l);
+  ldMinus = { on: linked ? true : !ex.cancel, hours: linked ? linked.hours : blk.hours, blk };
+  syncLdMinus();
   $("ld-subject").value = ex.subject || ""; $("ld-room").value = ex.room || "";
   $("ld-lbl-subject").textContent = s ? "Vertretung / anderes Fach" : "Geändert zu";
   $("ld-subfields").hidden = !!ex.cancel;
@@ -3534,22 +3666,55 @@ function openLessonDay(l, iso) {
   $("ld-hw").value = "";
   const n = nextLesson(state.lessons, state.settings.slots, l.subject, new Date(iso + "T23:59:00"), nextLessonOpts());
   $("ld-hw-hint").textContent = n ? "Fällig zur nächsten Stunde: " + humanDate(n.iso, n.start) + "." : "Keine weitere Stunde in den nächsten Wochen.";
-  $("ld-reset").hidden = !lessonExOf(l, iso);
+  $("ld-reset").hidden = !lessonExOf(l, iso) && !subOf(l, iso);
   $("dlg-lday").showModal();
 }
-$("ld-cancel").onchange = e => { $("ld-subfields").hidden = e.target.checked; };
+let ldMinus = { on: true, hours: 1, blk: null };
+function syncLdMinus() {
+  const show = isTeacherPlan() && $("ld-cancel").checked;
+  $("ld-minus").hidden = !show;
+  $("ld-minus-on").checked = ldMinus.on;
+  document.querySelectorAll("#ld-minus-h button").forEach(b => b.classList.toggle("on", +b.dataset.h === ldMinus.hours));
+  $("ld-minus-h").style.opacity = ldMinus.on ? "" : ".4";
+}
+$("ld-minus-on").onchange = e => { ldMinus.on = e.target.checked; syncLdMinus(); };
+document.querySelectorAll("#ld-minus-h button").forEach(b => b.onclick = () => { ldMinus.hours = +b.dataset.h; syncLdMinus(); });
+/* Minusstunde zum Ausfall anlegen, ändern oder entfernen. Bei Doppelstunde
+   fällt die Nachbarstunde mit aus und hängt am selben Eintrag. */
+function applyLdMinus(l, iso, cancelled) {
+  const old = subOf(l, iso);
+  if (old && old.pairId && !(cancelled && ldMinus.on && ldMinus.hours === 2)) {
+    const other = old.lessonId === l.id ? old.pairId : old.lessonId;
+    if (other !== l.id) delete state.lessonEx[other + "|" + iso];
+  }
+  state.subLog = state.subLog.filter(e => e !== old);
+  if (!(cancelled && ldMinus.on && isTeacherPlan())) return;
+  let slot = l.slot, pairId = null;
+  if (ldMinus.hours === 2 && ldMinus.blk && ldMinus.blk.hours === 2) {
+    slot = ldMinus.blk.slot;
+    const partner = state.lessons.find(x => x !== l && x.day === l.day && x.subject === l.subject
+      && (x.room || "") === (l.room || "") && (x.slot === l.slot - 1 || x.slot === l.slot + 1) && lessonOn(x, iso, lessonCtx(iso)));
+    if (partner) { pairId = partner.id; state.lessonEx[partner.id + "|" + iso] = { cancel: true }; }
+  } else if (ldMinus.hours === 2 && l.slot != null) slot = l.slot;
+  state.subLog.push({ id: old ? old.id : uid(), date: iso, type: "minus", hours: ldMinus.hours, slot,
+    klass: l.room || "", subject: l.subject, room: "", note: old ? old.note : "",
+    lessonId: l.id, pairId, createdAt: old ? old.createdAt : Date.now() });
+}
+$("ld-cancel").onchange = e => { $("ld-subfields").hidden = e.target.checked; syncLdMinus(); };
 $("ld-save").onclick = () => {
   const { lesson, iso } = ldEdit, k = exKey(lesson, iso);
   const subject = $("ld-subject").value.trim(), room = $("ld-room").value.trim();
   if ($("ld-cancel").checked) state.lessonEx[k] = { cancel: true };
   else if (subject || room) state.lessonEx[k] = { subject: subject || null, room: room || null };
   else delete state.lessonEx[k];
-  save(); $("dlg-lday").close(); renderWeek();
+  applyLdMinus(lesson, iso, $("ld-cancel").checked);
+  save(); $("dlg-lday").close(); renderWeek(); renderSubs();
   toast($("ld-cancel").checked ? "Als Ausfall markiert." : "Gespeichert.");
 };
 $("ld-reset").onclick = () => {
   delete state.lessonEx[exKey(ldEdit.lesson, ldEdit.iso)];
-  save(); $("dlg-lday").close(); renderWeek(); toast("Wie geplant.");
+  applyLdMinus(ldEdit.lesson, ldEdit.iso, false);
+  save(); $("dlg-lday").close(); renderWeek(); renderSubs(); toast("Wie geplant.");
 };
 $("ld-close").onclick = () => $("dlg-lday").close();
 function addHomework() {
@@ -3567,6 +3732,114 @@ function addHomework() {
 $("ld-hw-add").onclick = addHomework;
 $("ld-hw").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) addHomework(); };
 $("ld-exam").onclick = () => { $("dlg-lday").close(); openExamDialog(ldEdit.iso, ldEdit.lesson.subject); };
+
+/* ---------- Plus-/Minusstunden (Lehrkräfte) ---------- */
+const isTeacherPlan = () => state.settings.profile === "teacher" && isSchool() && feat("timetable");
+const SUB_TYPE = { plus: "Vertretung", minus: "Ausfall", aufsicht: "Aufsicht" };
+const subStart = e => {
+  if (e.slot == null) return "";
+  const t = ((state.settings.slots[e.slot] || "").split("-")[0] || "").trim();
+  return validTime(t) ? t : "";
+};
+const subTitle = e => [SUB_TYPE[e.type], [e.klass, e.subject].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+const subOf = (l, iso) => state.subLog.find(e => e.date === iso && e.type === "minus" && (e.lessonId === l.id || e.pairId === l.id)) || null;
+let sbEdit = null, sbType = "plus", sbHours = 1, subPeriod = "year";
+
+function openSubDialog(entry, iso, type) {
+  if (!Lic.full()) return showProHint("timetable");
+  sbEdit = entry || null;
+  sbType = entry ? entry.type : (type || "plus");
+  sbHours = entry ? entry.hours : 1;
+  const sel = $("sb-slot"); sel.replaceChildren(new Option("–", ""));
+  state.settings.slots.forEach((s, i) => sel.append(new Option(`${i + 1}. Stunde (${s.replace("-", "–")})`, i)));
+  sel.value = entry && entry.slot != null ? String(entry.slot) : "";
+  $("sb-date").value = entry ? entry.date : (iso || todayISO());
+  $("sb-klass").value = entry ? entry.klass : ""; $("sb-subject").value = entry ? entry.subject : "";
+  $("sb-room").value = entry ? entry.room : ""; $("sb-note").value = entry ? entry.note : "";
+  $("sb-head").textContent = entry ? SUB_TYPE[entry.type] + " bearbeiten" : "Eintragen";
+  $("sb-del").style.display = entry ? "" : "none";
+  syncSubDialog();
+  $("dlg-sub").showModal();
+}
+function syncSubDialog() {
+  document.querySelectorAll("#sb-type button").forEach(b => b.classList.toggle("on", b.dataset.t === sbType));
+  document.querySelectorAll("#sb-hours button").forEach(b => b.classList.toggle("on", +b.dataset.h === sbHours));
+  $("sb-type-hint").textContent = sbType === "plus" ? "Zählt als Plusstunde."
+    : sbType === "minus" ? "Zählt als Minusstunde." : "Wird erfasst, zählt aber nicht als Plusstunde.";
+}
+document.querySelectorAll("#sb-type button").forEach(b => b.onclick = () => { sbType = b.dataset.t; syncSubDialog(); });
+document.querySelectorAll("#sb-hours button").forEach(b => b.onclick = () => { sbHours = +b.dataset.h; syncSubDialog(); });
+$("sb-cancel").onclick = () => $("dlg-sub").close();
+$("sb-save").onclick = () => {
+  const date = $("sb-date").value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return toast("Bitte ein Datum wählen.");
+  const v = { date, type: sbType, hours: sbHours, slot: $("sb-slot").value === "" ? null : +$("sb-slot").value,
+              klass: $("sb-klass").value.trim(), subject: $("sb-subject").value.trim(),
+              room: $("sb-room").value.trim(), note: $("sb-note").value.trim() };
+  if (sbEdit) Object.assign(sbEdit, v);
+  else state.subLog.push({ id: uid(), ...v, lessonId: null, pairId: null, createdAt: Date.now() });
+  save(); $("dlg-sub").close(); renderWeek(); renderSubs();
+  toast(SUB_TYPE[v.type] + " gespeichert" + (v.type === "aufsicht" ? "." : ` (${subValue(v) > 0 ? "+" : ""}${subValue(v)} Std).`));
+};
+$("sb-del").onclick = () => {
+  if (!sbEdit) return;
+  const snap = snapshot(), e = sbEdit;
+  state.subLog = state.subLog.filter(x => x !== e);
+  // Gelöschter Ausfall: die Stunde(n) findet wieder statt
+  if (e.lessonId) { delete state.lessonEx[e.lessonId + "|" + e.date]; if (e.pairId) delete state.lessonEx[e.pairId + "|" + e.date]; }
+  save(); $("dlg-sub").close(); renderWeek(); renderSubs();
+  toast("Gelöscht.", () => restore(snap));
+};
+
+function renderSubs() {
+  const card = $("card-subs"); if (!card) return;
+  card.hidden = !isTeacherPlan();
+  if (card.hidden) return;
+  document.querySelectorAll("#sub-period button").forEach(b => b.classList.toggle("on", b.dataset.p === subPeriod));
+  const per = schoolPeriod(subPeriod, todayISO());
+  $("sub-period-label").textContent = per.label + (per.from ? ` (${deDate(per.from)} – ${deDate(per.to)})` : "");
+  const list = state.subLog.filter(e => (!per.from || e.date >= per.from) && (!per.to || e.date <= per.to))
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.slot ?? -1) - (a.slot ?? -1));
+  const sum = subSummary(list);
+  const tiles = $("sub-tiles"); tiles.replaceChildren();
+  const tile = (cls, v, l) => { const t = el("div", "sub-tile " + cls); t.append(el("div", "v", v), el("div", "l", l)); tiles.append(t); };
+  tile("p", "+" + sum.plus, "Plus (Std)");
+  tile("m", "−" + sum.minus, "Minus (Std)");
+  tile("s", (sum.saldo > 0 ? "+" : sum.saldo < 0 ? "−" : "±") + Math.abs(sum.saldo), "Saldo");
+  tile("a", String(sum.aufsicht), "Aufsichten");
+  const box = $("sub-list"); box.replaceChildren();
+  if (!list.length) { box.append(el("p", "empty", "Noch keine Einträge in diesem Zeitraum.")); return; }
+  let month = "";
+  for (const e of list) {
+    const m = parseISO(e.date).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+    if (m !== month) { box.append(el("div", "sub-month", m)); month = m; }
+    const r = el("div", "sub-row " + e.type);
+    r.append(el("span", "d", parseISO(e.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })));
+    const t = el("div", "t", subTitle(e));
+    t.append(el("small", null, slotLabel(e.slot, e.hours) + (e.room ? " · " + e.room : "") + (e.note ? " · " + e.note : "")));
+    r.append(t, el("span", "n", e.type === "aufsicht" ? (e.hours === 2 ? "2 Std" : "1 Std") : (e.type === "plus" ? "+" : "−") + e.hours));
+    r.onclick = () => openSubDialog(e);
+    box.append(r);
+  }
+}
+document.querySelectorAll("#sub-period button").forEach(b => b.onclick = () => { subPeriod = b.dataset.p; renderSubs(); });
+$("sub-add").onclick = () => openSubDialog(null, todayISO(), "plus");
+$("sub-share").onclick = async () => {
+  const per = schoolPeriod(subPeriod, todayISO());
+  const list = state.subLog.filter(e => (!per.from || e.date >= per.from) && (!per.to || e.date <= per.to))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.slot ?? -1) - (b.slot ?? -1));
+  if (!list.length) return toast("Keine Einträge in diesem Zeitraum.");
+  const s = subSummary(list);
+  const lines = list.map(e => `${deDate(e.date)} · ${slotLabel(e.slot, e.hours)} · ${subTitle(e)}`
+    + (e.type === "aufsicht" ? " (Aufsicht)" : ` · ${e.type === "plus" ? "+" : "−"}${e.hours}`) + (e.note ? ` – ${e.note}` : ""));
+  const text = `Mehr- und Minderstunden – ${per.label}\n`
+    + `Plus: ${s.plus} Std · Minus: ${s.minus} Std · Saldo: ${s.saldo > 0 ? "+" : ""}${s.saldo} Std · Aufsichten: ${s.aufsicht}\n\n` + lines.join("\n");
+  const Sh = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+  if (Sh && Sh.share) { try { await Sh.share({ title: "Mehr- und Minderstunden", text }); return; } catch { /* abgebrochen */ } }
+  if (navigator.share) { try { await navigator.share({ text }); return; } catch { /* abgebrochen */ } }
+  try { await navigator.clipboard.writeText(text); toast("In die Zwischenablage kopiert."); }
+  catch { mailto("", "Mehr- und Minderstunden", text); }
+};
 
 /* ---------- Klassenarbeit / Klausur planen ---------- */
 let exKind = "teacher";

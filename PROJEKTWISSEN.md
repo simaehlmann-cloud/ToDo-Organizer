@@ -22,6 +22,17 @@
   nach Wiederöffnen und erneutem Abhaken entstand ein zweiter Folgetermin. Jetzt nur bei
   geänderter Wiederholung oder geändertem Datum.
 
+## Mehr- und Minderstunden (3.1, nur Profil „Unterricht“ im Stundenplan-Modus)
+
+- `state.subLog = [{ id, date, type: "plus"|"minus"|"aufsicht", hours: 1|2, slot, klass, subject, room, note, lessonId, pairId }]`.
+  Plus = Vertretung, Minus = Ausfall, Aufsicht wird gezählt, aber nicht im Saldo (`subValue`, `subSummary`).
+- Erfassen: „＋ Vertretung“ an jedem Schultag der Woche (nicht an Feiertagen/in Ferien) oder eigene
+  Stunde antippen → „Fällt aus“ → „als Minusstunde zählen“ (Einzel/Doppel per `lessonBlock`).
+  Bei Doppel fällt die Nachbarstunde mit aus und hängt über `pairId` am selben Eintrag –
+  so entsteht beim Öffnen der zweiten Stunde kein zweiter Eintrag. Zurücksetzen/Löschen nimmt beides zurück.
+- Übersicht im Stundenplan: Monat, Halbjahr (Aug–Jan, Feb–Jul), Schuljahr (ab 1. August), Alle;
+  „Liste teilen“ als Text (Share-Plugin, sonst Zwischenablage/Mail).
+
 ## Heute-Widget (3.1)
 
 - Swift-Widget (WidgetKit, iOS 15+, klein/mittel/groß) in `res/ios/widget/`. Die App
