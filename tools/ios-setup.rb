@@ -7,11 +7,14 @@
 #   MARKETING_VERSION        Version aus index.html (APP_VERSION), z. B. 2.4
 #   CURRENT_PROJECT_VERSION  Build-Nummer, muss bei jedem Upload steigen
 #   TEAM_ID, PROFILE_NAME    nur für den signierten Build
-#   WIDGET=1                 Heute-Widget mitbauen (Erweiterung + App-Gruppe)
+#   WIDGET=1                 Heute-Widget mitbauen (Erweiterung + App-Gruppe);
+#                            die Brücke (WidgetDataPlugin) und Schnellaktionen
+#                            kommen immer ins Projekt
 #   WIDGET_PROFILE_NAME      Profil des Widgets (de.maehlmann.todoorganizer.widget)
 #
-# Die Dateien des Widgets (res/ios/widget, res/ios/app) kopiert der Workflow
-# vorher nach ios/App/TodayWidget bzw. ios/App/App.
+# Die Dateien (res/ios/app, res/ios/widget) kopiert der Workflow vorher nach
+# ios/App/App bzw. ios/App/TodayWidget – SceneDelegate.swift ersetzt dabei
+# die Vorlage von Capacitor (Schnellaktionen).
 #
 # Warum Ruby: Das Gem „xcodeproj“ (Teil von CocoaPods, auf den macOS-Läufern
 # vorhanden) ändert die Projektdatei sicher. Ein sed auf project.pbxproj
@@ -52,25 +55,26 @@ ziel.build_configurations.each do |c|
   end
 end
 
+# ---- Brücke zu iOS (Widget-Daten, Schnellaktionen) – immer ---------------------
+# Capacitor meldet Plugins über „packageClassList“ in capacitor.config.json an.
+# Ein eigener Startbildschirm im Storyboard hilft in Capacitor 8 NICHT: Der
+# SceneDelegate erzeugt CAPBridgeViewController im Code, das Storyboard bleibt
+# unbenutzt (deshalb kam das Widget bis Build 3.1 ohne Daten).
+r = gruppe.files.find { |x| x.path == 'WidgetDataPlugin.swift' } || gruppe.new_reference('WidgetDataPlugin.swift')
+ziel.source_build_phase.add_file_reference(r, true) unless ziel.source_build_phase.files_references.include?(r)
+require 'json'
+cfg_pfad = 'ios/App/App/capacitor.config.json'
+cfg = JSON.parse(File.read(cfg_pfad))
+cfg['packageClassList'] = (cfg['packageClassList'] || []) | ['WidgetDataPlugin']
+File.write(cfg_pfad, JSON.pretty_generate(cfg) + "\n")
+
 # ---- Heute-Widget ---------------------------------------------------------------
 widget = ENV['WIDGET'] == '1'
 if widget
   WIDGET_ID = APP_ID + '.widget'
-  # 1 · App: Brücke (Plugin) und eigener Startbildschirm, App-Gruppe
-  %w[AppViewController.swift WidgetDataPlugin.swift].each do |f|
-    r = gruppe.files.find { |x| x.path == f } || gruppe.new_reference(f)
-    ziel.source_build_phase.add_file_reference(r, true) unless ziel.source_build_phase.files_references.include?(r)
-  end
+  # 1 · App-Gruppe für die App
   gruppe.files.find { |x| x.path == 'App.entitlements' } || gruppe.new_reference('App.entitlements')
   ziel.build_configurations.each { |c| c.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements' }
-
-  # Main.storyboard: Capacitors Startbildschirm durch AppViewController ersetzen
-  sb = 'ios/App/App/Base.lproj/Main.storyboard'
-  text = File.read(sb)
-  neu = text.gsub(/customClass="CAPBridgeViewController" customModule="Capacitor"/,
-                  'customClass="AppViewController" customModule="App" customModuleProvider="target"')
-  abort('Main.storyboard: CAPBridgeViewController nicht gefunden') if neu == text && !text.include?('AppViewController')
-  File.write(sb, neu)
 
   # 2 · Widget-Erweiterung als eigenes Ziel
   wz = projekt.targets.find { |t| t.name == 'TodayWidget' } ||

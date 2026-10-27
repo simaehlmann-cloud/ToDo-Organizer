@@ -70,7 +70,8 @@ FÜR SCHULE UND UNTERRICHT
 • Ferien und Feiertage aller 16 Bundesländer – Stunden fallen dort automatisch weg
 • A/B-Wochen, auf Wunsch ohne Ferienwochen gezählt
 • Ausfall und Vertretung für einzelne Tage
-• Mehr- und Minderstunden: Vertretungen, Ausfälle und Aufsichten mit Saldo je Halbjahr
+• Mehr- und Minderstunden: Vertretungen, Ausfälle und Aufsichten mit Saldo, auch als PDF
+• Notizen zu jeder Stunde, als Stundenverlauf je Kurs
 • Hausaufgaben „bis nächste Mathe“: fällig zur nächsten Stunde, über Ferien hinweg
 • Klassenarbeiten planen: vorbereiten, schreiben, korrigieren mit Rückgabefrist
 • Klausuren: ein Lernplan mit verteilten Einheiten bis zum Termin
@@ -106,14 +107,14 @@ Mehrere Listen, etwa für Supermarkt und Drogerie. Die App schlägt vor, was du 
 ERINNERUNGEN
 Eine tägliche Übersicht zur gewünschten Uhrzeit und Erinnerungen zu jeder Aufgabe – auch bei geschlossener App. Direkt aus der Mitteilung verschieben oder abhaken.
 
-WIDGET „HEUTE“
-Dein Tag auf dem Home-Bildschirm: Aufgaben, Stunden und Termine nach Uhrzeit.
+WIDGET UND SCHNELLZUGRIFF
+Dein Tag auf dem Home-Bildschirm. Lange aufs App-Symbol drücken: neue Aufgabe oder Vertretung.
 
 HELL ODER DUNKEL
 Die App folgt deinem Gerät oder bleibt hell bzw. dunkel.
 
 SICHERUNG
-Vollständige Sicherung als Datei, auf Wunsch verschlüsselt (AES-GCM) – in die Dateien-App, iCloud Drive oder per Mail. Dazu Export als Kalenderdatei (.ics).
+Jede Woche automatisch in die Dateien-App, dazu Sicherung von Hand, auf Wunsch verschlüsselt (AES-GCM).
 
 PRIVAT VON ANFANG AN
 • Kein Konto, keine Registrierung

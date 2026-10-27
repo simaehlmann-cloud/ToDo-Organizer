@@ -35,7 +35,7 @@ function load(nowStr) {
   }
   const ctx = { Date: FakeDate, console };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
+  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, buildTablePdf, pdfFit, pdfText, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
   return { ...ctx.__, now: new FakeDate() };
 }
 
@@ -309,6 +309,20 @@ eq(C.breaksOf(['08:00-08:45', '08:45-09:30', '09:55-10:40', '10:40-11:25', '11:5
    [{ after: 1, start: '09:30', end: '09:55' }, { after: 3, start: '11:25', end: '11:50' }], 'Pausen aus den Zeiten');
 eq(C.breaksOf(['08:00-08:45', '08:47-09:30']), [], 'zwei Minuten sind keine Pause');
 eq(C.breaksOf([]), [], 'ohne Zeiten');
+
+console.log('PDF');
+const rowsP = Array.from({ length: 80 }, (_, i) => ['Di 03.11.26', '3. Std', 'Vertretung', '8c', 'Mathe', '+1', 'Notiz (' + i + ') äöü € – „Zitat“']);
+const pdf = C.buildTablePdf({ title: 'Test', sub: 'Unter', summary: 'Plus 1', cols: [{ label: 'A', w: 62 }, { label: 'B', w: 54 }, { label: 'C', w: 62 }, { label: 'D', w: 44 }, { label: 'E', w: 70 }, { label: 'F', w: 34, right: true }, { label: 'G', w: 189 }], rows: rowsP, footer: 'Fuß' });
+const xr = +pdf.match(/startxref\n(\d+)/)[1];
+eq(pdf.slice(xr, xr + 4), 'xref', 'startxref zeigt auf xref');
+const offsP = [...pdf.slice(xr).matchAll(/^(\d{10}) 00000 n $/gm)].map(m => +m[1]);
+eq(offsP.every((o, i) => pdf.slice(o).startsWith((i + 1) + ' 0 obj')), true, 'alle Objekt-Offsets stimmen');
+eq((pdf.match(/\/Type \/Page /g) || []).length, 2, '80 Zeilen → 2 Seiten');
+eq([...pdf].every(c => c.charCodeAt(0) < 256), true, 'nur Bytes 0–255');
+eq(C.pdfText('a(b)\\'), 'a\\(b\\)\\\\', 'Klammern und Backslash maskiert');
+eq(C.pdfText('ä€–„'), '\xe4\x80\x96\x84', 'Umlaute und Sonderzeichen in WinAnsi');
+eq(C.pdfFit('kurz', 9, 100), 'kurz', 'passt');
+eq(C.pdfFit('x'.repeat(200), 9, 50).endsWith('…'), true, 'zu lang → gekürzt mit …');
 
 console.log(fails ? `\n${fails} von ${n} Prüfungen fehlgeschlagen` : `\nAlle ${n} Prüfungen bestanden.`);
 process.exit(fails ? 1 : 0);

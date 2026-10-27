@@ -40,8 +40,11 @@ function iosMocks(o) {
       schedule: async x => { window.__log.notif = x.notifications; }, registerActionTypes: async () => {}, addListener: () => {}
     },
     StatusBar: { setStyle: async x => { window.__log.sb.push(x.style); } },
-    WidgetData: { set: async x => { window.__log.widget.push(x.json); }, status: async () => ({ group: true, bytes: (window.__log.widget.slice(-1)[0] || '').length }) },
-    Share: { share: async x => { window.__log.share = x.text; } },
+    WidgetData: { set: async x => { window.__log.widget.push(x.json); }, status: async () => ({ group: true, bytes: (window.__log.widget.slice(-1)[0] || '').length }),
+      setShortcuts: async x => { window.__log.shortcuts = x.items; return { count: x.items.length }; } },
+    Share: { share: async x => { window.__log.share = x.text || x.files; } },
+    Filesystem: { writeFile: async x => { (window.__log.fs = window.__log.fs || []).push([x.directory, x.path, (x.data || '').length]); return { uri: 'file:///' + x.path }; },
+                  copy: async x => { (window.__log.fs = window.__log.fs || []).push(['copy', x.from, x.to]); } },
     App: { addListener: () => {} },
     CapacitorCalendar: {
       checkPermission: async () => ({ result: o.calGranted ? 'granted' : 'prompt' }),
@@ -660,6 +663,13 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     await p.click('#sub-share');
     const share = await S(p, () => window.__log.share || '');
     ok(/Saldo: 0 Std/.test(share) && /03\.11\.2026 · 3\.\/4\. Std · Ausfall · 7b Mathe · −2 – Wandertag/.test(share), 'Liste teilen');
+    p.nextPrompt = 'Simon Mählmann';
+    await p.click('#sub-pdf'); await p.waitForTimeout(300);
+    const pdfw = await S(p, () => (window.__log.fs || []).find(x => /\.pdf$/.test(x[1])));
+    ok(pdfw && pdfw[0] === 'CACHE' && /Mehr-und-Minderstunden-Schuljahr-2026-27\.pdf/.test(pdfw[1]) && pdfw[2] > 800, 'PDF erzeugt: ' + (pdfw && pdfw[1]));
+    const pdfTxt = await S(p, () => { const per = schoolPeriod('year', todayISO()); return buildTablePdf({ title: 'T', cols: [{ label: 'A', w: 100 }], rows: [['Mählmann']] }); });
+    ok(/^%PDF-1\.4/.test(pdfTxt) && /startxref\n\d+\n%%EOF\n$/.test(pdfTxt) && pdfTxt.includes('M\xe4hlmann'), 'PDF-Aufbau und Umlaute (WinAnsi)');
+    p.nextPrompt = null;
     await p.click('#sub-period button[data-p="month"]');
     ok(/November 2026/.test(await p.textContent('#sub-period-label')), 'Zeitraum Monat');
     // Ausfall zurücksetzen → Minus weg, beide Stunden wieder da
@@ -734,6 +744,119 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     const back = await S(p, () => { const n = normalizeState(JSON.parse(JSON.stringify(state))); return n.duties.length + '/' + n.lessons.find(l => l.id === 'x').span; });
     ok(back === '1/2', 'Aufsichten und Doppelstunden überstehen Export/Import');
     ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('20 · Schnellaktionen am App-Symbol');
+  {
+    const st = { version: 3, lessons: [{ id: 'm', day: 2, slot: 1, subject: 'Mathe' }], settings: { profile: 'teacher', planMode: 'school', features: { timetable: true, shopping: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await p.waitForTimeout(300);
+    const sc = await S(p, () => (window.__log.shortcuts || []).map(x => x.title).join(' | '));
+    ok(sc === 'Neue Aufgabe | Vertretung eintragen | Stundenplan | Einkaufsliste', 'Lehrkraft: passende Schnellaktionen (' + sc + ')');
+    await S(p, () => window.__openAppLink('todoorganizer://new-sub')); await p.waitForTimeout(400);
+    ok(await p.$eval('#dlg-sub', d => d.open), '„Vertretung eintragen“ öffnet den Dialog');
+    await S(p, () => window.__openAppLink('todoorganizer://new-task')); await p.waitForTimeout(400);
+    ok(await S(p, () => document.querySelector('.view.active').id === 'view-tasks' && document.activeElement.id === 't-title'), '„Neue Aufgabe“ springt ins Eingabefeld');
+    await S(p, () => window.__openAppLink('todoorganizer://kaputt'));
+    ok(await S(p, () => document.querySelector('.view.active').id === 'view-tasks'), 'unbekannter Link ändert nichts');
+    await go(p, 'settings'); await p.selectOption('#set-profile', 'everyday'); await p.waitForTimeout(200);
+    const sc2 = await S(p, () => (window.__log.shortcuts || []).map(x => x.title).join(' | '));
+    ok(sc2 === 'Neue Aufgabe | Einkaufsliste', 'Alltag: ohne Vertretung und Stundenplan (' + sc2 + ')');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('21 · Notizen zur Stunde');
+  {
+    const lessons = [{ id: 'a', day: 2, slot: 1, subject: 'Mathe', room: '7b', color: '#2563eb' }, { id: 'b', day: 4, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
+                     { id: 'c', day: 3, slot: 2, subject: 'Mathe', room: '9a', color: '#2563eb' }];
+    const st = { version: 3, lessons, settings: { profile: 'teacher', planMode: 'school', features: { timetable: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await go(p, 'week');
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe · 7b' }).first().click();
+    ok(await p.isVisible('#ld-note'), 'Stunden-Dialog mit Notizfeld');
+    await p.fill('#ld-note', 'Bruchrechnung: Kürzen eingeführt'); await p.click('#ld-save');
+    let N = await S(p, () => state.lessonNotes);
+    ok(N.length === 1 && N[0].course === 'Mathe|7b' && N[0].date === '2026-11-03', 'Notiz am Kurs und Datum');
+    ok(await p.locator('#wk-days .wd-lesson .nt').count() === 1, '📝 an der Stunde');
+    // Donnerstag gleiche Klasse
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe · 7b' }).nth(1).click();
+    ok(await p.inputValue('#ld-note') === '' && /\(1\)/.test(await p.textContent('#ld-history')), 'anderer Tag: leer, Verlauf zeigt 1');
+    await p.fill('#ld-note', 'Erweitern geübt, HA S. 34'); await p.click('#ld-save');
+    // 9a ist ein anderer Kurs
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe · 9a' }).click();
+    ok(/^Stundenverlauf ansehen$/.test(await p.textContent('#ld-history')), 'andere Klasse: eigener Verlauf');
+    await p.click('#ld-close');
+    // Im Stundenplan: Verlauf im Dialog, neueste zuerst
+    await go(p, 'timetable');
+    await p.locator('#tt-grid .tt-s.full', { hasText: '7b' }).first().click();
+    const rows = await p.$$eval('#l-notes .note-row .x', e => e.map(x => x.textContent));
+    ok(rows.length === 2 && /Erweitern/.test(rows[0]) && /Kürzen/.test(rows[1]), 'Stundenplan zeigt den Verlauf, neueste oben');
+    await p.locator('#l-notes .note-row').nth(1).click();
+    ok(await p.$eval('#dlg-note', d => d.open) && await p.inputValue('#nt-date') === '2026-11-03', 'Notiz öffnen');
+    // Auf ein belegtes Datum verschieben, Rückfrage abbrechen → nichts geht verloren
+    p.nextPrompt = null;
+    p.removeAllListeners('dialog'); p.on('dialog', d => d.dismiss());
+    await p.fill('#nt-date', '2026-11-05'); await p.click('#nt-save');
+    ok((await S(p, () => state.lessonNotes.length)) === 2, 'Abbrechen der Rückfrage löscht nichts');
+    p.removeAllListeners('dialog'); p.on('dialog', d => d.accept());
+    await p.fill('#nt-date', '2026-11-03'); await p.fill('#nt-text', 'Kürzen eingeführt, Beispiele an der Tafel'); await p.click('#nt-save');
+    ok((await S(p, () => state.lessonNotes.find(n => n.date === '2026-11-03').text)) === 'Kürzen eingeführt, Beispiele an der Tafel', 'Notiz bearbeitet');
+    await p.click('#l-cancel');
+    // Verlauf teilen
+    await S(p, () => openCourseDialog('Mathe|7b'));
+    await p.click('#cs-share');
+    const sh = await S(p, () => window.__log.share || '');
+    ok(/^Stundenverlauf Mathe · 7b/.test(sh) && sh.indexOf('03.11.2026') < sh.indexOf('05.11.2026'), 'Verlauf teilen, ältestes zuerst');
+    await p.click('#cs-close');
+    // Leeren löscht die Notiz
+    await go(p, 'week');
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe · 7b' }).first().click();
+    await p.fill('#ld-note', ''); await p.click('#ld-save');
+    ok((await S(p, () => state.lessonNotes.length)) === 1, 'leeres Feld entfernt die Notiz');
+    // Stundenplan neu anlegen: Notizen bleiben am Kurs
+    await S(p, () => { state.lessons = [{ id: 'neu', day: 5, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' }]; save(); });
+    ok((await S(p, () => notesOf('Mathe|7b').length)) === 1, 'Notizen überstehen einen neuen Stundenplan');
+    const back = await S(p, () => normalizeState(JSON.parse(JSON.stringify(state))).lessonNotes.length);
+    ok(back === 1, 'Notizen überstehen Export/Import');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('22 · Sicherung');
+  {
+    const tasks = Array.from({ length: 4 }, (_, i) => ({ id: 't' + i, title: 'A' + i, dueDate: '2026-11-04', prio: 'mittel', createdAt: 1 }));
+    // Gerät seit 20 Tagen in Benutzung, nie gesichert
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: { version: 3, tasks, settings: { profile: 'everyday' } } });
+    await S(p, () => { Backup.d = { firstUse: Date.now() - 20 * 864e5, auto: false }; Backup.save(); renderAll(); });
+    ok(await p.isVisible('#bk-banner') && /Noch keine Sicherung/.test(await p.textContent('#bk-banner')), 'Hinweis nach 14 Tagen ohne Sicherung');
+    await p.click('#bk-later');
+    ok(!(await p.isVisible('#bk-banner')), '„Später“ blendet ihn eine Woche aus');
+    await S(p, () => { Backup.d.dismissedUntil = 0; Backup.save(); renderAll(); });
+    await p.click('#bk-now'); await p.waitForTimeout(300);
+    let fs = await S(p, () => window.__log.fs || []);
+    ok(fs.some(x => x[0] === 'CACHE' && /todo-organizer-backup-2026-11-03\.json/.test(x[1])) && !(await p.isVisible('#bk-banner')), '„Jetzt sichern“ exportiert und blendet aus');
+    // Automatische Sicherung
+    await go(p, 'settings');
+    ok(await p.isVisible('#bk-auto-row') && !(await p.isChecked('#bk-auto')), 'Schalter in der iOS-App sichtbar');
+    await p.check('#bk-auto'); await p.waitForTimeout(400);
+    fs = await S(p, () => window.__log.fs);
+    const doc = fs.filter(x => x[0] === 'DOCUMENTS');
+    ok(doc.length === 1 && doc[0][1] === 'ToDo-Organizer-Sicherung.json' && doc[0][2] > 100 && fs.some(x => x[0] === 'copy'), 'Sicherung in Dokumente, vorige Fassung kopiert');
+    ok(/Zuletzt automatisch gesichert heute/.test(await p.textContent('#bk-info')), 'Status in den Einstellungen');
+    await S(p, () => Backup.auto()); await p.waitForTimeout(200);
+    ok((await S(p, () => window.__log.fs.filter(x => x[0] === 'DOCUMENTS').length)) === 1, 'innerhalb der Woche keine zweite Sicherung');
+    await S(p, () => { Backup.d.lastExport = 0; Backup.d.lastAuto = Date.now() - 3 * 864e5; Backup.save(); renderAll(); });
+    ok(!(await p.isVisible('#bk-banner')), 'automatische Sicherung zählt: kein Hinweis');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+  {
+    // Neu installiert: noch kein Hinweis
+    const { ctx, p } = await open(browser, { state: { version: 3, tasks: [{ id: 'a', title: 'x' }, { id: 'b', title: 'y' }, { id: 'c', title: 'z' }], settings: { profile: 'everyday' } } });
+    ok(!(await p.isVisible('#bk-banner')), 'erste Woche: kein Hinweis');
+    ok(!(await p.isVisible('#bk-auto-row')), 'im Browser keine automatische Sicherung');
     await ctx.close();
   }
 
