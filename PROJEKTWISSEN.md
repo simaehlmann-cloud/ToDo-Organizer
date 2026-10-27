@@ -22,6 +22,24 @@
   nach Wiederöffnen und erneutem Abhaken entstand ein zweiter Folgetermin. Jetzt nur bei
   geänderter Wiederholung oder geändertem Datum.
 
+## Oktober 2026: Unterrichtsplaner-Ausbau
+
+- **Look:** Grund `--bg:#e9ecf0`, Karten weiß mit `--shadow`; die Woche hat keine große Karte mehr
+  (`.week-wrap`), die Tage sind eigene Kärtchen; „heute“ hellblau (`--sel`). Innere Flächen über
+  `--head`. Toasts haben eine eigene Farbe `--toast` (nie an das Menü koppeln – das gab weiß auf weiß).
+- **Menü-Symbole:** eigene SVG-Liniensymbole (`currentColor`), keine Emojis mehr.
+- **Notizen zur Stunde:** `state.lessonNotes = [{ course: "Fach|Klasse", date, text }]`, am Kurs statt
+  am Stundenplan-Eintrag. Feld im Stunden-Dialog, 📝 in der Woche, Verlauf im Stundenplan-Dialog,
+  eigener Notiz-Dialog, „Verlauf teilen“.
+- **Sicherung:** pro Gerät in localStorage `todo-organizer-backup` (firstUse, lastExport, lastAuto,
+  dismissedUntil). Hinweis in der Woche nach 14 Tagen ohne Sicherung (ab 7 Tagen Nutzung, ab 3
+  Einträgen). iOS: wöchentlich `ToDo-Organizer-Sicherung.json` (+ `-vorher`) in DOCUMENTS;
+  `UIFileSharingEnabled`/`LSSupportsOpeningDocumentsInPlace` machen den Ordner in der Dateien-App sichtbar.
+- **PDF:** `buildTablePdf` im CORE-Block, ohne Bibliothek (Helvetica, WinAnsi), `downloadBytes` gibt
+  Binärdaten weiter. Tests prüfen xref-Offsets; lokal mit qpdf/pdftotext gegengeprüft.
+- **iPad:** ab 1100 px Breite Woche als Spalten Mo–Fr + Wochenende (`#wk-days.cols`).
+- **Schnellaktionen:** `WidgetData.setShortcuts` (je Profil), `SceneDelegate` leitet sie als Link weiter.
+
 ## Fehler im Kauf bis 3.1 (gefunden am 27.10.2026)
 
 - `tools/capacitor-core-shim.js` rief `window.Capacitor.registerPlugin` auf. Die iOS-Brücke
@@ -57,9 +75,15 @@
 ## Heute-Widget (3.1)
 
 - Swift-Widget (WidgetKit, iOS 15+, klein/mittel/groß) in `res/ios/widget/`. Die App
-  schreibt per eigenem Plugin `WidgetData.set({json})` (`res/ios/app/WidgetDataPlugin.swift`,
-  angemeldet in `AppViewController`, der in Main.storyboard Capacitors Startbildschirm
-  ersetzt) eine Zusammenfassung von drei Tagen in `UserDefaults(suiteName: group.de.maehlmann.todoorganizer)`.
+  schreibt per eigenem Plugin `WidgetData.set({json})` (`res/ios/app/WidgetDataPlugin.swift`)
+  eine Zusammenfassung von drei Tagen als Datei `widget.json` in den Ordner der App-Gruppe.
+- **Anmeldung des Plugins über `packageClassList` in `capacitor.config.json`** (ios-setup.rb).
+  Bis Oktober 2026 lief das über einen eigenen Startbildschirm im Storyboard – in Capacitor 8
+  wirkungslos, weil `SceneDelegate` `CAPBridgeViewController()` im Code erzeugt. Folge:
+  „Widget-Brücke: nein“, Widget ohne Daten. Der Workflow prüft jetzt den Eintrag.
+- `res/ios/app/SceneDelegate.swift` ersetzt die Vorlage (@capacitor/ios 8.5.3) und leitet
+  Schnellaktionen am App-Symbol als `todoorganizer://…`-Link weiter (`ApplicationDelegateProxy`).
+  Die Einträge setzt die Web-App je nach Profil über `WidgetData.setShortcuts`.
 - Fertige Plugins (capacitor-widgetsbridge-plugin) gibt es nur für CocoaPods – unser
   Build nutzt SPM, deshalb die eigene Brücke.
 - `widgetSnapshot()` in index.html baut die Daten (Stunden mit Ferien/A/B/Ausfall,

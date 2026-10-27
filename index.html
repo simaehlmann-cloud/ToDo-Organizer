@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#f4f5f7">
+<meta name="theme-color" content="#e9ecf0">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -23,20 +23,21 @@ try {
 </script>
 <style>
 :root{
-  --bg:#f4f5f7; --card:#fff; --text:#1f2937; --muted:#6b7280;
+  /* Seit 3.1: sanftes Hellgrau als Grund, Inhalte als weiße Karten mit leichtem Schatten */
+  --bg:#e9ecf0; --card:#fff; --text:#1f2937; --muted:#6b7280; --head:#f4f6f8; --card-line:#e3e7ec;
   /* Menü: im hellen Modus hell (seit 3.1), aktiver Punkt blau hinterlegt */
-  --side:#ffffff; --side-text:#334155; --side-muted:#94a3b8; --side-line:#e5e7eb;
+  --side:#f8f9fb; --side-text:#334155; --side-muted:#94a3b8; --side-line:#e5e7eb;
   --side-act:#eaf1ff; --side-act-text:#1d4ed8;
   --toast:#1f2937;          /* Hinweise: immer dunkel mit weißer Schrift (nicht an das Menü koppeln) */
   --primary:#2563eb; --primary-h:#1d4ed8; --danger:#dc2626; --ok:#059669; --warn:#d97706;
-  --border:#e5e7eb; --shadow:0 1px 3px rgba(0,0,0,.07);
+  --border:#e1e5ea; --shadow:0 1px 2px rgba(15,23,42,.05),0 6px 18px rgba(15,23,42,.05);
   --input:#fff; --sel:#dbeafe; --soft:#eef4ff; --weekend:#fafafa; --tog:#cbd5e1;
   color-scheme:light;
 }
 /* Dunkle Darstellung: per Einstellung (System/Hell/Dunkel), gesetzt über
    data-theme am <html>. Alle Flächen laufen über Variablen. */
 :root[data-theme=dark]{
-  --bg:#0f1115; --card:#191c23; --text:#e7e9ee; --muted:#9aa3b2;
+  --bg:#0f1115; --card:#191c23; --text:#e7e9ee; --muted:#9aa3b2; --head:#0f1115; --card-line:transparent;
   --side:#161a21; --side-text:#cbd5e1; --side-muted:#7c8696; --side-line:#262b35;
   --side-act:#1f2b45; --side-act-text:#8fb0ff;
   --toast:#2f3747;
@@ -97,7 +98,9 @@ body.sb-inset #main{padding-top:calc(16px + var(--sb-h,26px))}
 .view.active{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-.card{background:var(--card);padding:19px;border-radius:12px;box-shadow:var(--shadow);margin-bottom:18px}
+.card{background:var(--card);padding:19px;border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--card-line);margin-bottom:18px}
+/* Woche: keine große Karte, die Tage liegen als eigene Kärtchen auf dem Grund */
+.card.week-wrap{background:transparent;box-shadow:none;border:none;padding-left:0;padding-right:0;padding-top:4px}
 h1{margin-bottom:16px;font-size:1.55rem}
 h3{margin-bottom:11px;font-size:1rem}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px;margin-bottom:13px}
@@ -108,7 +111,7 @@ label.fld{display:block;font-size:.76rem;color:var(--muted);margin-bottom:4px;fo
 .btn:hover{background:var(--primary-h)}
 .btn:active{transform:scale(.98)}
 .btn-sm{padding:6px 11px;font-size:.79rem;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:500}
-.btn-sm:hover{background:var(--bg)}
+.btn-sm:hover{background:var(--head)}
 .btn-sm.danger{color:var(--danger);border-color:#fca5a5}
 
 .filters{display:flex;gap:7px;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
@@ -134,10 +137,10 @@ label.fld{display:block;font-size:.76rem;color:var(--muted);margin-bottom:4px;fo
 .badge.pri-hoch{color:var(--danger)}.badge.pri-mittel{color:var(--warn)}.badge.pri-niedrig{color:var(--ok)}
 
 .tt{display:grid;grid-template-columns:56px repeat(var(--cols,5),minmax(84px,1fr));gap:4px;min-width:560px}
-.tt-h{font-weight:700;text-align:center;padding:7px;background:var(--bg);border-radius:5px;font-size:.85rem}
+.tt-h{font-weight:700;text-align:center;padding:7px;background:var(--head);border-radius:5px;font-size:.85rem}
 .tt-h.today{background:var(--primary);color:#fff}
 .tt-t{text-align:right;padding-right:7px;font-size:.68rem;color:var(--muted);align-self:center;line-height:1.3}
-.tt-s{background:var(--bg);border:1px solid var(--border);border-radius:5px;min-height:52px;padding:6px;font-size:.78rem;cursor:pointer;overflow:hidden}
+.tt-s{background:var(--head);border:1px solid var(--border);border-radius:5px;min-height:52px;padding:6px;font-size:.78rem;cursor:pointer;overflow:hidden}
 .tt-s:hover{outline:2px solid var(--primary)}
 .tt-s.full{color:#fff}
 .tt-s .subj{font-weight:700;line-height:1.2}
@@ -186,7 +189,7 @@ dialog[open]{top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,
 dialog::backdrop{background:rgba(0,0,0,.42)}
 dialog .bd{padding:20px}
 dialog h3{margin-bottom:14px}
-dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;background:var(--bg);border-top:1px solid var(--border);flex-wrap:wrap}
+dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;background:var(--head);border-top:1px solid var(--border);flex-wrap:wrap}
 
 #toast{box-shadow:0 6px 20px rgba(0,0,0,.25);position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--toast);color:#fff;padding:11px 16px;border-radius:9px;font-size:.87rem;z-index:99;transition:transform .26s;pointer-events:none;max-width:88%;text-align:center;display:flex;align-items:center;gap:12px}
 #toast.show{transform:translateX(-50%) translateY(0)}
@@ -232,19 +235,20 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 /* ---- Wochenübersicht ---- */
-.week-day{border:1px solid var(--border);border-radius:10px;margin-bottom:11px;overflow:hidden}
+.week-day{background:var(--card);border:1px solid var(--card-line);border-radius:12px;margin-bottom:11px;overflow:hidden;box-shadow:var(--shadow)}
 .week-day.today{border-color:var(--primary);border-width:2px}
 .week-day.weekend{background:var(--weekend)}
-.wd-head{display:flex;justify-content:space-between;align-items:baseline;gap:9px;padding:9px 12px;background:var(--bg);font-weight:700;font-size:.9rem;flex-wrap:wrap}
-.week-day.today .wd-head{background:var(--primary);color:#fff}
+.wd-head{display:flex;justify-content:space-between;align-items:baseline;gap:9px;padding:9px 12px;background:var(--head);font-weight:700;font-size:.9rem;flex-wrap:wrap}
+.week-day.today .wd-head{background:var(--sel);color:var(--primary-h)}
 .wd-head .cnt2{font-weight:600;font-size:.74rem;color:var(--muted)}
-.week-day.today .wd-head .cnt2{color:#dbeafe}
+.week-day.today .wd-head .cnt2{color:var(--primary)}
 .wd-body{padding:9px 12px}
 .wd-lessons{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
 .wd-lesson{padding:3px 9px;border-radius:6px;color:#fff;font-size:.73rem;font-weight:600;white-space:nowrap}
 .wd-task{display:flex;align-items:center;gap:9px;padding:6px 0 6px 9px;border-left:3px solid var(--border);font-size:.88rem;cursor:pointer;word-break:break-word}
 .wd-task input[type=checkbox]{width:18px;height:18px}
 .wd-task .pt{margin-left:auto;font-size:.72rem;color:var(--muted);white-space:nowrap}
+.wd-task .ti{flex:1;min-width:0;word-break:normal;overflow-wrap:anywhere}
 
 /* ---- Seit 2.4 ---- */
 /* hidden muss immer gewinnen. Vorher setzten .grid (Mehr-Felder) und ein
@@ -257,6 +261,11 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 
 /* Vollversion */
 .nav-btn.locked{opacity:.62}
+.nav-btn .ico{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+.nav-btn .ico svg{width:20px;height:20px}
+@media(max-width:760px){.nav-btn .ico svg{width:23px;height:23px}.nav-btn.active .ico svg{stroke-width:2.2}}
+.lbl-short{display:none}
+@media(max-width:760px){.lbl-long{display:none}.lbl-short{display:inline}}
 .nav-btn.locked .ico{position:relative}
 .nav-btn.locked .ico::after{content:"🔒";position:absolute;right:-9px;bottom:-3px;font-size:.55rem}
 .card.locked>*:not(h3):not(.lock-note){display:none!important}
@@ -288,7 +297,7 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 
 /* Bilder */
 .thumbs{display:flex;gap:8px;flex-wrap:wrap}
-.thumb{width:72px;height:72px;border-radius:9px;object-fit:cover;border:1px solid var(--border);cursor:pointer;background:var(--bg)}
+.thumb{width:72px;height:72px;border-radius:9px;object-fit:cover;border:1px solid var(--border);cursor:pointer;background:var(--head)}
 .thumb-add{width:72px;height:72px;border-radius:9px;border:2px dashed var(--border);background:none;color:var(--muted);font-size:1.5rem;cursor:pointer}
 #dlg-img{max-width:min(96vw,900px);background:#000}
 #dlg-img img{display:block;max-width:100%;max-height:calc(100dvh - 140px);margin:0 auto}
@@ -356,7 +365,7 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 :root[data-theme=dark] .cal-off.hol{background:#4c1d1d;color:#fca5a5}
 :root[data-theme=dark] .cal-off.fer{background:#123524;color:#86efac}
 .ex-preview{display:grid;gap:5px}
-.ex-preview div{font-size:.84rem;padding:7px 10px;border-radius:9px;background:var(--bg,#f4f5f7);display:flex;justify-content:space-between;gap:10px}
+.ex-preview div{font-size:.84rem;padding:7px 10px;border-radius:9px;background:var(--head);display:flex;justify-content:space-between;gap:10px}
 .ex-preview .d{color:var(--muted);white-space:nowrap}
 .ab-badge{display:inline-block;font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--primary);color:#fff;white-space:nowrap;vertical-align:2px}
 .wd-add{margin-top:8px;font-size:.74rem;padding:4px 10px}
@@ -364,12 +373,12 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .wd-lesson.sa{background:#64748b!important}
 .wd-lesson.sm{background:#dc2626!important;text-decoration:line-through}
 .sub-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
-.sub-tile{border-radius:12px;padding:10px 6px;text-align:center;background:var(--bg,#f4f5f7)}
+.sub-tile{border-radius:12px;padding:10px 6px;text-align:center;background:var(--head)}
 .sub-tile .v{font-size:1.25rem;font-weight:800}
 .sub-tile .l{font-size:.68rem;color:var(--muted);margin-top:2px}
 .sub-tile.p .v{color:#059669}.sub-tile.m .v{color:#dc2626}
 .sub-month{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px}
-.sub-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;background:var(--bg,#f4f5f7);margin-bottom:6px;cursor:pointer}
+.sub-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;background:var(--head);margin-bottom:6px;cursor:pointer}
 .sub-row .d{font-weight:700;font-size:.82rem;white-space:nowrap}
 .sub-row .t{flex:1;min-width:0;font-size:.84rem}
 .sub-row .t small{display:block;color:var(--muted);font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -381,6 +390,29 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .tt-b.full{background:#64748b;border:none;color:#fff;font-weight:700}
 .tt-s.dbl{display:flex;flex-direction:column;justify-content:center}
 .wd-lesson.du{background:#64748b!important}
+.wd-lesson .nt{margin-left:4px;font-size:.8em}
+.note-list{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.note-list h4{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.note-row{padding:9px 11px;border-radius:10px;background:var(--head);margin-bottom:6px;cursor:pointer}
+.note-row .d{font-weight:700;font-size:.78rem;color:var(--primary-h)}
+.note-row .x{font-size:.86rem;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
+.bk-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-left:4px solid var(--warn)}
+.bk-banner .t{display:flex;flex-direction:column;gap:2px;font-size:.88rem}
+.bk-banner .t span{color:var(--muted);font-size:.8rem}
+.bk-banner .b{display:flex;gap:8px;align-items:center}
+/* iPad quer und breiter: Mo–Fr als Spalten, Wochenende rechts gestapelt */
+#wk-days.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,.85fr);gap:10px;align-items:start}
+#wk-days.cols .week-day{margin-bottom:0}
+#wk-days.cols .wk-weekend{display:flex;flex-direction:column;gap:10px;min-width:0}
+#wk-days.cols .wd-head{flex-direction:column;align-items:flex-start;gap:2px;font-size:.84rem}
+#wk-days.cols .wd-head .wd-off{margin-left:0}
+#wk-days.cols .wd-lesson{white-space:normal;line-height:1.3}
+#wk-days.cols .wd-body{padding:8px}
+#wk-days.cols .wd-add{width:100%}
+/* Aufgaben in schmalen Spalten: Haken links, Zeit, Titel und Angaben untereinander */
+#wk-days.cols .wd-task{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:7px;row-gap:1px;align-items:start;font-size:.82rem;padding-left:7px}
+#wk-days.cols .wd-task input{grid-row:1 / span 3;margin-top:1px}
+#wk-days.cols .wd-task .tm,#wk-days.cols .wd-task .ti,#wk-days.cols .wd-task .pt{grid-column:2;margin-left:0}
 .ab-tag{font-size:.6rem;font-weight:800;background:rgba(255,255,255,.3);border-radius:5px;padding:0 4px;margin-left:4px}
 .ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0 4px;font-size:.86rem}
 .ab-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
@@ -393,13 +425,13 @@ h4{font-size:.9rem;margin:14px 0 8px}
 
 <nav id="sidebar">
   <h2>ToDo Organizer</h2>
-  <button class="nav-btn active" data-view="week"><span class="ico">📆</span><span>Woche</span></button>
-  <button class="nav-btn" data-view="tasks"><span class="ico">📋</span><span>Aufgaben</span></button>
-  <button class="nav-btn" data-view="calendar"><span class="ico">🗓</span><span>Kalender</span></button>
-  <button class="nav-btn" data-view="timetable"><span class="ico">📅</span><span id="nav-plan-label">Wochenplan</span></button>
-  <button class="nav-btn" data-view="shopping"><span class="ico">🛒</span><span>Einkauf</span></button>
-  <button class="nav-btn" data-view="settings"><span class="ico">⚙️</span><span>Einstell.</span></button>
-  <button class="nav-btn" data-view="about"><span class="ico">ℹ️</span><span>Info</span></button>
+  <button class="nav-btn active" data-view="week"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 14h3M13.5 14h3M7.5 17.5h3"/></svg></span><span>Woche</span></button>
+  <button class="nav-btn" data-view="tasks"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 9.2l1.6 1.6L12.4 8M14.5 9.5H17M8 15.2l1.6 1.6 2.8-2.8M14.5 15.5H17"/></svg></span><span>Aufgaben</span></button>
+  <button class="nav-btn" data-view="calendar"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><circle cx="8" cy="14" r=".6" fill="currentColor"/><circle cx="12" cy="14" r=".6" fill="currentColor"/><circle cx="16" cy="14" r=".6" fill="currentColor"/><circle cx="8" cy="17.5" r=".6" fill="currentColor"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg></span><span>Kalender</span></button>
+  <button class="nav-btn" data-view="timetable"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M3 14.5h18M9 4v16M15 4v16"/></svg></span><span id="nav-plan-label">Wochenplan</span></button>
+  <button class="nav-btn" data-view="shopping"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.2l2.3 10.3a1.8 1.8 0 0 0 1.8 1.4h7.6a1.8 1.8 0 0 0 1.7-1.3L21 8H6.1"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg></span><span>Einkauf</span></button>
+  <button class="nav-btn" data-view="settings"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1"/><circle cx="15" cy="6.5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17.5" r="2"/></svg></span><span class="lbl-long">Einstellungen</span><span class="lbl-short">Einstell.</span></button>
+  <button class="nav-btn" data-view="about"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".7" fill="currentColor"/></svg></span><span>Info</span></button>
   <div id="sidebar-foot">Alle Daten bleiben auf diesem Gerät.<br>© Simon Mählmann</div>
 </nav>
 
@@ -418,11 +450,15 @@ h4{font-size:.9rem;margin:14px 0 8px}
         <p class="brand-sub" id="brand-sub"></p>
       </div>
     </header>
+    <div class="card bk-banner" id="bk-banner" hidden>
+      <div class="t"><strong>Zeit für eine Sicherung</strong><span id="bk-banner-text"></span></div>
+      <div class="b"><button class="btn" id="bk-now">Jetzt sichern</button><button class="btn-sm" id="bk-later">Später</button></div>
+    </div>
     <div class="card" id="card-habits" data-pro="Gewohnheiten" hidden>
       <h3>Gewohnheiten</h3>
       <div id="habit-list"></div>
     </div>
-    <div class="card">
+    <div class="card week-wrap">
       <div class="cal-head">
         <button class="btn-sm" id="wk-prev" aria-label="Vorige Woche">‹</button>
         <span class="mo" id="wk-title"></span>
@@ -533,6 +569,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-sm" id="sub-add">＋ Eintrag</button>
         <button class="btn-sm" id="sub-share">Liste teilen</button>
+        <button class="btn-sm" id="sub-pdf">Als PDF</button>
       </div>
       <div id="sub-list"></div>
       <p class="hint" style="margin:12px 0 0">Vertretung zählt plus, Ausfall minus, Aufsichten werden nur erfasst. Schneller geht es in der Woche: „＋ Vertretung“ am Tag oder eigene Stunde antippen → „Fällt aus“.</p>
@@ -694,6 +731,9 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <div class="card">
       <h3>Sicherung</h3>
       <p class="hint">Alle Daten liegen nur auf diesem Gerät. Wird die App gelöscht (oder im Browser der Speicher geleert), sind sie weg. Deshalb regelmäßig exportieren.</p>
+      <label id="bk-auto-row" hidden style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer;margin-bottom:6px">
+        <input type="checkbox" id="bk-auto" style="width:19px;height:19px"> Jede Woche automatisch in die Dateien-App sichern</label>
+      <p class="hint" id="bk-info" hidden style="margin:0 0 12px"></p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:11px">
         <label style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer">
           <input type="checkbox" id="backup-encrypt" style="width:19px;height:19px">
@@ -766,11 +806,12 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div class="feat"><div class="i">📅</div><div><div class="t">Wochenplan und Stundenplan</div><div class="d">Feste Wochentermine wie Training oder Kurse – oder als Stundenplan mit Schulstunden, A/B-Wochen, Ausfall und Vertretung. Hausaufgaben „bis nächste Mathe“ landen bei der nächsten Stunde – Ferien und Feiertage werden übersprungen.</div></div></div>
       <div class="feat"><div class="i">🏖</div><div><div class="t">Feiertage und Ferien</div><div class="d">Für alle 16 Bundesländer in Woche und Kalender. Feiertage werden berechnet, Schulferien sind in der App hinterlegt (Quelle: OpenHolidays API, Lizenz ODbL) – ohne Abruf aus dem Netz.</div></div></div>
       <div class="feat"><div class="i">📝</div><div><div class="t">Klassenarbeiten und Klausuren</div><div class="d">Für Lehrkräfte: Vorbereiten, Schreiben, Korrigieren mit Frist. Für Schüler: ein Lernplan mit verteilten Einheiten bis zur Klausur.</div></div></div>
-      <div class="feat"><div class="i">⚖️</div><div><div class="t">Mehr- und Minderstunden</div><div class="d">Für Lehrkräfte: Vertretungen (+), Ausfälle (−) und Aufsichten mit Datum, Einzel- oder Doppelstunde, Klasse und Notiz. Übersicht mit Saldo je Monat, Halbjahr oder Schuljahr, als Liste teilbar.</div></div></div>
+      <div class="feat"><div class="i">📝</div><div><div class="t">Notizen zur Stunde</div><div class="d">Stunde in der Woche antippen und festhalten, was dran war. Im Stundenplan zeigt jedes Fach seinen Stundenverlauf nach Datum – teilbar, ohne Schülerdaten.</div></div></div>
+      <div class="feat"><div class="i">⚖️</div><div><div class="t">Mehr- und Minderstunden</div><div class="d">Für Lehrkräfte: Vertretungen (+), Ausfälle (−) und Aufsichten mit Datum, Einzel- oder Doppelstunde, Klasse und Notiz. Übersicht mit Saldo je Monat, Halbjahr oder Schuljahr, als Liste oder PDF.</div></div></div>
       <div class="feat"><div class="i">✅</div><div><div class="t">Gewohnheiten</div><div class="d">Sport, Lesen, Wasser trinken: mit Wochenziel abhaken, Serien sehen.</div></div></div>
       <div class="feat"><div class="i">🧾</div><div><div class="t">Vorlagen</div><div class="d">Wiederkehrende Abläufe wie „Urlaub packen“ einmal anlegen und mit einem Tippen samt Unterpunkten einsetzen.</div></div></div>
       <div class="feat"><div class="i">🛒</div><div><div class="t">Einkaufslisten</div><div class="d">Mehrere Listen, Vorschläge aus früheren Einkäufen, abhaken, aufräumen, teilen.</div></div></div>
-      <div class="feat"><div class="i">💾</div><div><div class="t">Sicherung</div><div class="d">Vollständige Sicherung als Datei, auf Wunsch mit Passwort verschlüsselt; Termine zusätzlich als Kalenderdatei (.ics).</div></div></div>
+      <div class="feat"><div class="i">💾</div><div><div class="t">Sicherung</div><div class="d">Vollständige Sicherung als Datei, auf Wunsch mit Passwort verschlüsselt; in der iPhone-App zusätzlich jede Woche automatisch in die Dateien-App. Erinnerung, wenn lange nicht gesichert wurde. Termine auch als Kalenderdatei (.ics).</div></div></div>
       <div class="feat"><div class="i">🌙</div><div><div class="t">Dunkle Darstellung</div><div class="d">Hell, dunkel oder wie das Gerät.</div></div></div>
       <div class="feat" id="feat-share"><div class="i">📤</div><div><div class="t">Teilen an ToDo Organizer</div><div class="d">Auf Android-Geräten erscheint „ToDo Organizer" im Teilen-Menü anderer Apps. Geteilter Text wird als neue Aufgabe vorgeschlagen.</div></div></div>
     </div>
@@ -883,6 +924,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div><label class="fld" for="l-subject" id="l-lbl-subject">Fach</label><input type="text" id="l-subject"></div>
       <div><label class="fld" for="l-room" id="l-lbl-room">Raum / Lehrkraft</label><input type="text" id="l-room"></div>
       <div><label class="fld" for="l-color">Farbe</label><input type="color" id="l-color" style="width:100%;height:42px;padding:3px"></div>
+      <div id="l-notes" class="note-list" hidden></div>
       <label id="l-double-row" style="display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="l-double" style="width:18px;height:18px"> Doppelstunde (diese und die nächste Stunde)</label>
       <div class="fld-week" hidden><label class="fld" for="l-week">Gilt in</label><select id="l-week">
         <option value="">jeder Woche</option><option value="A">nur Woche A</option><option value="B">nur Woche B</option></select></div>
@@ -899,6 +941,9 @@ h4{font-size:.9rem;margin:14px 0 8px}
   <div class="bd">
     <h3 id="ld-head">Stunde</h3>
     <p class="hint" id="ld-sub" style="margin:-4px 0 12px"></p>
+    <label class="fld" for="ld-note">Notiz zur Stunde</label>
+    <textarea id="ld-note" rows="3" placeholder="Thema, was gemacht wurde, was als Nächstes ansteht …" style="margin-bottom:6px"></textarea>
+    <p class="hint" style="margin:0 0 12px"><a href="#" id="ld-history">Stundenverlauf ansehen</a></p>
     <label style="display:flex;align-items:center;gap:9px;font-size:.92rem;cursor:pointer;margin-bottom:12px">
       <input type="checkbox" id="ld-cancel" style="width:20px;height:20px"> Fällt an diesem Tag aus</label>
     <div id="ld-minus" class="ab-row" hidden style="margin:-4px 0 12px">
@@ -921,6 +966,34 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <button class="btn-sm" id="ld-close">Abbrechen</button>
     <button class="btn" id="ld-save">Übernehmen</button>
   </div>
+</dialog>
+
+<dialog id="dlg-note">
+  <div class="bd">
+    <h3 id="nt-head">Notiz zur Stunde</h3>
+    <div class="grid" style="margin-bottom:6px">
+      <div><label class="fld" for="nt-date">Datum</label><input type="date" id="nt-date"></div>
+    </div>
+    <label class="fld" for="nt-text">Notiz</label>
+    <textarea id="nt-text" rows="6" placeholder="Thema, was gemacht wurde, was als Nächstes ansteht …"></textarea>
+  </div>
+  <div class="ft">
+    <button class="btn-sm danger" id="nt-del">Löschen</button>
+    <button class="btn-sm" id="nt-cancel">Abbrechen</button>
+    <button class="btn" id="nt-save">Speichern</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-course">
+  <div class="bd">
+    <h3 id="cs-head">Stundenverlauf</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn-sm" id="cs-add">＋ Notiz</button>
+      <button class="btn-sm" id="cs-share">Verlauf teilen</button>
+    </div>
+    <div id="cs-list"></div>
+  </div>
+  <div class="ft"><button class="btn" id="cs-close">Schließen</button></div>
 </dialog>
 
 <dialog id="dlg-duty">
@@ -1587,6 +1660,101 @@ function breaksOf(slots) {
 }
 /* Belegt ein Eintrag die Stunde si? (Doppelstunde: auch die nächste) */
 const occupies = (l, si) => l && l.slot != null && (l.slot === si || (+l.span === 2 && l.slot + 1 === si));
+/* ---- PDF ohne fremde Bibliothek ----
+   Schlichtes A4-PDF mit Kopf, Zusammenfassung und Tabelle (Helvetica,
+   WinAnsi für Umlaute). Ergebnis: Zeichenkette mit Bytes 0–255. */
+const PDF_W = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,
+  278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,
+  667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,
+  500,722,500,500,500,334,260,334,584];
+const PDF_MAP = { "€": 0x80, "‚": 0x82, "„": 0x84, "…": 0x85, "‘": 0x91, "’": 0x92, "“": 0x93, "”": 0x94, "•": 0x95, "–": 0x96, "—": 0x97, "−": 0x2d };
+function pdfText(str) {
+  let out = "";
+  for (const ch of String(str)) {
+    let c = ch.codePointAt(0);
+    if (PDF_MAP[ch] != null) c = PDF_MAP[ch];
+    else if (c > 0xff || (c >= 0x7f && c < 0xa0)) c = 0x3f;            // nicht darstellbar → ?
+    if (c === 0x28 || c === 0x29 || c === 0x5c) out += "\\";
+    out += String.fromCharCode(c);
+  }
+  return out;
+}
+function pdfWidth(str, size, bold) {
+  let w = 0;
+  for (const ch of String(str)) {
+    const c = ch.codePointAt(0);
+    const base = c >= 32 && c <= 126 ? c : (/[äàáâ]/i.test(ch) ? 97 : /[öòóô]/i.test(ch) ? 111 : /[üùúû]/i.test(ch) ? 117 : ch === "ß" ? 98 : 110);
+    w += PDF_W[base - 32] || 556;
+  }
+  return w * size / 1000 * (bold ? 1.06 : 1);
+}
+function pdfFit(str, size, max, bold) {
+  str = String(str || "").replace(/\s+/g, " ").trim();
+  if (pdfWidth(str, size, bold) <= max) return str;
+  while (str.length > 1 && pdfWidth(str + "…", size, bold) > max) str = str.slice(0, -1);
+  return str.trimEnd() + "…";
+}
+/* o = { title, sub, summary, cols: [{ label, w, right }], rows: [[…]], footer } */
+function buildTablePdf(o) {
+  const W = 595, H = 842, M = 40, rowH = 15, size = 9;
+  const pages = [];
+  let ops = null, y = 0;
+  const T = (x, yy, s, sz, bold) => ops.push(`BT /${bold ? "F2" : "F1"} ${sz} Tf ${x.toFixed(2)} ${yy.toFixed(2)} Td (${pdfText(s)}) Tj ET`);
+  const head = first => {
+    ops = []; pages.push(ops); y = H - M;
+    if (first) {
+      T(M, y - 16, o.title, 16, true); y -= 26;
+      if (o.sub) { T(M, y - 10, o.sub, 10, false); y -= 16; }
+      if (o.summary) {
+        ops.push(`0.93 0.95 1 rg ${M} ${(y - 26).toFixed(2)} ${W - 2 * M} 22 re f 0 g`);
+        T(M + 8, y - 18.5, o.summary, 10, true); y -= 36;
+      }
+    } else { T(M, y - 10, o.title + " (Fortsetzung)", 10, true); y -= 20; }
+    let x = M;
+    ops.push(`0.2 0.2 0.2 RG 0.8 w ${M} ${(y - rowH + 3).toFixed(2)} m ${W - M} ${(y - rowH + 3).toFixed(2)} l S`);
+    for (const c of o.cols) {
+      const tx = c.right ? x + c.w - 4 - pdfWidth(c.label, size, true) : x + 2;
+      T(tx, y - rowH + 7, c.label, size, true); x += c.w;
+    }
+    y -= rowH + 2;
+  };
+  head(true);
+  o.rows.forEach((r, i) => {
+    if (y - rowH < M + 24) head(false);
+    if (i % 2 === 0) ops.push(`0.96 g ${M} ${(y - rowH + 3).toFixed(2)} ${W - 2 * M} ${rowH} re f 0 g`);
+    let x = M;
+    o.cols.forEach((c, k) => {
+      const s = pdfFit(r[k], size, c.w - 6, false);
+      const tx = c.right ? x + c.w - 4 - pdfWidth(s, size, false) : x + 2;
+      T(tx, y - rowH + 7, s, size, false); x += c.w;
+    });
+    y -= rowH;
+  });
+  const n = pages.length;
+  pages.forEach((p, i) => {
+    ops = p;
+    T(M, 22, (o.footer || "") + `   Seite ${i + 1} von ${n}`, 8, false);
+  });
+  // Objekte: 1 Katalog, 2 Seiten, 3/4 Schriften, dann je Seite Seite + Inhalt
+  const objs = [];
+  objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  const kids = pages.map((_, i) => `${5 + 2 * i} 0 R`).join(" ");
+  objs[2] = `<< /Type /Pages /Kids [${kids}] /Count ${n} >>`;
+  objs[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+  objs[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+  pages.forEach((p, i) => {
+    const content = p.join("\n");
+    objs[5 + 2 * i] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`;
+    objs[6 + 2 * i] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+  });
+  let out = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
+  const offs = [];
+  for (let i = 1; i < objs.length; i++) { offs[i] = out.length; out += `${i} 0 obj\n${objs[i]}\nendobj\n`; }
+  const xref = out.length;
+  out += `xref\n0 ${objs.length}\n0000000000 65535 f \n` + offs.slice(1).map(v => String(v).padStart(10, "0") + " 00000 n \n").join("");
+  out += `trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return out;
+}
 /* ==CORE-END== */
 
 /* ==FERIEN-BEGIN== Schulferien je Land, erzeugt mit tools/make-ferien.js.
@@ -1667,6 +1835,8 @@ const DEFAULT_STATE = () => ({
   subLog: [],
   // Feste Pausenaufsichten: { id, day, after (Pause nach Stunde i), place, week }
   duties: [],
+  // Notizen zur Stunde: { id, course: "Fach|Klasse", date, text, updatedAt } – am Kurs, nicht am Eintrag
+  lessonNotes: [],
   // Schreibgeschützte Termine aus einem abonnierten Kalender (ICS) – Anzeige-Cache.
   extEvents: [],
   categories: [ { id:"c3", name:"Privat", color:"#059669" } ],
@@ -1755,6 +1925,8 @@ function normalizeState(p) {
     duties: arr(p.duties).filter(x => x && x.day >= 1 && x.day <= 7 && Number.isInteger(+x.after) && +x.after >= 0)
       .map(x => ({ id: x.id || uid(), day: +x.day, after: +x.after, place: String(x.place || "").slice(0, 60),
                    week: x.week === "A" || x.week === "B" ? x.week : null })),
+    lessonNotes: arr(p.lessonNotes).filter(n => n && typeof n.course === "string" && /^\d{4}-\d{2}-\d{2}$/.test(n.date || "") && String(n.text || "").trim())
+      .map(n => ({ id: n.id || uid(), course: n.course.slice(0, 120), date: n.date, text: String(n.text).slice(0, 5000), updatedAt: n.updatedAt || Date.now() })),
     subLog: arr(p.subLog).filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && ["plus", "minus", "aufsicht"].indexOf(e.type) > -1)
       .map(e => ({ id: e.id || uid(), date: e.date, type: e.type, hours: +e.hours === 2 ? 2 : 1,
         slot: e.slot != null && e.slot !== "" && !isNaN(+e.slot) ? +e.slot : null,
@@ -1870,6 +2042,19 @@ const Widget = {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.push(), 1200);
   },
+  /* Schnellaktionen am App-Symbol (lange drücken), passend zum Profil */
+  shortcuts() {
+    const p = this.plugin(); if (!p || !p.setShortcuts) return;
+    const prof = state.settings.profile, teacher = prof === "teacher" && isSchool() && feat("timetable");
+    const items = [{ type: "todoorganizer://new-task", title: "Neue Aufgabe", icon: "plus.circle" }];
+    if (teacher) items.push({ type: "todoorganizer://new-sub", title: "Vertretung eintragen", icon: "arrow.left.arrow.right" });
+    if (feat("timetable") && isSchool()) items.push({ type: "todoorganizer://timetable", title: "Stundenplan", icon: "tablecells" });
+    if (feat("shopping")) items.push({ type: "todoorganizer://shopping", title: "Einkaufsliste", icon: "cart" });
+    const key = JSON.stringify(items);
+    if (key === this.lastShortcuts) return;
+    this.lastShortcuts = key;
+    p.setShortcuts({ items }).catch(e => console.warn("Schnellaktionen:", e && e.message));
+  },
   async push() {
     const p = this.plugin(); if (!p) return;
     clearTimeout(this.timer);
@@ -1954,6 +2139,78 @@ function toast(msg, undoFn) {
   t._h = setTimeout(() => { t.classList.remove("show"); t.style.pointerEvents = "none"; }, undoFn ? 6000 : 2600);
 }
 
+/* ---------- Sicherung: Erinnerung und automatische Sicherung ----------
+   Pro Gerät (nicht in den Daten, damit ein Import den Stand nicht verfälscht):
+   firstUse, lastExport (von Hand), lastAuto (automatisch), dismissedUntil.
+   In der iOS-App schreibt die App einmal pro Woche eine Sicherung in ihren
+   Dokumente-Ordner – sichtbar in der Dateien-App („Auf meinem iPhone“) und
+   Teil der iCloud-Gerätesicherung. Die vorige Fassung bleibt daneben liegen. */
+const BK_KEY = "todo-organizer-backup";
+const BK_FILE = "ToDo-Organizer-Sicherung.json", BK_PREV = "ToDo-Organizer-Sicherung-vorher.json";
+const Backup = {
+  d: {},
+  load() {
+    try { this.d = JSON.parse(localStorage.getItem(BK_KEY) || "{}") || {}; } catch { this.d = {}; }
+    if (!this.d.firstUse) { this.d.firstUse = Date.now(); this.save(); }
+  },
+  save() { try { localStorage.setItem(BK_KEY, JSON.stringify(this.d)); } catch { /* privat */ } },
+  fs() { const P = window.Capacitor && window.Capacitor.Plugins; return (isNative() && P && P.Filesystem) || null; },
+  autoOn() { return this.d.auto !== false; },
+  hasData() { return state.tasks.length + state.lessons.length + state.subLog.length + state.lessonNotes.length >= 3; },
+  lastSafe() { return Math.max(this.d.lastExport || 0, this.d.lastAuto || 0); },
+  due(now) {
+    now = now || Date.now();
+    if (!this.hasData() || now - (this.d.firstUse || now) < 7 * 864e5) return false;
+    if ((this.d.dismissedUntil || 0) > now) return false;
+    return now - this.lastSafe() > 14 * 864e5;
+  },
+  exported() { this.d.lastExport = Date.now(); this.save(); renderBackupBanner(); renderBackupInfo(); },
+  async json() {
+    const images = await exportImages();
+    return JSON.stringify(Object.keys(images).length ? { ...state, images } : state);
+  },
+  running: false,
+  async auto(force) {
+    const fs = this.fs();
+    if (!fs || !this.autoOn() || this.running) return;
+    if (!force && this.d.lastAuto && Date.now() - this.d.lastAuto < 7 * 864e5) return;
+    if (!this.hasData()) return;
+    this.running = true;
+    try {
+      const data = await this.json();
+      try { await fs.copy({ from: BK_FILE, to: BK_PREV, directory: "DOCUMENTS", toDirectory: "DOCUMENTS" }); } catch { /* erste Sicherung */ }
+      await fs.writeFile({ path: BK_FILE, data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
+      this.d.lastAuto = Date.now(); this.d.autoError = null;
+    } catch (e) { this.d.autoError = String((e && (e.message || e.errorMessage)) || e); }
+    this.running = false;
+    this.save(); renderBackupBanner(); renderBackupInfo();
+  }
+};
+function ago(ms) {
+  const d = Math.floor((Date.now() - ms) / 864e5);
+  return d <= 0 ? "heute" : d === 1 ? "gestern" : "vor " + d + " Tagen";
+}
+function renderBackupBanner() {
+  const b = $("bk-banner"); if (!b) return;
+  b.hidden = !Backup.due();
+  if (b.hidden) return;
+  const last = Backup.lastSafe();
+  $("bk-banner-text").textContent = (last ? "Letzte Sicherung " + ago(last) + "." : "Noch keine Sicherung.")
+    + " Deine Daten liegen nur auf diesem Gerät.";
+}
+function renderBackupInfo() {
+  const fs = Backup.fs();
+  $("bk-auto-row").hidden = !fs;
+  $("bk-auto").checked = Backup.autoOn();
+  const info = $("bk-info");
+  info.hidden = !fs;
+  if (!fs) return;
+  info.textContent = !Backup.autoOn() ? "Automatische Sicherung ist aus."
+    : Backup.d.autoError ? "Automatische Sicherung fehlgeschlagen: " + Backup.d.autoError
+    : Backup.d.lastAuto ? "Zuletzt automatisch gesichert " + ago(Backup.d.lastAuto) + " – Dateien-App → Auf meinem iPhone → ToDo Organizer."
+    : "Die erste automatische Sicherung folgt, sobald etwas eingetragen ist.";
+}
+
 /* Vollständige Kopie des Datenstands für Rückgängig-Aktionen. */
 function snapshot() { return JSON.parse(JSON.stringify(state)); }
 function restore(snap) {
@@ -1965,6 +2222,29 @@ const catColor = id => (catById(id) || {}).color || "#94a3b8";
 
 function mailto(to, subject, body) {
   location.href = `mailto:${to || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+/* Binärdatei (z. B. PDF) weitergeben: str enthält Bytes 0–255 */
+function downloadBytes(filename, str, mime) {
+  const P = window.Capacitor && window.Capacitor.Plugins;
+  if (isNative() && P && P.Filesystem && P.Share) {
+    (async () => {
+      try {
+        const r = await P.Filesystem.writeFile({ path: filename, data: btoa(str), directory: "CACHE" });   // ohne encoding = base64
+        await P.Share.share({ title: filename, files: [r.uri] });
+      } catch (e) {
+        const m = String((e && (e.message || e.errorMessage)) || e);
+        if (!/cancel/i.test(m)) toast("Datei konnte nicht weitergegeben werden.");
+      }
+    })();
+    return;
+  }
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function download(filename, content, mime) {
   // In der iOS-App (WKWebView) tun <a download>-Links nichts. Dort wird die
@@ -2854,7 +3134,7 @@ function weekTaskRow(t, withDate) {
   cb.onclick = e => { e.stopPropagation(); toggleTask(t.id); };
   row.append(cb);
   if (t.dueTime) row.append(el("span","tm",t.dueTime));
-  row.append(el("span",null,t.title));
+  row.append(el("span","ti",t.title));
   const bits = [];
   if (withDate && t.dueDate) bits.push(deDate(t.dueDate));
   const subs = t.subtasks || [];
@@ -2910,6 +3190,11 @@ function renderWeek() {
   // Die Woche zeigt immer alle sieben Tage: Aufgaben gibt es auch am
   // Wochenende, unabhängig davon, ob der Stundenplan Sa/So ausblendet.
   // A/B-Woche als Plakette – nicht in Ferienwochen, die ohnehin nicht zählen
+  // Breiter Bildschirm (iPad quer): Woche als Spalten
+  const cols = window.matchMedia && matchMedia("(min-width: 1100px)").matches;
+  box.classList.toggle("cols", !!cols);
+  let weekendBox = null;
+  if (cols) { weekendBox = el("div", "wk-weekend"); }
   const abNow = abOf(isoOf(mo));
   const ferienWoche = isFerienWeek(isoOf(mo), state.settings.region, ferienList(), FERIEN_NAMES);
   if (abNow && feat("timetable") && !ferienWoche) $("wk-title").append(" ", el("span", "ab-badge", "Woche " + abNow));
@@ -2926,7 +3211,7 @@ function renderWeek() {
                    - (PRIO_RANK[b.prio] != null ? PRIO_RANK[b.prio] : 9));
 
     const head = el("div","wd-head");
-    const hl = el("span",null,`${DAY_NAMES[dow]}, ${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}`);
+    const hl = el("span",null,`${(cols ? DAY_SHORT : DAY_NAMES)[dow]}, ${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}`);
     const off = dayInfo(iso);
     if (off.holiday) hl.append(el("span","wd-off hol", off.holiday));
     else if (off.ferien) hl.append(el("span","wd-off fer", off.ferien));
@@ -2941,8 +3226,9 @@ function renderWeek() {
     if (feat("timetable")) {
       lessonsOn(iso).forEach(l => {
         const ex = lessonExOf(l, iso) || {};
+        const hasNote = !!noteOf(courseOf(l), iso);
         const subj = ex.subject || l.subject, room = ex.room || l.room;
-        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l, end: +l.span === 2 ? planEnd(l) : null,
+        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l, end: +l.span === 2 ? planEnd(l) : null, note: hasNote,
                      cls: ex.cancel ? "cx" : (ex.subject || ex.room) ? "sub" : "",
                      text: `${subj}${room ? " · " + room : ""}`, color: l.color || "#2563eb" });
       });
@@ -2958,6 +3244,7 @@ function renderWeek() {
       chips.sort((x, y) => x.time.localeCompare(y.time)).forEach(c => {
         const s = el("span","wd-lesson" + (c.cls ? " " + c.cls : "") + (c.lesson ? " tap" : ""), (c.time ? c.time + (c.end ? "–" + c.end : "") + " " : "") + c.text);
         s.style.background = c.color;
+        if (c.note) { const nt = el("span", "nt", "📝"); nt.title = "Notiz vorhanden"; s.append(nt); }
         if (c.lesson || c.sub || c.duty) {
           s.setAttribute("role", "button"); s.tabIndex = 0;
           s.onclick = () => c.lesson ? openLessonDay(c.lesson, iso) : c.sub ? openSubDialog(c.sub) : openDutyDialog(c.duty);
@@ -2975,10 +3262,16 @@ function renderWeek() {
       body.append(add);
     }
     dayEl.append(body);
-    box.append(dayEl);
+    if (weekendBox && dow >= 6) weekendBox.append(dayEl); else box.append(dayEl);
   }
+  if (weekendBox) box.append(weekendBox);
 }
 
+if (window.matchMedia) {
+  const mq = matchMedia("(min-width: 1100px)");
+  const re = () => renderWeek();
+  if (mq.addEventListener) mq.addEventListener("change", re); else if (mq.addListener) mq.addListener(re);
+}
 $("wk-prev").onclick = () => { weekOffset--; renderWeek(); renderHabits(); };
 $("wk-next").onclick = () => { weekOffset++; renderWeek(); renderHabits(); };
 $("wk-now").onclick  = () => { weekOffset = 0; renderWeek(); renderHabits(); };
@@ -3709,6 +4002,7 @@ function openLessonDialog(lesson, day, slot) {
   $("l-double-row").hidden = timed || gridSlot == null || gridSlot + 1 >= state.settings.slots.length;
   $("l-double").checked = !!(lesson && +lesson.span === 2);
   $("l-del").style.display = lesson ? "" : "none";
+  renderLessonNotes(lesson);
   $("dlg-lesson").showModal();
   setTimeout(() => $("l-subject").focus(), 60);
 }
@@ -3760,6 +4054,10 @@ function openLessonDay(l, iso) {
   $("ld-sub").textContent = lessonStart(l, state.settings.slots) + (planEnd(l) ? "–" + planEnd(l) : "")
     + (l.room ? " · " + l.room : "") + (w ? " · Woche " + w : "");
   $("ld-cancel").checked = !!ex.cancel;
+  const nt = noteOf(courseOf(l), iso);
+  $("ld-note").value = nt ? nt.text : "";
+  const cnt = notesOf(courseOf(l)).length;
+  $("ld-history").textContent = cnt ? `Stundenverlauf ansehen (${cnt})` : "Stundenverlauf ansehen";
   // Lehrkraft: Ausfall als Minusstunde (Einzel/Doppel nach Stundenplan)
   const linked = subOf(l, iso), blk = lessonBlock(state.lessons, l);
   ldMinus = { on: linked ? true : !ex.cancel, hours: linked ? linked.hours : blk.hours, blk };
@@ -3814,6 +4112,7 @@ $("ld-save").onclick = () => {
   else if (subject || room) state.lessonEx[k] = { subject: subject || null, room: room || null };
   else delete state.lessonEx[k];
   applyLdMinus(lesson, iso, $("ld-cancel").checked);
+  setNote(courseOf(lesson), iso, $("ld-note").value);
   save(); $("dlg-lday").close(); renderWeek(); renderSubs();
   toast($("ld-cancel").checked ? "Als Ausfall markiert." : "Gespeichert.");
 };
@@ -3823,6 +4122,13 @@ $("ld-reset").onclick = () => {
   save(); $("dlg-lday").close(); renderWeek(); renderSubs(); toast("Wie geplant.");
 };
 $("ld-close").onclick = () => $("dlg-lday").close();
+$("ld-history").onclick = e => {
+  e.preventDefault();
+  // Ungespeicherte Notiz nicht verlieren
+  setNote(courseOf(ldEdit.lesson), ldEdit.iso, $("ld-note").value); save(); renderWeek();
+  $("dlg-lday").close();
+  openCourseDialog(courseOf(ldEdit.lesson));
+};
 function addHomework() {
   const title = $("ld-hw").value.trim();
   if (!title) { $("ld-hw").focus(); return toast("Bitte die Hausaufgabe eingeben."); }
@@ -3838,6 +4144,111 @@ function addHomework() {
 $("ld-hw-add").onclick = addHomework;
 $("ld-hw").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) addHomework(); };
 $("ld-exam").onclick = () => { $("dlg-lday").close(); openExamDialog(ldEdit.iso, ldEdit.lesson.subject); };
+
+/* ---------- Notizen zur Stunde (Stundenverlauf je Kurs) ----------
+   Kurs = Fach + Klasse/Raum. So bleiben Notizen erhalten, wenn der Stundenplan
+   zum Halbjahr neu angelegt wird – solange Fach und Klasse gleich heißen. */
+const courseOf = l => (l.subject || "").trim() + "|" + (l.room || "").trim();
+const courseLabel = c => { const [s, r] = c.split("|"); return s + (r ? " · " + r : ""); };
+const noteOf = (course, iso) => state.lessonNotes.find(n => n.course === course && n.date === iso) || null;
+const notesOf = course => state.lessonNotes.filter(n => n.course === course).sort((a, b) => b.date.localeCompare(a.date));
+function setNote(course, iso, text) {
+  text = String(text || "").trim();
+  const n = noteOf(course, iso);
+  if (!text) { if (n) state.lessonNotes = state.lessonNotes.filter(x => x !== n); return; }
+  if (n) { n.text = text; n.updatedAt = Date.now(); }
+  else state.lessonNotes.push({ id: uid(), course, date: iso, text, updatedAt: Date.now() });
+}
+async function shareText(title, text) {
+  const Sh = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+  if (Sh && Sh.share) { try { await Sh.share({ title, text }); return; } catch { /* abgebrochen */ } }
+  if (navigator.share) { try { await navigator.share({ title, text }); return; } catch { /* abgebrochen */ } }
+  try { await navigator.clipboard.writeText(text); toast("In die Zwischenablage kopiert."); }
+  catch { mailto("", title, text); }
+}
+/* Liste der Notizen eines Kurses in ein Element zeichnen */
+function renderNoteRows(box, course, max) {
+  box.replaceChildren();
+  const list = notesOf(course);
+  if (!list.length) { box.append(el("p", "hint", "Noch keine Notizen. In der Woche die Stunde antippen und „Notiz zur Stunde“ ausfüllen.")); return list; }
+  list.slice(0, max || list.length).forEach(n => {
+    const r = el("div", "note-row");
+    r.append(el("div", "d", parseISO(n.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })),
+             el("div", "x", n.text));
+    r.onclick = () => openNoteDialog(course, n.date);
+    box.append(r);
+  });
+  if (max && list.length > max) {
+    const more = el("button", "btn-sm", `Alle ${list.length} Notizen`);
+    more.onclick = () => openCourseDialog(course);
+    box.append(more);
+  }
+  return list;
+}
+let ntEdit = null, csCourse = null;
+function openNoteDialog(course, iso) {
+  if (!Lic.full()) return showProHint("timetable");
+  ntEdit = { course, date: iso };
+  const n = iso ? noteOf(course, iso) : null;
+  $("nt-head").textContent = "Notiz · " + courseLabel(course);
+  $("nt-date").value = iso || todayISO();
+  $("nt-text").value = n ? n.text : "";
+  $("nt-del").style.display = n ? "" : "none";
+  $("dlg-note").showModal();
+  setTimeout(() => $("nt-text").focus(), 60);
+}
+$("nt-cancel").onclick = () => $("dlg-note").close();
+$("nt-save").onclick = () => {
+  const iso = $("nt-date").value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return toast("Bitte ein Datum wählen.");
+  const text = $("nt-text").value.trim();
+  if (!text) return toast("Die Notiz ist leer.");
+  // Erst fragen, dann ändern: Abbrechen darf nichts verlieren
+  if (noteOf(ntEdit.course, iso) && ntEdit.date !== iso && !confirm("Für diesen Tag gibt es schon eine Notiz. Ersetzen?")) return;
+  // Datum geändert: alte Notiz an die neue Stelle verschieben
+  if (ntEdit.date && ntEdit.date !== iso) setNote(ntEdit.course, ntEdit.date, "");
+  setNote(ntEdit.course, iso, text);
+  save(); $("dlg-note").close(); afterNotes(); toast("Notiz gespeichert.");
+};
+$("nt-del").onclick = () => {
+  const snap = snapshot();
+  setNote(ntEdit.course, ntEdit.date, "");
+  save(); $("dlg-note").close(); afterNotes(); toast("Notiz gelöscht.", () => restore(snap));
+};
+function openCourseDialog(course) {
+  if (!Lic.full()) return showProHint("timetable");
+  csCourse = course;
+  $("cs-head").textContent = "Stundenverlauf · " + courseLabel(course);
+  renderNoteRows($("cs-list"), course);
+  if (!$("dlg-course").open) $("dlg-course").showModal();
+}
+$("cs-close").onclick = () => $("dlg-course").close();
+$("cs-add").onclick = () => openNoteDialog(csCourse, null);
+$("cs-share").onclick = () => {
+  const list = notesOf(csCourse).slice().reverse();
+  if (!list.length) return toast("Noch keine Notizen.");
+  shareText("Stundenverlauf " + courseLabel(csCourse), "Stundenverlauf " + courseLabel(csCourse) + "\n\n"
+    + list.map(n => parseISO(n.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) + "\n" + n.text).join("\n\n"));
+};
+/* Nach Änderungen: offene Listen und Woche neu zeichnen */
+function afterNotes() {
+  renderWeek();
+  if ($("dlg-course").open && csCourse) renderNoteRows($("cs-list"), csCourse);
+  if ($("dlg-lesson").open && editingLesson && editingLesson.lesson) renderLessonNotes(editingLesson.lesson);
+}
+function renderLessonNotes(lesson) {
+  const box = $("l-notes");
+  box.hidden = !lesson;
+  if (!lesson) return;
+  const course = courseOf(lesson);
+  const head = el("h4", null, "Stundenverlauf");
+  const add = el("button", "btn-sm", "＋ Notiz"); add.type = "button";
+  add.onclick = () => openNoteDialog(course, null);
+  head.append(add);
+  const rows = el("div");
+  box.replaceChildren(head, rows);
+  renderNoteRows(rows, course, 5);
+}
 
 /* ---------- Feste Pausenaufsichten (Lehrkräfte) ---------- */
 let duEdit = null;
@@ -3977,11 +4388,37 @@ $("sub-share").onclick = async () => {
     + (e.type === "aufsicht" ? " (Aufsicht)" : ` · ${e.type === "plus" ? "+" : "−"}${e.hours}`) + (e.note ? ` – ${e.note}` : ""));
   const text = `Mehr- und Minderstunden – ${per.label}\n`
     + `Plus: ${s.plus} Std · Minus: ${s.minus} Std · Saldo: ${s.saldo > 0 ? "+" : ""}${s.saldo} Std · Aufsichten: ${s.aufsicht}\n\n` + lines.join("\n");
-  const Sh = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
-  if (Sh && Sh.share) { try { await Sh.share({ title: "Mehr- und Minderstunden", text }); return; } catch { /* abgebrochen */ } }
-  if (navigator.share) { try { await navigator.share({ text }); return; } catch { /* abgebrochen */ } }
-  try { await navigator.clipboard.writeText(text); toast("In die Zwischenablage kopiert."); }
-  catch { mailto("", "Mehr- und Minderstunden", text); }
+  shareText("Mehr- und Minderstunden", text);
+};
+
+/* Mehr- und Minderstunden als PDF (für die Schulleitung) */
+const PDF_NAME_KEY = "todo-organizer-pdfname";
+$("sub-pdf").onclick = () => {
+  const per = schoolPeriod(subPeriod, todayISO());
+  const list = state.subLog.filter(e => (!per.from || e.date >= per.from) && (!per.to || e.date <= per.to))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.slot ?? -1) - (b.slot ?? -1));
+  if (!list.length) return toast("Keine Einträge in diesem Zeitraum.");
+  let name = "";
+  try { name = localStorage.getItem(PDF_NAME_KEY) || ""; } catch { /* privat */ }
+  const input = prompt("Name auf der Übersicht (optional):", name);
+  if (input === null) return;
+  name = input.trim();
+  try { localStorage.setItem(PDF_NAME_KEY, name); } catch { /* privat */ }
+  const s = subSummary(list);
+  const sign = n => (n > 0 ? "+" : n < 0 ? "−" : "±") + Math.abs(n);
+  const pdf = buildTablePdf({
+    title: "Mehr- und Minderstunden – " + per.label,
+    sub: [name, per.from ? deDate(per.from) + " – " + deDate(per.to) : ""].filter(Boolean).join(" · "),
+    summary: `Plus ${s.plus} Std · Minus ${s.minus} Std · Saldo ${sign(s.saldo)} Std · Aufsichten ${s.aufsicht}`,
+    cols: [{ label: "Datum", w: 62 }, { label: "Stunde", w: 54 }, { label: "Art", w: 62 }, { label: "Klasse", w: 44 },
+           { label: "Fach", w: 70 }, { label: "Std", w: 34, right: true }, { label: "Notiz", w: 189 }],
+    rows: list.map(e => [
+      parseISO(e.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit" }),
+      slotLabel(e.slot, e.hours), SUB_TYPE[e.type], e.klass || "", e.subject || "",
+      e.type === "aufsicht" ? "(" + e.hours + ")" : sign(subValue(e)), e.note || ""]),
+    footer: "Erstellt am " + deDate(todayISO()) + " mit ToDo Organizer · Aufsichten in Klammern, ohne Wertung"
+  });
+  downloadBytes("Mehr-und-Minderstunden-" + per.label.replace(/[^\wäöüÄÖÜß.-]+/g, "-") + ".pdf", pdf, "application/pdf");
 };
 
 /* ---------- Klassenarbeit / Klausur planen ---------- */
@@ -4620,12 +5057,24 @@ $("btn-export").onclick = async () => {
     try {
       const envelope = await encryptBackup(json, pw);
       download(`todo-organizer-backup-verschluesselt-${todayISO()}.json`, envelope, "application/json");
+      Backup.exported();
       toast("Verschlüsselte Sicherung erstellt.");
     } catch (e) { console.error(e); toast("Verschlüsselung fehlgeschlagen."); }
   } else {
     download(`todo-organizer-backup-${todayISO()}.json`, json, "application/json");
+    Backup.exported();
     toast("Sicherung erstellt.");
   }
+};
+$("bk-now").onclick = async () => {
+  download(`todo-organizer-backup-${todayISO()}.json`, await Backup.json(), "application/json");
+  Backup.exported();
+  toast("Sicherung erstellt – Speicherort im Teilen-Menü wählen.");
+};
+$("bk-later").onclick = () => { Backup.d.dismissedUntil = Date.now() + 7 * 864e5; Backup.save(); renderBackupBanner(); };
+$("bk-auto").onchange = e => {
+  Backup.d.auto = e.target.checked; Backup.save();
+  if (e.target.checked) Backup.auto(true); else renderBackupInfo();
 };
 $("btn-import").onclick = () => $("file-import").click();
 $("file-import").onchange = e => {
@@ -4859,7 +5308,7 @@ function applyTheme() {
   const dark = t === "dark" || (t === "system" && darkMQ && darkMQ.matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = dark ? "#0f1115" : "#f4f5f7";
+  if (meta) meta.content = dark ? "#0f1115" : "#e9ecf0";
   const SB = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
   // DARK = helle Schrift für dunklen Hintergrund (Begriff aus dem Plugin)
   if (SB && SB.setStyle) SB.setStyle({ style: dark ? "DARK" : "LIGHT" }).catch(() => {});
@@ -4952,10 +5401,12 @@ function renderAll() {
   renderTasks(); renderCalendar(); renderTimetable(); renderShopping();
   renderWeek(); renderHabits(); renderStats();
   fillSubjectSelects(); updateStorageInfo();
-  Widget.soon();
+  Widget.soon(); Widget.shortcuts();
+  renderBackupBanner(); renderBackupInfo();
 }
 
 load();
+Backup.load();
 Lic.load();
 calSelected = todayISO();
 initUI();
@@ -4996,12 +5447,23 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   const App = c && c.Plugins && c.Plugins.App;
   if (!App || !App.addListener) return;
   const open = url => {
-    const m = /^todoorganizer:\/\/([a-z]+)/.exec(url || "");
-    if (!m || ["week", "tasks", "calendar", "timetable", "shopping", "settings"].indexOf(m[1]) < 0) return;
-    document.querySelectorAll("dialog[open]").forEach(d => { if (d.id !== "dlg-onboard") d.close(); });
-    if (m[1] === "week") { weekOffset = 0; renderWeek(); renderHabits(); }
-    switchTo(m[1]);
+    const m = /^todoorganizer:\/\/([a-z-]+)/.exec(url || "");
+    const views = ["week", "tasks", "calendar", "timetable", "shopping", "settings", "new-task", "new-sub"];
+    if (!m || views.indexOf(m[1]) < 0) return;
+    if ($("dlg-onboard").open) return;                  // erst die Einstiegsfrage
+    document.querySelectorAll("dialog[open]").forEach(d => d.close());
+    const a = m[1];
+    if (a === "week") { weekOffset = 0; renderWeek(); renderHabits(); }
+    if (a === "new-task") { switchTo("tasks"); setTimeout(() => $("t-title").focus(), 250); return; }
+    if (a === "new-sub") {
+      switchTo("week");
+      if (isTeacherPlan()) setTimeout(() => openSubDialog(null, todayISO(), "plus"), 250);
+      return;
+    }
+    if (a === "shopping") { switchTo("shopping"); setTimeout(() => $("s-item").focus(), 250); return; }
+    switchTo(a);
   };
+  window.__openAppLink = open;       // für die Tests
   App.addListener("appUrlOpen", e => open(e && e.url));
   if (App.getLaunchUrl) App.getLaunchUrl().then(r => open(r && r.url)).catch(() => {});
 })();
@@ -5062,11 +5524,14 @@ function handleSharedText(text) {
   });
 })();
 
+// Wöchentliche Sicherung kurz nach dem Start (nicht während des Ladens)
+setTimeout(() => Backup.auto(), 4000);
+
 // Erinnerungen prüfen: beim Start, alle 5 Minuten und beim Zurückkehren in den Tab.
 checkReminder();
 setInterval(checkReminder, 5 * 60 * 1000);
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { Widget.push(); return; }    // beim Verlassen sofort aktuell
+  if (document.hidden) { Widget.push(); Backup.auto(); return; }    // beim Verlassen: Widget aktuell, ggf. Wochensicherung
   checkReminder(); renderTasks(); renderHabits();
   // Der Kalender kann sich außerhalb der App geändert haben.
   if (DevCal.on()) { DevCal.reset(); renderWeek(); renderCalendar(); }

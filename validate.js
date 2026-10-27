@@ -139,7 +139,7 @@ if (!html.includes('==CORE-BEGIN==') || !html.includes('==CORE-END==')) E('CORE-
 
 // ---- Heute-Widget (seit 3.1) ---------------------------------------------------------
 for (const f of ['res/ios/widget/TodayWidget.swift', 'res/ios/widget/Info.plist', 'res/ios/widget/TodayWidget.entitlements',
-                 'res/ios/widget/PrivacyInfo.xcprivacy', 'res/ios/app/WidgetDataPlugin.swift', 'res/ios/app/AppViewController.swift',
+                 'res/ios/widget/PrivacyInfo.xcprivacy', 'res/ios/app/WidgetDataPlugin.swift', 'res/ios/app/SceneDelegate.swift',
                  'res/ios/app/App.entitlements'])
   if (!gibt(f)) E(f + ' fehlt (Heute-Widget)');
 if (gibt('res/ios/widget/TodayWidget.swift')) {
@@ -151,10 +151,14 @@ if (gibt('res/ios/widget/TodayWidget.swift')) {
   if (!/jsName = "WidgetData"/.test(pl) || !html.includes('Plugins.WidgetData')) E('Widget-Brücke: Name in Swift und index.html passt nicht (WidgetData)');
   if (!/1C8F\.1/.test(lies('res/ios/PrivacyInfo.xcprivacy'))) E('PrivacyInfo der App: Grund 1C8F.1 (App-Gruppe) fehlt');
 }
+if (!wf.includes('UIFileSharingEnabled bool true') || !wf.includes('LSSupportsOpeningDocumentsInPlace bool true'))
+  E('ios.yml: Dokumente-Ordner nicht freigegeben – die automatische Sicherung wäre in der Dateien-App unsichtbar');
 if (!wf.includes('node tests/purchase.test.js')) E('ios.yml: Ladeprüfung des Kaufmoduls fehlt (tests/purchase.test.js)');
 if (/^\s*return window\.Capacitor\.registerPlugin/m.test(lies('tools/capacitor-core-shim.js')))
   E('capacitor-core-shim.js ruft registerPlugin ohne Prüfung auf – die iOS-Brücke hat diese Funktion nicht (Käufe gehen dann nicht)');
 if (!wf.includes('IOS_PROVISIONING_PROFILE_WIDGET') || !wf.includes('export WIDGET=1')) E('ios.yml: Heute-Widget nicht eingebunden');
+if (!/packageClassList[\s\S]{0,80}WidgetDataPlugin/.test(lies('tools/ios-setup.rb'))) E('ios-setup.rb: WidgetDataPlugin wird nicht in packageClassList eingetragen – die Brücke käme nie an');
+if (/Main\.storyboard/.test(lies('tools/ios-setup.rb'))) E('ios-setup.rb ändert Main.storyboard – in Capacitor 8 wirkungslos (SceneDelegate)');
 if (!wf.includes('CFBundleURLSchemes') || !html.includes('todoorganizer:')) E('Link-Schema todoorganizer fehlt (Widget öffnet sonst nur die App)');
 
 // ---- Ferien (seit 3.1): Daten vorhanden, Quelle genannt, nicht veraltet ------------
