@@ -25,7 +25,7 @@ const ok = (c, m) => { n++; if (!c) { fails++; console.log('  ✗ ' + m); } else
 /* ---- Nachbildungen der iOS-Plugins ---- */
 function iosMocks(o) {
   o = o || {};
-  window.__log = { notif: [], cal: [], sb: [] };
+  window.__log = { notif: [], cal: [], sb: [], widget: [] };
   const own = Object.assign({}, o.owned || {});
   const handlers = { approved: [], finished: [], productUpdated: [], receiptUpdated: [] };
   const products = {};
@@ -40,6 +40,7 @@ function iosMocks(o) {
       schedule: async x => { window.__log.notif = x.notifications; }, registerActionTypes: async () => {}, addListener: () => {}
     },
     StatusBar: { setStyle: async x => { window.__log.sb.push(x.style); } },
+    WidgetData: { set: async x => { window.__log.widget.push(x.json); } },
     App: { addListener: () => {} },
     CapacitorCalendar: {
       checkPermission: async () => ({ result: o.calGranted ? 'granted' : 'prompt' }),
@@ -559,6 +560,39 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     await ctx.close();
   }
 
+  console.log('17 · Heute-Widget');
+  {
+    const lessons = [{ id: 'lm', day: 2, slot: 4, subject: 'Mathe', room: '7b', color: '#2563eb' },
+                     { id: 'lx', day: 2, slot: 0, subject: 'Kunst', color: '#db2777' }];
+    const st = { version: 3, lessons, lessonEx: { 'lx|2026-11-03': { cancel: true } },
+      categories: [{ id: 'c1', name: 'Privat', color: '#059669' }],
+      tasks: [{ id: 'a', title: 'Zahnarzt', categoryId: 'c1', dueDate: '2026-11-03', dueTime: '15:00', prio: 'mittel', createdAt: 1 },
+              { id: 'b', title: 'Wäsche', dueDate: '2026-11-03', prio: 'mittel', createdAt: 1 },
+              { id: 'c', title: 'Alt', dueDate: '2026-10-30', prio: 'mittel', createdAt: 1 },
+              { id: 'd', title: 'Morgen-Aufgabe', dueDate: '2026-11-04', prio: 'mittel', createdAt: 1 }],
+      settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true, features: { timetable: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await p.waitForTimeout(1500);
+    let log = await S(p, () => window.__log.widget);
+    ok(log.length >= 1, 'Zusammenfassung an das Widget geschickt');
+    const w = JSON.parse(log[log.length - 1]);
+    ok(w.v === 1 && w.days.length === 3 && w.days[0].iso === '2026-11-03' && w.days[0].label.startsWith('Heute'), 'drei Tage ab heute');
+    const it = w.days[0].items;
+    ok(it.map(x => x.kind + ':' + (x.time || '-')).join() === 'lesson:08:00,lesson:11:50,task:15:00,task:-', 'nach Uhrzeit, Aufgaben ohne Uhrzeit zuletzt: ' + it.map(x => x.title).join(' | '));
+    ok(it[0].cancelled === true && it[1].title === 'Mathe · 7b', 'Ausfall markiert, Raum am Fach');
+    ok(w.overdue === 1, 'überfällig gezählt');
+    ok(w.days[1].items.some(x => x.title === 'Morgen-Aufgabe'), 'Vorrat für morgen');
+    // Änderung → neue Zusammenfassung, gleicher Stand → keine doppelte
+    const n0 = log.length;
+    await S(p, () => { toggleTask('b'); });
+    await p.waitForTimeout(1500);
+    log = await S(p, () => window.__log.widget);
+    ok(log.length === n0 + 1 && !JSON.parse(log[log.length - 1]).days[0].items.some(x => x.title === 'Wäsche'), 'Abhaken aktualisiert das Widget');
+    await S(p, () => renderAll()); await p.waitForTimeout(1500);
+    ok((await S(p, () => window.__log.widget.length)) === n0 + 1, 'unveränderter Stand wird nicht erneut geschickt');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
   console.log('16 · Schule ohne Vollversion');
   {
     const st = { version: 3, lessons: [{ id: 'lm', day: 2, slot: 1, subject: 'Mathe' }],
