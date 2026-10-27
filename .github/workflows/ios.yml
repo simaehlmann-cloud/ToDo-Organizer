@@ -98,17 +98,24 @@ jobs:
       #   IOS_CERTIFICATE_P12_BASE64, IOS_CERTIFICATE_PASSWORD,
       #   IOS_PROVISIONING_PROFILE (neu, für de.maehlmann.todoorganizer),
       #   IOS_TEAM_ID
-      # Ohne sie baut der Lauf nur unsigniert (Kompilierbarkeit).
+      # Für das Heute-Widget zusätzlich (seit 3.1):
+      #   IOS_PROVISIONING_PROFILE_WIDGET (für de.maehlmann.todoorganizer.widget)
+      #   und ein IOS_PROVISIONING_PROFILE, das die App-Gruppe enthält.
+      # Ohne Widget-Profil baut der signierte Lauf wie bisher ohne Widget.
+      # Ohne Zertifikat baut der Lauf nur unsigniert – dann immer MIT Widget,
+      # damit der Swift-Code bei jedem Push übersetzt wird.
       - name: Signierschlüssel einrichten
         id: signieren
         env:
           ZERT_B64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
           ZERT_PW: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
           PROFIL_B64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          WIDGET_B64: ${{ secrets.IOS_PROVISIONING_PROFILE_WIDGET }}
         run: |
           set -e
           if [ -z "$ZERT_B64" ] || [ -z "$PROFIL_B64" ]; then
             echo "vorhanden=false" >> "$GITHUB_OUTPUT"
+            echo "widget=true" >> "$GITHUB_OUTPUT"
             echo "Kein Zertifikat hinterlegt – signierter Build wird übersprungen."
             exit 0
           fi
@@ -146,6 +153,39 @@ jobs:
 
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$PROFIL" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          GRUPPE="group.$APP_ID"
+          APP_HAT_GRUPPE=false
+          /usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.security.application-groups' "$INHALT" 2>/dev/null \
+            | grep -q "$GRUPPE" && APP_HAT_GRUPPE=true
+
+          # ---- Heute-Widget: eigenes Profil, App-Gruppe in beiden Profilen ----
+          WIDGET=false
+          if [ -n "$WIDGET_B64" ]; then
+            WPROFIL="$RUNNER_TEMP/widget.mobileprovision"; WINHALT="$RUNNER_TEMP/widget.plist"
+            saeubern "$WIDGET_B64" > "$WPROFIL"
+            [ -s "$WPROFIL" ] || { echo "::error::Das Widget-Profil ließ sich nicht dekodieren."; exit 1; }
+            security cms -D -i "$WPROFIL" > "$WINHALT"
+            WUUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$WINHALT")
+            WNAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$WINHALT")
+            WAPP=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$WINHALT")
+            echo "Widget-Profil: $WNAME ($WUUID) für $WAPP"
+            case "$WAPP" in
+              *".$APP_ID.widget") ;;
+              *) echo "::error::IOS_PROVISIONING_PROFILE_WIDGET gehört zu '$WAPP', erwartet $APP_ID.widget."; exit 1 ;;
+            esac
+            /usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.security.application-groups' "$WINHALT" 2>/dev/null | grep -q "$GRUPPE" \
+              || { echo "::error::Das Widget-Profil enthält die App-Gruppe $GRUPPE nicht. Bei der Widget-App-ID „App Groups“ einschalten, Gruppe zuordnen, Profil neu erzeugen."; exit 1; }
+            [ "$APP_HAT_GRUPPE" = true ] \
+              || { echo "::error::Das App-Profil (IOS_PROVISIONING_PROFILE) enthält die App-Gruppe $GRUPPE nicht. Bei der App-ID „App Groups“ einschalten, Gruppe zuordnen, Profil neu erzeugen und das Secret ersetzen."; exit 1; }
+            cp "$WPROFIL" "$HOME/Library/MobileDevice/Provisioning Profiles/$WUUID.mobileprovision"
+            echo "widget_profil_name=$WNAME" >> "$GITHUB_OUTPUT"
+            WIDGET=true
+            rm -f "$WPROFIL" "$WINHALT"
+          else
+            echo "::notice::Kein Widget-Profil (IOS_PROVISIONING_PROFILE_WIDGET) – signierter Build ohne Heute-Widget."
+          fi
+          echo "widget=$WIDGET" >> "$GITHUB_OUTPUT"
+
           rm -f "$ZERT" "$PROFIL" "$INHALT"
           echo "profil_name=$NAME" >> "$GITHUB_OUTPUT"
           echo "vorhanden=true" >> "$GITHUB_OUTPUT"
@@ -175,11 +215,19 @@ jobs:
           CURRENT_PROJECT_VERSION: ${{ steps.version.outputs.build }}
           TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
           PROFILE_NAME: ${{ steps.signieren.outputs.profil_name }}
+          WIDGET_PROFILE_NAME: ${{ steps.signieren.outputs.widget_profil_name }}
+          WIDGET_AN: ${{ steps.signieren.outputs.widget }}
         run: |
           set -e
           # Icon (randlos, ohne Alpha) und Privacy-Manifest
           cp res/ios/icon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
           cp res/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
+          # Heute-Widget: Swift-Dateien der App und die Erweiterung
+          if [ "$WIDGET_AN" = "true" ]; then
+            export WIDGET=1
+            cp res/ios/app/AppViewController.swift res/ios/app/WidgetDataPlugin.swift res/ios/app/App.entitlements ios/App/App/
+            mkdir -p ios/App/TodayWidget && cp res/ios/widget/* ios/App/TodayWidget/
+          fi
           ruby tools/ios-setup.rb
 
           P=ios/App/App/Info.plist
@@ -190,6 +238,9 @@ jobs:
           # Nur Standard-Verschlüsselung (AES-GCM des Systems für das Backup):
           # ausgenommen, also false. Sonst fragt jeder Upload nach.
           setze ITSAppUsesNonExemptEncryption bool false
+          # Eigenes Link-Schema: Ein Tipp aufs Widget öffnet todoorganizer://week
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$P" 2>/dev/null || true
+          plutil -insert CFBundleURLTypes -json '[{"CFBundleURLName":"de.maehlmann.todoorganizer","CFBundleURLSchemes":["todoorganizer"]}]' "$P"
           # Seit 3.0 mit dunkler Darstellung: kein UIUserInterfaceStyle mehr.
           # Die Statusleiste stellt die App selbst um (@capacitor/status-bar).
           /usr/libexec/PlistBuddy -c "Delete :UIUserInterfaceStyle" "$P" 2>/dev/null || true
@@ -233,7 +284,8 @@ jobs:
           PBX=ios/App/App.xcodeproj/project.pbxproj
           holen() { /usr/libexec/PlistBuddy -c "Print :$1" "$P" 2>/dev/null || echo FEHLT; }
           FEHLER=0
-          BUNDLE=$(grep -m1 -o 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*;' "$PBX" | sed 's/.*= *//; s/;$//; s/"//g')
+          # Mehrere Ziele (App, Widget): die App-ID muss vorkommen
+          BUNDLE=$(grep -o "PRODUCT_BUNDLE_IDENTIFIER = $APP_ID;" "$PBX" | head -1 | sed 's/.*= *//; s/;$//')
           echo "Bundle-ID:        $BUNDLE"
           echo "Name:             $(holen CFBundleDisplayName)"
           echo "Export-Erklärung: $(holen ITSAppUsesNonExemptEncryption)"
@@ -257,6 +309,15 @@ jobs:
           for p in local-notifications filesystem share app status-bar; do
             grep -q "@capacitor/$p\"" "$SPM" || { echo "::error::Plugin @capacitor/$p fehlt im Xcode-Projekt."; FEHLER=1; }
           done
+          if grep -q 'TodayWidget.appex in Embed Foundation Extensions' "$PBX"; then
+            echo "Heute-Widget eingebaut."
+            grep -q 'customClass="AppViewController"' ios/App/App/Base.lproj/Main.storyboard \
+              || { echo "::error::Main.storyboard nutzt nicht AppViewController – die Widget-Brücke fehlt."; FEHLER=1; }
+            grep -q "PRODUCT_BUNDLE_IDENTIFIER = $APP_ID.widget;" "$PBX" || { echo "::error::Widget-Bundle-ID falsch."; FEHLER=1; }
+          else
+            echo "Heute-Widget nicht eingebaut."
+          fi
+          [ "$(holen CFBundleURLTypes:0:CFBundleURLSchemes:0)" = "todoorganizer" ] || { echo "::error::Link-Schema todoorganizer fehlt."; FEHLER=1; }
           echo "--- Package.swift ---"; cat "$SPM"
           exit $FEHLER
 
@@ -273,6 +334,7 @@ jobs:
         env:
           TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
           PROFIL_NAME: ${{ steps.signieren.outputs.profil_name }}
+          WIDGET_PROFIL_NAME: ${{ steps.signieren.outputs.widget_profil_name }}
         run: |
           set -eo pipefail
           ARCHIV="$RUNNER_TEMP/App.xcarchive"
@@ -291,8 +353,13 @@ jobs:
           # Nicht "provisioningProfiles.$APP_ID": plutil liest die Punkte der
           # Bundle-ID als Pfad und findet den Eintrag dann nicht. Deshalb das
           # ganze Wörterbuch auf einmal als JSON (jq maskiert Sonderzeichen).
-          plutil -insert provisioningProfiles -json \
-            "$(jq -cn --arg id "$APP_ID" --arg name "$PROFIL_NAME" '{($id): $name}')" "$OPT"
+          if [ -n "$WIDGET_PROFIL_NAME" ]; then
+            PROFILE_JSON=$(jq -cn --arg id "$APP_ID" --arg name "$PROFIL_NAME" --arg wid "$APP_ID.widget" --arg wname "$WIDGET_PROFIL_NAME" \
+              '{($id): $name, ($wid): $wname}')
+          else
+            PROFILE_JSON=$(jq -cn --arg id "$APP_ID" --arg name "$PROFIL_NAME" '{($id): $name}')
+          fi
+          plutil -insert provisioningProfiles -json "$PROFILE_JSON" "$OPT"
           echo "--- ExportOptions.plist ---"; plutil -p "$OPT"
 
           xcodebuild -exportArchive -archivePath "$ARCHIV" -exportOptionsPlist "$OPT" \
