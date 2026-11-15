@@ -1,0 +1,178 @@
+name: Build ToDo Organizer (Android)
+
+# Baut bei jedem Push auf main eine installierbare APK – ohne Mac, auf dem
+# kostenlosen Linux-Läufer. Wie beim iOS-Lauf liegt im Repository nur der
+# Web-Teil; das Android-Projekt entsteht jedes Mal frisch.
+#
+# Ergebnis: Actions → dieser Lauf → unten „Artifacts“ → ToDo-Organizer-APK.
+# (ZIP herunterladen, entpacken, APK aufs Handy, antippen, installieren.)
+#
+# Signatur:
+#   Mit den Secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD und
+#   ANDROID_KEY_ALIAS wird die APK immer mit demselben Schlüssel signiert –
+#   neue Fassungen installieren sich dann über die alte, die Daten bleiben.
+#   Ohne Secrets entsteht eine Debug-APK mit wechselndem Schlüssel: Vor jeder
+#   neuen Fassung müsste die alte deinstalliert werden (Daten vorher sichern!).
+#
+# Kauf/Sperren: Auf Android ist alles frei (LIMIT_PLATFORMS in index.html),
+# bis die Produkte in der Play Console angelegt sind.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Capacitor 8 verlangt Java 21.
+      - name: Java einrichten
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Schnelle Prüfungen
+        run: |
+          set -e
+          node validate.js
+          node tests/core.test.js
+
+      - name: Version und Versionsnummer bestimmen
+        id: version
+        run: |
+          set -e
+          VER=$(grep -o 'const APP_VERSION = "[0-9.]*"' index.html | grep -o '[0-9][0-9.]*')
+          [ -n "$VER" ] || { echo "::error::APP_VERSION nicht gefunden."; exit 1; }
+          # Android verlangt für ein Update eine höhere versionCode als die
+          # installierte. Die Laufnummer steigt mit jedem Lauf; +100 hält
+          # Abstand zu den früher lokal gebauten Fassungen.
+          CODE=$(( ${{ github.run_number }} + 100 ))
+          echo "Version $VER, versionCode $CODE"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Pakete installieren
+        run: |
+          set -e
+          npm install --no-audit --no-fund
+          # Nur für Android: Plattform und „Teilen → ToDo Organizer“.
+          # (Nicht in package.json, damit der iOS-Lauf unverändert bleibt.)
+          npm install --no-save --no-audit --no-fund "@capacitor/android@8.5.3" "@capgo/capacitor-share-target@8.0.63"
+
+      - name: Web-Teil zusammenstellen
+        run: |
+          set -e
+          rm -rf www && mkdir -p www
+          cp index.html manifest.json sw.js datenschutz.html impressum.html www/
+          cp -R icons www/ 2>/dev/null || true
+          node tools/make-purchase-js.js www/purchase.js
+          node tests/purchase.test.js www/purchase.js
+          ls -la www
+
+      - name: Android-Projekt erzeugen
+        run: |
+          set -e
+          # Plugins für Android ausdrücklich aufzählen: Das Kauf-Plugin (StoreKit)
+          # bleibt draußen, solange Android keine Sperren hat; das Teilen-Plugin
+          # steht nicht in package.json und würde sonst übersehen.
+          node -e '
+            const fs = require("fs"), c = JSON.parse(fs.readFileSync("capacitor.config.json", "utf8"));
+            c.android = Object.assign({}, c.android, { backgroundColor: "#e9ecf0", includePlugins: [
+              "@capacitor/app", "@capacitor/filesystem", "@capacitor/local-notifications", "@capacitor/share",
+              "@capacitor/status-bar", "@ebarooni/capacitor-calendar", "@capgo/capacitor-share-target"] });
+            fs.writeFileSync("capacitor.config.json", JSON.stringify(c, null, 2));'
+          npx cap add android
+          npx cap sync android
+          node tools/android-setup.js "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.code }}"
+
+      - name: Erzeugtes Projekt bestätigen
+        run: |
+          set -e
+          M=android/app/src/main/AndroidManifest.xml
+          FEHLER=0
+          grep -q 'applicationId "de.maehlmann.todoorganizer"' android/app/build.gradle || { echo "::error::applicationId falsch."; FEHLER=1; }
+          grep -q 'android.intent.action.SEND' "$M" || { echo "::error::Teilen-Ziel fehlt im Manifest."; FEHLER=1; }
+          grep -q 'android:scheme="todoorganizer"' "$M" || { echo "::error::Link-Schema fehlt."; FEHLER=1; }
+          grep -q 'READ_CALENDAR' "$M" || { echo "::error::Kalender-Berechtigung fehlt."; FEHLER=1; }
+          for p in local-notifications filesystem share app status-bar; do
+            grep -q "capacitor-$p" android/capacitor.settings.gradle || { echo "::error::Plugin @capacitor/$p fehlt im Android-Projekt."; FEHLER=1; }
+          done
+          grep -q 'capgo-capacitor-share-target' android/capacitor.settings.gradle || { echo "::error::Teilen-Plugin fehlt."; FEHLER=1; }
+          grep -q 'ebarooni-capacitor-calendar' android/capacitor.settings.gradle || { echo "::error::Kalender-Plugin fehlt."; FEHLER=1; }
+          [ -s android/app/src/main/assets/public/purchase.js ] || { echo "::error::purchase.js fehlt im App-Paket."; FEHLER=1; }
+          echo "--- capacitor.settings.gradle ---"; cat android/capacitor.settings.gradle
+          exit $FEHLER
+
+      - name: Signierschlüssel einrichten
+        id: signieren
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -e
+          if [ -z "$KS_B64" ] || [ -z "$KS_PW" ] || [ -z "$KS_ALIAS" ]; then
+            echo "vorhanden=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Kein Signierschlüssel hinterlegt – es entsteht eine Debug-APK mit wechselndem Schlüssel. Vor dem Installieren die alte App deinstallieren (vorher Daten sichern)."
+            exit 0
+          fi
+          printf '%s' "$KS_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/upload.jks"
+          [ -s "$RUNNER_TEMP/upload.jks" ] || { echo "::error::ANDROID_KEYSTORE_BASE64 ließ sich nicht dekodieren."; exit 1; }
+          keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storepass "$KS_PW" -alias "$KS_ALIAS" > /dev/null \
+            || { echo "::error::Schlüssel oder Passwort oder Alias passen nicht zusammen."; exit 1; }
+          echo "vorhanden=true" >> "$GITHUB_OUTPUT"
+
+      - name: APK bauen
+        id: bauen
+        env:
+          KS_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SIGNIERT: ${{ steps.signieren.outputs.vorhanden }}
+        run: |
+          set -e
+          cd android
+          chmod +x gradlew
+          NAME="ToDo-Organizer-${{ steps.version.outputs.version }}-${{ steps.version.outputs.code }}"
+          mkdir -p ../ausgabe
+          if [ "$SIGNIERT" = "true" ]; then
+            ./gradlew --no-daemon assembleRelease
+            BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+            UNSIG=$(ls app/build/outputs/apk/release/*-unsigned.apk | head -1)
+            "$BT/zipalign" -p -f 4 "$UNSIG" "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/upload.jks" --ks-pass env:KS_PW --ks-key-alias "$KS_ALIAS" \
+              --out "../ausgabe/$NAME.apk" "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" verify --print-certs "../ausgabe/$NAME.apk" | head -3
+          else
+            ./gradlew --no-daemon assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "../ausgabe/$NAME-debug.apk"
+          fi
+          rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/aligned.apk"
+          ls -la ../ausgabe
+
+      - name: APK bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToDo-Organizer-APK
+          path: ausgabe/*.apk
+          retention-days: 30
+          if-no-files-found: error
