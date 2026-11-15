@@ -37,7 +37,9 @@ function iosMocks(o) {
     LocalNotifications: {
       checkPermissions: async () => ({ display: 'granted' }), requestPermissions: async () => ({ display: 'granted' }),
       getPending: async () => ({ notifications: [] }), cancel: async () => {},
-      schedule: async x => { window.__log.notif = x.notifications; }, registerActionTypes: async () => {}, addListener: () => {}
+      schedule: async x => { window.__log.notif = x.notifications; }, registerActionTypes: async () => {}, addListener: () => {},
+      checkExactNotificationSetting: async () => ({ exact_alarm: window.__exact || 'denied' }),
+      changeExactNotificationSetting: async () => { window.__exact = 'granted'; return { exact_alarm: 'granted' }; }
     },
     StatusBar: { setStyle: async x => { window.__log.sb.push(x.style); } },
     WidgetData: { set: async x => { window.__log.widget.push(x.json); }, status: async () => ({ group: true, bytes: (window.__log.widget.slice(-1)[0] || '').length }),
@@ -62,7 +64,8 @@ function iosMocks(o) {
       createEvent: async x => { window.__log.cal.push(['create', x.title, x.isAllDay, x.startDate]); return { id: 'new1' }; }
     }
   };
-  window.Capacitor = { getPlatform: () => 'ios', isNativePlatform: () => true, Plugins: P };
+  if (o.platform === 'android') delete P.WidgetData;
+  window.Capacitor = { getPlatform: () => o.platform || 'ios', isNativePlatform: () => true, Plugins: P };
   window.CdvPurchase = {
     ProductType: { NON_CONSUMABLE: 'nc' }, Platform: { APPLE_APPSTORE: 'ios-appstore' }, ErrorCode: { PAYMENT_CANCELLED: 6777006 },
     store: {
@@ -1048,6 +1051,33 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     ok(await q.isHidden('#wk-review'), 'abgeschaltet');
     ok(!q.errors.length, 'keine Fehler ' + q.errors.join(' | '));
     await r2.ctx.close();
+  }
+
+  console.log('26 · Android');
+  {
+    const { ctx, p } = await open(browser, { ios: { platform: 'android' } });
+    ok(await S(p, () => Lic.status()) === 'free', 'Android: keine Sperren');
+    ok(!(await S(p, () => document.body.classList.contains('sb-inset'))), 'kein doppelter Statusleisten-Abstand');
+    await go(p, 'settings');
+    await S(p, () => updateReminderStatus());
+    await p.waitForTimeout(50);
+    ok(await p.isVisible('#rem-android') && /nicht erlaubt/.test(await p.textContent('#rem-exact')), 'Hinweis: pünktliche Erinnerungen nicht erlaubt');
+    await p.click('#btn-rem-exact');
+    await p.waitForTimeout(50);
+    ok(/erlaubt\./.test(await p.textContent('#rem-exact')) && await p.isHidden('#btn-rem-exact'), 'nach Freigabe: erlaubt');
+    ok(/Dokumente/.test(await p.textContent('#bk-auto-lbl')), 'Sicherung in „Dokumente“');
+    await S(p, () => { for (const id of ['z1', 'z2', 'z3']) state.tasks.push({ id, title: 'x', prio: 'mittel', createdAt: 1, dueDate: '2026-11-03' }); save(); });
+    await S(p, () => Backup.auto(true));
+    const bi = await S(p, () => { renderBackupInfo(); return $('bk-info').textContent; });
+    ok(/Eigene Dateien/.test(bi) && /DOCUMENTS/.test(JSON.stringify(await S(p, () => window.__log.fs))), 'Sicherung geschrieben, Ablageort für Android: ' + bi);
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+  {
+    const { ctx, p } = await open(browser, { ios: {} });
+    await go(p, 'settings'); await S(p, () => updateReminderStatus()); await p.waitForTimeout(50);
+    ok(await p.isHidden('#rem-android'), 'iOS: kein Android-Hinweis');
+    await ctx.close();
   }
 
   console.log('16 · Schule ohne Vollversion');

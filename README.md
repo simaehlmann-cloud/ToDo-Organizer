@@ -39,7 +39,7 @@ store/make-previews.js        App-Vorschauvideos (braucht ffmpeg)
 store/make-iap-shots.js       Prüfbilder für die beiden In-App-Käufe
 store/demo-data.js, device.js Beispieldaten und Gerätenachbildung dafür
 PROJEKTWISSEN.md              Entscheidungen und Technik
-mipmap-*/, playstore-icon-512.png, ANLEITUNG.txt   Icons fürs Android-Projekt
+res/android/mipmap-*/       App-Symbol fürs Android-Projekt (tools/android-setup.js)
 ```
 
 ## Prüfen
@@ -60,9 +60,14 @@ auf macOS). Ohne Secrets nur unsigniert, mit Secrets entsteht die IPA.
 Hochgeladen wird nur beim manuellen Start (Actions → Run workflow).
 Einrichtung: siehe [APPSTORE-CONNECT.md](APPSTORE-CONNECT.md).
 
-**Android** baut weiter lokal im Android-Studio-Projekt (Dateien nach `www/`,
-`npx cap copy`, `.\gradlew.bat assembleDebug`). Die Sperren gelten dort
-vorerst nicht (`LIMIT_PLATFORMS` in `index.html`).
+**Android** baut ebenfalls bei jedem Push (`.github/workflows/android.yml`, Linux,
+kostenlos): Das Projekt entsteht frisch (`npx cap add android`), `tools/android-setup.js`
+trägt Symbol, Startbildschirm, Kalender-Rechte, „Teilen“, Kurzbefehle und Version ein.
+Ergebnis unter Actions → Lauf → Artifacts → ToDo-Organizer-APK. Mit den Secrets
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` ist die APK
+immer gleich signiert (Updates ohne Datenverlust), sonst entsteht eine Debug-APK.
+Die Sperren gelten dort vorerst nicht (`LIMIT_PLATFORMS` in `index.html`), das
+Kauf-Plugin wird für Android nicht eingebunden.
 
 ## Ferien aktualisieren
 

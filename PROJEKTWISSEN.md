@@ -40,6 +40,20 @@
 - **iPad:** ab 1100 px Breite Woche als Spalten Mo–Fr + Wochenende (`#wk-days.cols`).
 - **Schnellaktionen:** `WidgetData.setShortcuts` (je Profil), `SceneDelegate` leitet sie als Link weiter.
 
+## Android-Bau auf GitHub (15.11.2026)
+
+- `android.yml`: ubuntu-latest, Java 21, `@capacitor/android@8.5.3` und
+  `@capgo/capacitor-share-target@8.0.63` nur per `--no-save` (iOS bleibt unberührt).
+  `android.includePlugins` wird im Lauf gesetzt – ohne `capacitor-plugin-cdv-purchase`;
+  ohne die Liste würde Capacitor das nicht in package.json stehende Teilen-Plugin übersehen.
+- versionCode = Laufnummer + 100. Signiert mit Secrets (zipalign + apksigner auf
+  `assembleRelease`), sonst `assembleDebug`.
+- Capacitor 8 (SystemBars) rückt die Seite selbst ein bzw. reicht env(safe-area-*) durch:
+  der alte JS-Notbehelf (`sb-inset`, 26 px) ist auf Android aus – er hätte doppelt eingerückt.
+- Erinnerungen: Android 12+ braucht „Alarme & Erinnerungen“ für pünktliche Benachrichtigungen
+  (`checkExactNotificationSetting`); Hinweis zum Akkusparen (Samsung „schlafende Apps“).
+- Lokal im Container nicht baubar (Google-Server gesperrt) – Gradle läuft nur auf GitHub.
+
 ## November 2026: Zeitspannen, Kurse, Aufräumen
 
 - **Aufgabe von–bis:** `task.endTime` (nur gültig mit `dueTime` und später als sie, gleicher Tag).
@@ -236,7 +250,7 @@
 ## Offen
 
 - Android: Produkte in der Play Console anlegen, dann `"android"` in
-  `LIMIT_PLATFORMS` aufnehmen und Filesystem/Share ins Android-Projekt übernehmen.
+  `LIMIT_PLATFORMS` aufnehmen, Kauf-Plugin in `includePlugins` aufnehmen, AAB bauen.
 - Warnung bei überfälligem Backup (`settings.lastExport`) und veraltetem
   ICS-Abruf (`settings.extCalLastSync`) – in MyToDo seit 1.27 vorhanden.
 - Teilen an den ToDo Organizer (Share Extension) gibt es auf iOS noch nicht.

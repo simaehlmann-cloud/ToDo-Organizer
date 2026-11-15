@@ -746,6 +746,11 @@ h4{font-size:.9rem;margin:14px 0 8px}
         <button class="btn-sm" id="btn-rem-test">Test</button>
       </div>
       <p class="hint" id="rem-status" style="margin:11px 0 0"></p>
+      <div id="rem-android" hidden style="margin-top:12px;padding-top:11px;border-top:1px solid var(--border)">
+        <p class="hint" id="rem-exact" style="margin:0 0 8px"></p>
+        <button class="btn-sm" id="btn-rem-exact" hidden>Pünktliche Erinnerungen erlauben</button>
+        <p class="hint" style="margin:10px 0 0">Kommen Erinnerungen verspätet oder gar nicht, schränkt meist das Akkusparen die App ein. Abhilfe: Einstellungen → Apps → ToDo Organizer → Akku → „Nicht eingeschränkt“. Bei Samsung zusätzlich unter Akku → Hintergrundnutzungslimits prüfen, dass die App nicht bei den „schlafenden“ Apps steht.</p>
+      </div>
     </div>
 
     <div class="card" id="card-extcal" data-pro="Kalender verbinden">
@@ -777,7 +782,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <h3>Sicherung</h3>
       <p class="hint">Alle Daten liegen nur auf diesem Gerät. Wird die App gelöscht (oder im Browser der Speicher geleert), sind sie weg. Deshalb regelmäßig exportieren.</p>
       <label id="bk-auto-row" hidden style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer;margin-bottom:6px">
-        <input type="checkbox" id="bk-auto" style="width:19px;height:19px"> Jede Woche automatisch in die Dateien-App sichern</label>
+        <input type="checkbox" id="bk-auto" style="width:19px;height:19px"> <span id="bk-auto-lbl">Jede Woche automatisch in die Dateien-App sichern</span></label>
       <p class="hint" id="bk-info" hidden style="margin:0 0 12px"></p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:11px">
         <label style="display:flex;align-items:center;gap:9px;font-size:.88rem;cursor:pointer">
@@ -2383,12 +2388,15 @@ function renderBackupInfo() {
   const fs = Backup.fs();
   $("bk-auto-row").hidden = !fs;
   $("bk-auto").checked = Backup.autoOn();
+  if (platformId() === "android") $("bk-auto-lbl").textContent = "Jede Woche automatisch in den Ordner „Dokumente“ sichern";
   const info = $("bk-info");
   info.hidden = !fs;
   if (!fs) return;
   info.textContent = !Backup.autoOn() ? "Automatische Sicherung ist aus."
     : Backup.d.autoError ? "Automatische Sicherung fehlgeschlagen: " + Backup.d.autoError
-    : Backup.d.lastAuto ? "Zuletzt automatisch gesichert " + ago(Backup.d.lastAuto) + " – Dateien-App → Auf meinem iPhone → ToDo Organizer."
+    : Backup.d.lastAuto ? "Zuletzt automatisch gesichert " + ago(Backup.d.lastAuto) + (platformId() === "android"
+        ? " – Ordner „Dokumente“ (Samsung: Eigene Dateien → Interner Speicher → Documents)."
+        : " – Dateien-App → Auf meinem iPhone → ToDo Organizer.")
     : "Die erste automatische Sicherung folgt, sobald etwas eingetragen ist.";
 }
 
@@ -3002,6 +3010,7 @@ async function remStatus() {
 
 async function updateReminderStatus() {
   const s = $("rem-status"); if (!s) return;
+  updateExactStatus();
   const p = await remStatus();
   const mode = isNative()
     ? "Installierte App: Erinnerungen kommen auch bei geschlossener App."
@@ -3012,6 +3021,28 @@ async function updateReminderStatus() {
     : p === "denied" ? "Abgelehnt. Freigabe in den Systemeinstellungen für diese App ändern."
     : "Noch nicht freigegeben. " + mode;
 }
+
+/* Android 12+: Ohne „Alarme & Erinnerungen“ plant das System Erinnerungen nur
+   ungefähr (oft mehrere Minuten zu spät). */
+async function updateExactStatus() {
+  const box = $("rem-android"), ln = LN();
+  const on = platformId() === "android" && ln && ln.checkExactNotificationSetting;
+  box.hidden = !on;
+  if (!on) return;
+  let st = "granted";
+  try { st = (await ln.checkExactNotificationSetting()).exact_alarm; } catch { /* ältere Android-Fassung */ }
+  $("rem-exact").textContent = st === "granted"
+    ? "Pünktliche Erinnerungen: erlaubt."
+    : "Pünktliche Erinnerungen sind nicht erlaubt – Erinnerungen können sich um einige Minuten verspäten.";
+  $("btn-rem-exact").hidden = st === "granted";
+}
+$("btn-rem-exact").onclick = async () => {
+  const ln = LN();
+  try { await ln.changeExactNotificationSetting(); } catch { /* Einstellungsseite nicht verfügbar */ }
+  await updateExactStatus();
+  await scheduleAll();
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden && platformId() === "android") updateExactStatus(); });
 
 $("btn-rem-allow").onclick = async () => {
   const p = await remPermission();
@@ -5934,7 +5965,9 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     document.body.append(probe);
     const measured = probe.getBoundingClientRect().height;
     probe.remove();
-    if (measured < 1 && isNative()) {
+    // Android: Capacitor 8 rückt die Seite selbst ein oder liefert env() –
+    // ein zusätzlicher Abstand wäre doppelt. Bleibt für ältere Hüllen.
+    if (measured < 1 && isNative() && platformId() !== "android") {
       // 26px entspricht der üblichen Höhe der Android-Statusleiste bei
       // Standard-Schriftskalierung; bei Bedarf hier anpassen.
       document.body.style.setProperty("--sb-h", "26px");
