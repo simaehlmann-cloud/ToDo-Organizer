@@ -35,14 +35,14 @@ function load(nowStr) {
   }
   const ctx = { Date: FakeDate, console };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, buildTablePdf, pdfFit, pdfText, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
+  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, buildTablePdf, pdfFit, pdfText, hmMin, addMinutes, validEnd, timeRange, durLabel, firstOverlap, countLessons, nextFerien, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
   return { ...ctx.__, now: new FakeDate() };
 }
 
 const C = load('2026-11-03T10:15:00');      // Dienstag
 const cats = [{ id: 'c1', name: 'Privat' }, { id: 'c2', name: 'Arbeit' }, { id: 'c3', name: 'Haus und Garten' }];
 const P = t => { const r = C.parseQuick(t, { now: C.now, categories: cats }); delete r.hits; return r; };
-const base = { date: null, time: null, catId: null, prio: null, rec: null, every: null, unit: null, subject: null };
+const base = { date: null, time: null, end: null, catId: null, prio: null, rec: null, every: null, unit: null, subject: null };
 const exp = o => Object.assign({}, base, o);
 
 console.log('Datumshelfer');
@@ -309,6 +309,60 @@ eq(C.breaksOf(['08:00-08:45', '08:45-09:30', '09:55-10:40', '10:40-11:25', '11:5
    [{ after: 1, start: '09:30', end: '09:55' }, { after: 3, start: '11:25', end: '11:50' }], 'Pausen aus den Zeiten');
 eq(C.breaksOf(['08:00-08:45', '08:47-09:30']), [], 'zwei Minuten sind keine Pause');
 eq(C.breaksOf([]), [], 'ohne Zeiten');
+
+console.log('Zeitspanne in der Schnelleingabe');
+eq(P('Fußballtraining Di 18–19:30 #Privat'), exp({ title: 'Fußballtraining', date: '2026-11-03', time: '18:00', end: '19:30', catId: 'c1' }), '18–19:30');
+eq(P('Training Do 18-19 Uhr'), exp({ title: 'Training', date: '2026-11-05', time: '18:00', end: '19:00' }), '18-19 Uhr');
+eq(P('von 18 bis 19.30 Uhr Chor'), exp({ title: 'Chor', date: '2026-11-03', time: '18:00', end: '19:30' }), 'von … bis … Uhr');
+eq(P('Chor 18 Uhr bis 19:30'), exp({ title: 'Chor', date: '2026-11-03', time: '18:00', end: '19:30' }), '18 Uhr bis 19:30');
+eq(P('Elternabend 19.30 – 21 Uhr'), exp({ title: 'Elternabend', date: '2026-11-03', time: '19:30', end: '21:00' }), '19.30 – 21 Uhr');
+eq(P('Fortbildung 12.12. 9-15:30'), exp({ title: 'Fortbildung', date: '2026-12-12', time: '09:00', end: '15:30' }), 'Datum und Spanne');
+eq(P('Training Di 18 Uhr 90 Min'), exp({ title: 'Training', date: '2026-11-03', time: '18:00', end: '19:30' }), 'Dauer in Minuten');
+eq(P('Lauf morgen 7 Uhr 1,5 Std'), exp({ title: 'Lauf', date: '2026-11-04', time: '07:00', end: '08:30' }), 'Dauer 1,5 Std');
+eq(P('Lauf morgen 7:00 anderthalb Stunden'), exp({ title: 'Lauf', date: '2026-11-04', time: '07:00', end: '08:30' }), 'anderthalb Stunden');
+eq(P('Lauf morgen 7 Uhr 1 Std. 30 Min.'), exp({ title: 'Lauf', date: '2026-11-04', time: '07:00', end: '08:30' }), '1 Std. 30 Min.');
+eq(P('Kino Fr 20 Uhr für zwei Stunden'), exp({ title: 'Kino', date: '2026-11-06', time: '20:00', end: '22:00' }), 'für zwei Stunden');
+eq(P('Party Sa 22 Uhr 3 Std'), exp({ title: 'Party 3 Std', date: '2026-11-07', time: '22:00' }), 'über Mitternacht: kein Ende');
+eq(P('Training 20-19 Uhr'), exp({ title: 'Training', date: '2026-11-03', time: '20:00' }), 'Ende vor Beginn: nur Beginn');
+eq(P('Seite 18-19 lesen'), exp({ title: 'Seite 18-19 lesen' }), 'Seitenzahlen bleiben');
+eq(P('Mathe S. 3 Nr. 4-6'), exp({ title: 'Mathe S. 3 Nr. 4-6' }), 'Aufgabennummern bleiben');
+eq(P('Lesen 30 Min'), exp({ title: 'Lesen 30 Min' }), 'Dauer ohne Uhrzeit bleibt im Titel');
+eq(P('Abgabe bis 18 Uhr'), exp({ title: 'Abgabe', date: '2026-11-03', time: '18:00' }), '„bis 18 Uhr“ ist keine Spanne');
+eq(P('Arzt Fr 15 Uhr'), exp({ title: 'Arzt', date: '2026-11-06', time: '15:00' }), 'einzelne Uhrzeit unverändert');
+eq(PS('S. 34 bis nächste Mathe'), exp({ title: 'S. 34', date: '2026-11-05', subject: 'Mathematik' }), '„bis nächste Mathe“ bleibt Fach');
+
+console.log('Zeitspannen');
+eq([C.addMinutes('18:00', 90), C.addMinutes('23:30', 45), C.addMinutes('x', 5), C.addMinutes('08:00', 0)], ['19:30', null, null, '08:00'], 'addMinutes');
+eq([C.validEnd('18:00', '19:30'), C.validEnd('18:00', '18:00'), C.validEnd(null, '19:00'), C.validEnd('18:00', '')], [true, false, false, false], 'validEnd');
+eq([C.timeRange('18:00', '19:30'), C.timeRange('18:00', null), C.timeRange('18:00', '17:00'), C.timeRange(null, '19:00')], ['18:00–19:30', '18:00', '18:00', ''], 'timeRange');
+eq([C.durLabel('18:00', '18:45'), C.durLabel('18:00', '19:00'), C.durLabel('18:00', '19:30'), C.durLabel('18:00', null)], ['45 Min.', '1 Std.', '1 Std. 30 Min.', ''], 'durLabel');
+const ovItems = [{ start: '08:00', end: '08:45', label: 'Mathe' }, { start: '17:00', label: 'Punkt' }, { start: '19:30', end: '20:00', label: 'Danach' }];
+eq(C.firstOverlap('18:00', '19:30', ovItems), null, 'grenzt an – keine Überschneidung');
+eq(C.firstOverlap('08:30', '09:00', ovItems).label, 'Mathe', 'überschneidet die Stunde');
+eq(C.firstOverlap('16:30', '17:30', ovItems).label, 'Punkt', 'Termin ohne Ende liegt drin');
+eq(C.firstOverlap('16:30', null, ovItems), null, 'ohne Ende keine Prüfung');
+
+console.log('Stunden zählen');
+const cl = [{ id: 'a', day: 2, slot: 0, subject: 'Mathe', span: 2 }, { id: 'b', day: 2, slot: 4, subject: 'Mathe' }, { id: 'c', day: 4, slot: 1, subject: 'Mathe', week: 'B' }];
+const ctxW = iso => ({ week: C.abWeekOf(iso, ab), off: !!(C.dayOff(iso, 'NI', C.FERIEN.NI, C.FERIEN_NAMES).ferien || C.holidayName(iso, 'NI')) });
+// Di 3.11. 10:15: Doppelstunde schon vorbei, 11:50 kommt noch. 3.11. ist Woche A (siehe oben).
+eq(C.countLessons(cl, slots, C.now, '2026-11-04', { ctx: ctxW }), { hours: 1, lessons: 1 }, 'heute nur noch 11:50');
+eq(C.countLessons(cl, slots, C.now, '2026-11-11', { ctx: ctxW }), { hours: 4, lessons: 3 }, 'bis Mi 11.11.: heute 1, Do nur B-Woche, Di (B) Doppel + 1');
+eq(C.countLessons(cl, slots, C.now, '2026-11-11', { ctx: ctxW, cancelled: (l, iso) => iso === '2026-11-10' && l.id === 'a' }), { hours: 2, lessons: 2 }, 'Ausfall der Doppelstunde');
+eq(C.countLessons(cl, slots, C.now, '2026-11-03', { ctx: ctxW }), { hours: 0, lessons: 0 }, 'Ziel heute: 0');
+eq(C.countLessons([], slots, C.now, '2027-01-01'), { hours: 0, lessons: 0 }, 'ohne Stunden');
+const C5 = load('2026-12-14T07:00:00');   // Montag vor den Weihnachtsferien (NI ab 23.12.)
+const nf = C5.nextFerien('2026-12-14', C.FERIEN.NI, C.FERIEN_NAMES);
+eq(nf.name, 'Weihnachtsferien', 'nächste Ferien: Weihnachten');
+eq(C5.countLessons([{ id: 'w', day: 3, slot: 0, subject: 'Mathe' }], slots, C5.now, nf.from, { ctx: ctxN }), { hours: 1, lessons: 1 }, 'nur Mi 16.12. – Ferienbeginn zählt nicht mit');
+eq(C.nextFerien('2026-11-03', [['2026-11-04', '2026-11-04', 0], ['2026-12-23', '2027-01-09', 1]], ['Brückentag', 'Weihnachtsferien']).name, 'Weihnachtsferien', 'einzelner Brückentag zählt nicht');
+eq(C.nextFerien('2026-11-03', [], []), null, 'ohne Daten null');
+
+console.log('Nächste Stunde eines Kurses');
+const kl = [{ id: 'k1', day: 2, slot: 4, subject: 'Mathe', room: '9a' }, { id: 'k2', day: 4, slot: 0, subject: 'Mathe', room: '7b' }, { id: 'k3', day: 5, slot: 2, subject: 'Mathe', room: '9a' }];
+eq(C.nextLesson(kl, slots, 'Mathe', C.now, { match: l => l.room === '7b' }).iso, '2026-11-05', 'nur Klasse 7b');
+eq(C.nextLesson(kl, slots, 'Mathe', C.now, { match: l => l.room === '9a' }).iso, '2026-11-03', '9a heute 11:50');
+eq(C.nextLesson(kl, slots, 'Mathe', new Date('2026-11-03T12:35:00'), { match: l => l.room === '9a' }).iso, '2026-11-06', 'nach dem Ende der Stunde: Fr');
 
 console.log('PDF');
 const rowsP = Array.from({ length: 80 }, (_, i) => ['Di 03.11.26', '3. Std', 'Vertretung', '8c', 'Mathe', '+1', 'Notiz (' + i + ') äöü € – „Zitat“']);

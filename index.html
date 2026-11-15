@@ -248,7 +248,7 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .wd-task{display:flex;align-items:center;gap:9px;padding:6px 0 6px 9px;border-left:3px solid var(--border);font-size:.88rem;cursor:pointer;word-break:break-word}
 .wd-task input[type=checkbox]{width:18px;height:18px}
 .wd-task .pt{margin-left:auto;font-size:.72rem;color:var(--muted);white-space:nowrap}
-.wd-task .ti{flex:1;min-width:0;word-break:normal;overflow-wrap:anywhere}
+.wd-task .ti{flex:1;min-width:0;word-break:normal;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
 
 /* ---- Seit 2.4 ---- */
 /* hidden muss immer gewinnen. Vorher setzten .grid (Mehr-Felder) und ein
@@ -400,12 +400,45 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .bk-banner .t{display:flex;flex-direction:column;gap:2px;font-size:.88rem}
 .bk-banner .t span{color:var(--muted);font-size:.8rem}
 .bk-banner .b{display:flex;gap:8px;align-items:center}
+/* Wochenrückblick (sonntags) */
+.wk-review{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-left:4px solid var(--ok)}
+.wk-review .t{display:flex;flex-direction:column;gap:3px;font-size:.88rem}
+.wk-review .t span{color:var(--muted);font-size:.8rem;line-height:1.45}
+.wk-review .b{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* Uhrzeit von – bis */
+.tm-range{display:flex;align-items:center;gap:6px}
+.tm-range input{flex:1;min-width:0}
+.tm-range span{color:var(--muted)}
+.tm-range input:disabled{opacity:.45}
+.dur-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-2px 0 12px}
+.dur-row .lbl{font-size:.8rem;color:var(--muted);margin-right:2px}
+/* Gemerkt für die nächste Stunde */
+.memo-box{background:var(--soft);border-left:3px solid var(--warn);border-radius:9px;padding:8px 10px;margin:0 0 12px;font-size:.88rem}
+.memo-box .m{display:flex;gap:8px;align-items:flex-start;padding:3px 0}
+.memo-box .m .x{flex:1;white-space:pre-line;overflow-wrap:break-word}
+.memo-box .m .d{font-size:.74rem;color:var(--muted);white-space:nowrap}
+.memo-box .h{font-size:.74rem;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.memo-own{margin-top:6px;font-size:.84rem}
+.memo-own .m{display:flex;gap:8px;align-items:center;padding:3px 0;color:var(--muted)}
+.memo-own .m .x{flex:1;color:var(--text);overflow-wrap:break-word}
+.ld-count{margin:-6px 0 12px;color:var(--primary-h);font-weight:600}
+:root[data-theme=dark] .ld-count{color:var(--primary)}
+/* Stunden bis zu den Ferien */
+.cc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cc-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:var(--head);cursor:pointer;border:0;text-align:left;font:inherit;color:inherit}
+.cc-item .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.cc-item .n{font-size:1.15rem;font-weight:700;min-width:1.6em;text-align:right}
+.cc-item .c{flex:1;min-width:0;font-size:.85rem;line-height:1.3;overflow-wrap:break-word}
+.cc-item .c small{display:block;color:var(--muted);font-size:.74rem}
+.wd-lesson .nt + .nt{margin-left:2px}
+.ov-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ov-head .ov-btns{display:flex;gap:6px;text-transform:none;letter-spacing:0;font-weight:600}
 /* iPad quer und breiter: Mo–Fr als Spalten, Wochenende rechts gestapelt */
 #wk-days.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,.85fr);gap:10px;align-items:start}
 #wk-days.cols .week-day{margin-bottom:0}
 #wk-days.cols .wk-weekend{display:flex;flex-direction:column;gap:10px;min-width:0}
 #wk-days.cols .wd-head{flex-direction:column;align-items:flex-start;gap:2px;font-size:.84rem}
-#wk-days.cols .wd-head .wd-off{margin-left:0}
+#wk-days.cols .wd-head .wd-off{margin:3px 0 1px;display:table;white-space:normal}
 #wk-days.cols .wd-lesson{white-space:normal;line-height:1.3}
 #wk-days.cols .wd-body{padding:8px}
 #wk-days.cols .wd-add{width:100%}
@@ -454,6 +487,10 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div class="t"><strong>Zeit für eine Sicherung</strong><span id="bk-banner-text"></span></div>
       <div class="b"><button class="btn" id="bk-now">Jetzt sichern</button><button class="btn-sm" id="bk-later">Später</button></div>
     </div>
+    <div class="card wk-review" id="wk-review" hidden>
+      <div class="t"><strong id="wr-head">Wochenrückblick</strong><span id="wr-text"></span></div>
+      <div class="b"><button class="btn" id="wr-move" hidden>Offene auf Montag</button><button class="btn-sm" id="wr-hide">Ausblenden</button></div>
+    </div>
     <div class="card" id="card-habits" data-pro="Gewohnheiten" hidden>
       <h3>Gewohnheiten</h3>
       <div id="habit-list"></div>
@@ -487,13 +524,13 @@ h4{font-size:.9rem;margin:14px 0 8px}
         <button class="btn-sm" id="btn-more" aria-expanded="false">Mehr ▾</button>
         <button class="btn-sm" id="btn-templates">Vorlagen</button>
       </div>
-      <p class="qa-tip" id="qa-tip">Tipp: Datum, Uhrzeit und Kategorie gleich mitschreiben – z. B. „Zahnarzt anrufen morgen 9 Uhr #Privat !“</p>
+      <p class="qa-tip" id="qa-tip">Tipp: Datum, Uhrzeit und Kategorie gleich mitschreiben – z. B. „Zahnarzt anrufen morgen 9 Uhr #Privat !“ oder „Training Di 18–19:30“</p>
       <div class="grid" id="t-details" hidden>
         <div><label class="fld" for="t-category">Kategorie</label><select id="t-category"></select></div>
         <div><label class="fld" for="t-prio">Priorität</label><select id="t-prio">
           <option value="niedrig">Niedrig</option><option value="mittel" selected>Mittel</option><option value="hoch">Hoch</option></select></div>
         <div><label class="fld" for="t-date">Fällig am</label><input type="date" id="t-date"></div>
-        <div><label class="fld" for="t-time">Uhrzeit</label><input type="time" id="t-time"></div>
+        <div><label class="fld" for="t-time">Uhrzeit (von – bis)</label><div class="tm-range"><input type="time" id="t-time"><span aria-hidden="true">–</span><input type="time" id="t-end" aria-label="bis" disabled></div></div>
         <div><label class="fld" for="t-recurrence">Wiederholung</label><select id="t-recurrence" class="rec-sel"></select></div>
         <div><label class="fld" for="t-remind">Erinnerung</label><select id="t-remind" class="rem-sel"></select></div>
         <div id="t-rec-custom" class="rec-custom" hidden style="grid-column:1 / -1">
@@ -561,6 +598,12 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div id="plan-list"></div>
       <p class="hint" id="plan-hint" style="margin:13px 0 0">Eintrag antippen zum Bearbeiten oder Löschen.</p>
     </div>
+    <div class="card" id="card-count" hidden>
+      <h3 id="cc-head">Stunden bis zu den Ferien</h3>
+      <p class="hint" id="cc-sub" style="margin:0 0 10px"></p>
+      <div id="cc-list" class="cc-list"></div>
+    </div>
+
     <div class="card" id="card-subs" hidden>
       <h3>Mehr- und Minderstunden</h3>
       <div class="seg" id="sub-period"><button data-p="month">Monat</button><button data-p="half">Halbjahr</button><button data-p="year">Schuljahr</button><button data-p="all">Alle</button></div>
@@ -634,6 +677,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
           <option value="everyday">Alltag und Beruf</option><option value="school">Schule oder Studium</option><option value="teacher">Unterricht (Lehrkraft)</option></select></div>
       </div>
       <p class="hint" style="margin:10px 0 0">Bei Schule und Unterricht zeigt die App den Stundenplan mit Schulstunden und verknüpft Aufgaben mit Fächern.</p>
+      <label style="display:flex;align-items:center;gap:9px;font-size:.9rem;cursor:pointer;margin-top:12px">
+        <input type="checkbox" id="set-review" style="width:19px;height:19px"> Sonntags Wochenrückblick in der Woche zeigen</label>
     </div>
 
     <div class="card" id="card-region">
@@ -797,8 +842,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
 
     <div class="card">
       <h3>Funktionen</h3>
-      <div class="feat"><div class="i">📆</div><div><div class="t">Wochenübersicht</div><div class="d">Alle sieben Tage auf einen Blick: Aufgaben, Termine aus deinem Kalender, Wochenplan und Gewohnheiten. Überfälliges steht gesammelt obenauf.</div></div></div>
-      <div class="feat"><div class="i">⚡</div><div><div class="t">Schnelleingabe</div><div class="d">„Zahnarzt anrufen morgen 9 Uhr #Privat !“ – Datum, Uhrzeit, Kategorie, Priorität und Wiederholung werden beim Tippen erkannt. Alles auf dem Gerät, ohne Online-Dienst.</div></div></div>
+      <div class="feat"><div class="i">📆</div><div><div class="t">Wochenübersicht</div><div class="d">Alle sieben Tage auf einen Blick: Aufgaben, Termine aus deinem Kalender, Wochenplan und Gewohnheiten. Überfälliges steht gesammelt obenauf und lässt sich mit einem Tipp auf heute oder morgen schieben; sonntags gibt es einen kurzen Wochenrückblick.</div></div></div>
+      <div class="feat"><div class="i">⚡</div><div><div class="t">Schnelleingabe</div><div class="d">„Zahnarzt anrufen morgen 9 Uhr #Privat !“ oder „Training Di 18–19:30“ – Datum, Uhrzeit von–bis, Dauer, Kategorie, Priorität und Wiederholung werden beim Tippen erkannt. Alles auf dem Gerät, ohne Online-Dienst.</div></div></div>
       <div class="feat"><div class="i">📋</div><div><div class="t">Aufgaben</div><div class="d">Kategorien mit eigenen Farben, Prioritäten, Unterpunkte mit Fortschrittsbalken, Notizen und Bilder. Filtern, suchen, verschieben, rückgängig machen.</div></div></div>
       <div class="feat"><div class="i">🔄</div><div><div class="t">Wiederholungen</div><div class="d">Täglich, werktags, wöchentlich, monatlich, jährlich oder „alle N Tage/Wochen/Monate“ – auf Wunsch ab dem Tag des Erledigens gezählt.</div></div></div>
       <div class="feat"><div class="i">🔔</div><div><div class="t">Erinnerungen</div><div class="d">Zur Uhrzeit der Aufgabe oder vorher (15 Minuten bis 1 Woche), dazu eine tägliche Übersicht. Aus der Mitteilung heraus verschieben oder abhaken.</div></div></div>
@@ -806,7 +851,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
       <div class="feat"><div class="i">📅</div><div><div class="t">Wochenplan und Stundenplan</div><div class="d">Feste Wochentermine wie Training oder Kurse – oder als Stundenplan mit Schulstunden, A/B-Wochen, Ausfall und Vertretung. Hausaufgaben „bis nächste Mathe“ landen bei der nächsten Stunde – Ferien und Feiertage werden übersprungen.</div></div></div>
       <div class="feat"><div class="i">🏖</div><div><div class="t">Feiertage und Ferien</div><div class="d">Für alle 16 Bundesländer in Woche und Kalender. Feiertage werden berechnet, Schulferien sind in der App hinterlegt (Quelle: OpenHolidays API, Lizenz ODbL) – ohne Abruf aus dem Netz.</div></div></div>
       <div class="feat"><div class="i">📝</div><div><div class="t">Klassenarbeiten und Klausuren</div><div class="d">Für Lehrkräfte: Vorbereiten, Schreiben, Korrigieren mit Frist. Für Schüler: ein Lernplan mit verteilten Einheiten bis zur Klausur.</div></div></div>
-      <div class="feat"><div class="i">📝</div><div><div class="t">Notizen zur Stunde</div><div class="d">Stunde in der Woche antippen und festhalten, was dran war. Im Stundenplan zeigt jedes Fach seinen Stundenverlauf nach Datum – teilbar, ohne Schülerdaten.</div></div></div>
+      <div class="feat"><div class="i">📝</div><div><div class="t">Notizen zur Stunde</div><div class="d">Stunde in der Woche antippen und festhalten, was dran war – oder „für die nächste Stunde merken“ (📌 erscheint an der nächsten Stunde der Klasse). Im Stundenplan zeigt jedes Fach seinen Stundenverlauf nach Datum und wie viele Stunden bis zur Klassenarbeit und zu den Ferien bleiben – teilbar, ohne Schülerdaten.</div></div></div>
       <div class="feat"><div class="i">⚖️</div><div><div class="t">Mehr- und Minderstunden</div><div class="d">Für Lehrkräfte: Vertretungen (+), Ausfälle (−) und Aufsichten mit Datum, Einzel- oder Doppelstunde, Klasse und Notiz. Übersicht mit Saldo je Monat, Halbjahr oder Schuljahr, als Liste oder PDF.</div></div></div>
       <div class="feat"><div class="i">✅</div><div><div class="t">Gewohnheiten</div><div class="d">Sport, Lesen, Wasser trinken: mit Wochenziel abhaken, Serien sehen.</div></div></div>
       <div class="feat"><div class="i">🧾</div><div><div class="t">Vorlagen</div><div class="d">Wiederkehrende Abläufe wie „Urlaub packen“ einmal anlegen und mit einem Tippen samt Unterpunkten einsetzen.</div></div></div>
@@ -850,16 +895,22 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <h3>Aufgabe bearbeiten</h3>
     <div style="display:grid;gap:11px">
       <div><label class="fld" for="e-title">Titel</label><input type="text" id="e-title"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:11px">
         <div><label class="fld" for="e-category">Kategorie</label><select id="e-category"></select></div>
         <div><label class="fld" for="e-prio">Priorität</label><select id="e-prio">
           <option value="niedrig">Niedrig</option><option value="mittel">Mittel</option><option value="hoch">Hoch</option></select></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+      <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:9px">
         <div><label class="fld" for="e-date">Fällig am</label><input type="date" id="e-date"></div>
         <div><label class="fld" for="e-time">Uhrzeit</label><input type="time" id="e-time"></div>
+        <div><label class="fld" for="e-end">bis</label><input type="time" id="e-end" disabled></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+      <div class="dur-row" id="e-dur" hidden>
+        <span class="lbl">Dauer</span>
+        <button type="button" class="btn-sm" data-m="30">30 Min.</button><button type="button" class="btn-sm" data-m="60">1 Std.</button><button type="button" class="btn-sm" data-m="90">1½ Std.</button><button type="button" class="btn-sm" data-m="120">2 Std.</button>
+        <span class="lbl" id="e-dur-lbl"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:11px">
         <div><label class="fld" for="e-recurrence">Wiederholung</label><select id="e-recurrence" class="rec-sel"></select></div>
         <div><label class="fld" for="e-remind">Erinnerung</label><select id="e-remind" class="rem-sel"></select></div>
       </div>
@@ -917,7 +968,7 @@ h4{font-size:.9rem;margin:14px 0 8px}
   <div class="bd">
     <h3 id="l-head">Stunde</h3>
     <div style="display:grid;gap:11px">
-      <div id="l-times" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+      <div id="l-times" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:11px">
         <div><label class="fld" for="l-start">Von</label><input type="time" id="l-start"></div>
         <div><label class="fld" for="l-end">Bis</label><input type="time" id="l-end"></div>
       </div>
@@ -941,6 +992,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
   <div class="bd">
     <h3 id="ld-head">Stunde</h3>
     <p class="hint" id="ld-sub" style="margin:-4px 0 12px"></p>
+    <div id="ld-memos" class="memo-box" hidden></div>
+    <p class="hint ld-count" id="ld-count" hidden></p>
     <label class="fld" for="ld-note">Notiz zur Stunde</label>
     <textarea id="ld-note" rows="3" placeholder="Thema, was gemacht wurde, was als Nächstes ansteht …" style="margin-bottom:6px"></textarea>
     <p class="hint" style="margin:0 0 12px"><a href="#" id="ld-history">Stundenverlauf ansehen</a></p>
@@ -953,6 +1006,11 @@ h4{font-size:.9rem;margin:14px 0 8px}
     <div id="ld-subfields" class="grid" style="margin-bottom:6px">
       <div><label class="fld" for="ld-subject" id="ld-lbl-subject">Vertretung / anderes Fach</label><input type="text" id="ld-subject" placeholder="wie geplant"></div>
       <div><label class="fld" for="ld-room">Raum</label><input type="text" id="ld-room" placeholder="wie geplant"></div>
+    </div>
+    <div id="ld-memo-box">
+      <label class="fld" for="ld-memo">Für die nächste Stunde merken</label>
+      <div class="inline-btns"><input type="text" id="ld-memo" placeholder="z. B. Test zurückgeben, Beamer reservieren" enterkeyhint="done" maxlength="500"><button class="btn-sm" id="ld-memo-add" type="button">Merken</button></div>
+      <div id="ld-memo-own" class="memo-own"></div>
     </div>
     <div id="ld-hw-box">
       <label class="fld" for="ld-hw">Hausaufgabe bis zur nächsten Stunde</label>
@@ -987,6 +1045,8 @@ h4{font-size:.9rem;margin:14px 0 8px}
 <dialog id="dlg-course">
   <div class="bd">
     <h3 id="cs-head">Stundenverlauf</h3>
+    <p class="hint ld-count" id="cs-count" hidden></p>
+    <div id="cs-memos" class="memo-box" hidden></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <button class="btn-sm" id="cs-add">＋ Notiz</button>
       <button class="btn-sm" id="cs-share">Verlauf teilen</button>
@@ -1133,6 +1193,38 @@ const addDays = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDate() + n
 const dowOf = iso => ((parseISO(iso).getDay() + 6) % 7) + 1;          // 1 = Montag … 7 = Sonntag
 const mondayOf = iso => addDays(iso, 1 - dowOf(iso));
 const validTime = s => /^([01]\d|2[0-3]):[0-5]\d$/.test(s || "");
+/* ---- Zeitspannen (Aufgabe von–bis) ---- */
+const hmMin = s => validTime(s) ? (+s.slice(0, 2)) * 60 + (+s.slice(3, 5)) : null;
+const minHm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+/* Uhrzeit + Minuten; null, wenn ungültig oder über Mitternacht */
+function addMinutes(hm, n) {
+  const m = hmMin(hm);
+  if (m == null || !(n >= 0)) return null;
+  const r = m + Math.round(n);
+  return r < 1440 ? minHm(r) : null;
+}
+/* Ende gültig: beide Zeiten gültig, Ende nach Beginn (am selben Tag) */
+const validEnd = (start, end) => validTime(start) && validTime(end) && hmMin(end) > hmMin(start);
+/* „18:00“ oder „18:00–19:30“ */
+const timeRange = (start, end) => !validTime(start) ? "" : start + (validEnd(start, end) ? "–" + end : "");
+/* Dauer als Text: „45 Min.“, „1 Std.“, „1 Std. 30 Min.“ */
+function durLabel(start, end) {
+  if (!validEnd(start, end)) return "";
+  const d = hmMin(end) - hmMin(start), h = Math.floor(d / 60), m = d % 60;
+  return h ? h + " Std." + (m ? " " + m + " Min." : "") : m + " Min.";
+}
+/* Erste Überschneidung einer Spanne mit anderen Einträgen.
+   items = [{ start, end?, label }]; ohne Ende zählt ein Eintrag als Zeitpunkt. */
+function firstOverlap(start, end, items) {
+  if (!validEnd(start, end)) return null;
+  const a = hmMin(start), b = hmMin(end);
+  for (const x of items || []) {
+    const s = hmMin(x.start); if (s == null) continue;
+    const e = validEnd(x.start, x.end) ? hmMin(x.end) : s + 1;
+    if (a < e && s < b) return x;
+  }
+  return null;
+}
 
 /* Monate addieren, ohne über das Monatsende zu rutschen.
    setMonth() macht aus dem 31. Januar den 3. März — hier wird stattdessen
@@ -1245,7 +1337,7 @@ function parseQuick(text, opts = {}) {
   const now = opts.now || new Date();
   const today = isoOf(now);
   const cats = opts.categories || [];
-  const res = { title: text, date: null, time: null, catId: null, prio: null,
+  const res = { title: text, date: null, time: null, end: null, catId: null, prio: null,
                 rec: null, every: null, unit: null, subject: null, hits: [] };
   let s = " " + text + " ";
   const cut = m => { s = s.slice(0, m.index) + " " + s.slice(m.index + m[0].length); };
@@ -1338,6 +1430,18 @@ function parseQuick(text, opts = {}) {
     }
   }
 
+  // 3a · Zeitspanne: „18–19:30“, „18-19 Uhr“, „von 18 bis 19.30 Uhr“, „18 Uhr bis 19:30“.
+  //      Ohne „Uhr“, Minuten oder „von“ zählt „18-19“ nicht (z. B. Seitenzahlen).
+  {
+    const H = "([01]?\\d|2[0-3])", M = "(?:[:.]([0-5]\\d))?", U = "(\\s*(?:uhr|h))?";
+    const m = find(QB + "(von\\s+|um\\s+|ab\\s+)?" + H + M + U + "\\s*(?:-|–|—|bis)\\s*" + H + M + U + QE);
+    if (m && (m[1] || m[3] || m[4] || m[6] || m[7])) {
+      const a = String(+m[2]).padStart(2, "0") + ":" + (m[3] || "00");
+      const b = String(+m[5]).padStart(2, "0") + ":" + (m[6] || "00");
+      // Ende vor Beginn („20-19 Uhr“): nur den Beginn übernehmen
+      if (validTime(a)) { res.time = a; res.end = validEnd(a, b) ? b : null; res.hits.push("time"); cut(m); }
+    }
+  }
   // 3 · Uhrzeit (9 Uhr · 9:30 · 9.30 Uhr · um 9 · 14 h)
   const timeRules = [
     QB + "(?:um\\s+)?([01]?\\d|2[0-3])[:.]([0-5]\\d)\\s*(?:uhr|h)" + QE,
@@ -1345,7 +1449,7 @@ function parseQuick(text, opts = {}) {
     QB + "(?:um\\s+)?([01]?\\d|2[0-3])\\s*(?:uhr|h)" + QE,
     QB + "um\\s+([01]?\\d|2[0-3])(?![\\d.:])" + QE
   ];
-  for (const rx of timeRules) {
+  for (const rx of res.time ? [] : timeRules) {
     const m = find(rx); if (!m) continue;
     res.time = String(+m[1]).padStart(2, "0") + ":" + (m[2] || "00");
     res.hits.push("time"); cut(m); break;
@@ -1358,6 +1462,26 @@ function parseQuick(text, opts = {}) {
       res.time = { "früh":"08:00", frueh:"08:00", morgen:"08:00", vormittag:"10:00", mittag:"12:00",
                    nachmittag:"15:00", abend:"19:00" }[w] || null;
       if (res.time) { res.hits.push("time"); cut(m); }
+    }
+  }
+  // 3b · Dauer nach einer Uhrzeit: „90 Min“, „1,5 Std“, „2 Stunden“, „1 Std. 30 Min.“, „anderthalb Stunden“
+  if (res.time && !res.end) {
+    const HN = "(\\d{1,2}(?:[,.]\\d{1,2})?|eine?|einer|anderthalb|eineinhalb|zwei|drei|vier|fünf|fuenf|sechs)";
+    const hoursOf = w => { w = w.toLowerCase();
+      if (w === "anderthalb" || w === "eineinhalb") return 1.5;
+      const n = /^\d/.test(w) ? parseFloat(w.replace(",", ".")) : numOf(w);
+      return n; };
+    const rules = [
+      [QB + "(?:für\\s+)?" + HN + "\\s*(?:std\\.?|stunden?|h)\\s+(?:und\\s+)?(\\d{1,2})\\s*(?:min\\.?|minuten)" + QE, m => hoursOf(m[1]) * 60 + (+m[2])],
+      [QB + "(?:für\\s+)?" + HN + "\\s*(?:std\\.?|stunden?|h)" + QE, m => hoursOf(m[1]) * 60],
+      [QB + "(?:für\\s+)?(\\d{1,3})\\s*(?:min\\.?|minuten)" + QE, m => +m[1]]
+    ];
+    for (const [rx, fn] of rules) {
+      const m = find(rx); if (!m) continue;
+      const d = fn(m);
+      const e = d > 0 && d <= 16 * 60 ? addMinutes(res.time, d) : null;
+      if (e) { res.end = e; res.hits.push("end"); cut(m); }
+      break;
     }
   }
 
@@ -1393,7 +1517,7 @@ function parseQuick(text, opts = {}) {
   if (res.rec && !res.date) res.date = res.rec === "weekdays" && dowOf(today) > 5 ? nextWeekday(today, 1, false) : today;
 
   let title = s.replace(/\s+/g, " ").trim()
-               .replace(/\s+(am|um|ab|bis|,|-|–)$/i, "").replace(/^(am|um|bis)\s+/i, "").trim();
+               .replace(/\s+(am|um|ab|bis|von|für|,|-|–)$/i, "").replace(/^(am|um|bis)\s+/i, "").trim();
   if (!title) { title = text.trim(); }
   res.title = title;
   return res;
@@ -1443,7 +1567,7 @@ function lessonStart(l, slots) {
    wenn die Stunde an dem Tag ausfällt. Gesucht wird höchstens 10 Wochen voraus. */
 function nextLesson(lessons, slots, subject, now, opts = {}) {
   if (!subject) return null;
-  const rows = (lessons || []).filter(l => l.subject === subject)
+  const rows = (lessons || []).filter(l => l.subject === subject && (!opts.match || opts.match(l)))
     .sort((a, b) => lessonStart(a, slots).localeCompare(lessonStart(b, slots)));
   if (!rows.length) return null;
   const today = isoOf(now), nowMin = now.getHours() * 60 + now.getMinutes();
@@ -1462,6 +1586,38 @@ function nextLesson(lessons, slots, subject, now, opts = {}) {
     }
   }
   return null;
+}
+/* Wie viele Stunden hat ein Kurs noch – ab jetzt bis vor einem Datum?
+   rows: Plan-Einträge des Kurses; opts.ctx/opts.cancelled wie bei nextLesson.
+   Begonnene Stunden zählen nicht mehr, eine Doppelstunde (span 2) zählt 2.
+   → { hours, lessons } */
+function countLessons(rows, slots, now, toISO, opts = {}) {
+  const r = { hours: 0, lessons: 0 };
+  if (!rows || !rows.length || !/^\d{4}-\d{2}-\d{2}$/.test(toISO || "")) return r;
+  const today = isoOf(now), nowMin = now.getHours() * 60 + now.getMinutes();
+  for (let iso = today, i = 0; iso < toISO && i < 400; iso = addDays(iso, 1), i++) {
+    const dow = dowOf(iso), cand = rows.filter(l => l.day === dow);
+    if (!cand.length) continue;
+    const ctx = opts.ctx ? opts.ctx(iso) : null;
+    for (const l of cand) {
+      if (!lessonOn(l, iso, ctx)) continue;
+      if (opts.cancelled && opts.cancelled(l, iso)) continue;
+      if (iso === today && nowMin >= hmMin(lessonStart(l, slots))) continue;
+      r.lessons++; r.hours += +l.span === 2 ? 2 : 1;
+    }
+  }
+  return r;
+}
+/* Nächste Ferien, die nach einem Tag beginnen → { from, to, name } oder null.
+   Einzelne freie Tage (Brückentag, beweglicher Ferientag) zählen nicht als Ferien. */
+function nextFerien(iso, list, names) {
+  let best = null;
+  for (const f of list || []) {
+    const name = (names && names[f[2]]) || "";
+    const long = /ferien$|pause$/i.test(name) || Math.round((parseISO(f[1]) - parseISO(f[0])) / 864e5) >= 2;
+    if (long && f[0] > iso && (!best || f[0] < best[0])) best = f;
+  }
+  return best ? { from: best[0], to: best[1], name: (names && names[best[2]]) || "Ferien" } : null;
 }
 /* ---- Feiertage und Ferien ----
    Gesetzliche Feiertage werden berechnet (Ostern nach Gauß/Meeus), nur
@@ -1837,6 +1993,8 @@ const DEFAULT_STATE = () => ({
   duties: [],
   // Notizen zur Stunde: { id, course: "Fach|Klasse", date, text, updatedAt } – am Kurs, nicht am Eintrag
   lessonNotes: [],
+  // „Für die nächste Stunde merken“: { id, course, after (Datum), afterTime (Ende der Stunde), text, createdAt }
+  lessonMemos: [],
   // Schreibgeschützte Termine aus einem abonnierten Kalender (ICS) – Anzeige-Cache.
   extEvents: [],
   categories: [ { id:"c3", name:"Privat", color:"#059669" } ],
@@ -1856,7 +2014,9 @@ const DEFAULT_STATE = () => ({
     extCalLastSync: null,
     region: "",               // Bundesland für Feiertage und Ferien (z. B. "NI")
     showFerien: false,        // Schulferien anzeigen
-    ab: { on: false, anchor: null, type: "A", skip: true }   // A/B-Wochen
+    ab: { on: false, anchor: null, type: "A", skip: true },  // A/B-Wochen
+    weekReview: true,         // Wochenrückblick sonntags in der Woche
+    reviewHidden: ""          // Montag der Woche, deren Rückblick ausgeblendet wurde
   }
 });
 
@@ -1897,6 +2057,7 @@ function normalizeState(p) {
       prio: PRIO_RANK[t.prio] != null ? t.prio : "mittel",
       dueDate: /^\d{4}-\d{2}-\d{2}$/.test(t.dueDate || "") ? t.dueDate : null,
       dueTime: validTime(t.dueTime) ? t.dueTime : null,
+      endTime: validEnd(t.dueTime, t.endTime) ? t.endTime : null,
       remind: REMIND_MIN[t.remind] != null || t.remind === "none" ? t.remind : "due",
       recurrence: REC_OPTIONS.some(o => o[0] === t.recurrence) ? t.recurrence : "none",
       recurEvery: Math.max(1, parseInt(t.recurEvery, 10) || 1), recurUnit: t.recurUnit || "d",
@@ -1906,6 +2067,8 @@ function normalizeState(p) {
       images: arr(t.images).filter(x => typeof x === "string"),
       note: t.note || "", completed: !!t.completed, completedAt: t.completedAt || null,
       spawned: !!t.spawned,
+      // Klassenarbeit (aus dem Planer) und ihr Kurs „Fach|Klasse“ – für „noch X Stunden bis …“
+      exam: !!t.exam, course: typeof t.course === "string" && t.course ? t.course.slice(0, 120) : null,
       createdAt: t.createdAt || Date.now()
     })),
     lessons,
@@ -1927,6 +2090,10 @@ function normalizeState(p) {
                    week: x.week === "A" || x.week === "B" ? x.week : null })),
     lessonNotes: arr(p.lessonNotes).filter(n => n && typeof n.course === "string" && /^\d{4}-\d{2}-\d{2}$/.test(n.date || "") && String(n.text || "").trim())
       .map(n => ({ id: n.id || uid(), course: n.course.slice(0, 120), date: n.date, text: String(n.text).slice(0, 5000), updatedAt: n.updatedAt || Date.now() })),
+    // Merkzettel, deren Stunde längst vorbei ist, nicht ewig mitschleppen (Ziel liegt höchstens 10 Wochen später)
+    lessonMemos: arr(p.lessonMemos).filter(m => m && typeof m.course === "string" && /^\d{4}-\d{2}-\d{2}$/.test(m.after || "") && m.after >= addDays(todayISO(), -120) && String(m.text || "").trim())
+      .map(m => ({ id: m.id || uid(), course: m.course.slice(0, 120), after: m.after, afterTime: validTime(m.afterTime) ? m.afterTime : "23:59",
+                   text: String(m.text).trim().slice(0, 500), createdAt: m.createdAt || Date.now() })),
     subLog: arr(p.subLog).filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && ["plus", "minus", "aufsicht"].indexOf(e.type) > -1)
       .map(e => ({ id: e.id || uid(), date: e.date, type: e.type, hours: +e.hours === 2 ? 2 : 1,
         slot: e.slot != null && e.slot !== "" && !isNaN(+e.slot) ? +e.slot : null,
@@ -1953,7 +2120,9 @@ function normalizeState(p) {
         anchor: ps.ab && /^\d{4}-\d{2}-\d{2}$/.test(ps.ab.anchor || "") ? mondayOf(ps.ab.anchor) : null,
         type: ps.ab && ps.ab.type === "B" ? "B" : "A",
         skip: !(ps.ab && ps.ab.skip === false)
-      }
+      },
+      weekReview: ps.weekReview !== false,
+      reviewHidden: /^\d{4}-\d{2}-\d{2}$/.test(ps.reviewHidden || "") ? ps.reviewHidden : ""
     }
   };
   if (legacy) {
@@ -2068,6 +2237,7 @@ const Widget = {
 function widgetSnapshot() {
   const today = todayISO();
   const days = [];
+  const memos = memoMap();
   for (let i = 0; i < 3; i++) {
     const iso = addDays(today, i);
     const items = [];
@@ -2075,7 +2245,8 @@ function widgetSnapshot() {
       const ex = lessonExOf(l, iso) || {};
       const subj = ex.subject || l.subject, room = ex.room || l.room;
       items.push({ id: "l" + l.id, kind: "lesson", time: lessonStart(l, state.settings.slots),
-                   title: subj + (room ? " · " + room : ""), color: l.color || "#2563eb", cancelled: !!ex.cancel });
+                   title: subj + (room ? " · " + room : "") + (memos.has(l.id + "|" + iso) ? " 📌" : ""),
+                   color: l.color || "#2563eb", cancelled: !!ex.cancel });
     });
     if (feat("timetable")) dutiesOn(iso).forEach(du => items.push({ id: "d" + du.id, kind: "lesson",
       time: dutyBreak(du).start, title: "Aufsicht" + (du.place ? " · " + du.place : ""), color: "#64748b" }));
@@ -2085,7 +2256,8 @@ function widgetSnapshot() {
     if (feat("extCal")) eventsOn(iso).forEach((e, k) => items.push({ id: "e" + k, kind: "event",
       time: validTime(e.time) ? e.time : null, title: String(e.title || "Termin"), color: e.color || "#9333ea" }));
     state.tasks.filter(t => !t.completed && t.dueDate === iso).forEach(t => items.push({ id: "t" + t.id, kind: "task",
-      time: validTime(t.dueTime) ? t.dueTime : null, title: t.title, color: catColor(t.categoryId) }));
+      time: validTime(t.dueTime) ? t.dueTime : null, end: validEnd(t.dueTime, t.endTime) ? t.endTime : null,
+      title: t.title, color: catColor(t.categoryId) }));
     // Ganztägige Termine zuerst, dann nach Uhrzeit, Aufgaben ohne Uhrzeit am Ende
     const key = x => x.time || (x.kind === "task" ? "~" : " ");
     // Einfacher Zeichenvergleich: localeCompare sortiert „~“ vor die Ziffern
@@ -2122,8 +2294,17 @@ function el(tag, cls, text) {
 }
 /* Toast mit optionalem Rückgängig-Button. Der Snapshot wird vor der Änderung
    erstellt und beim Antippen komplett zurückgespielt. */
+// Schließt der Dialog, in dem der Hinweis gerade steht, wandert er zurück nach außen
+document.addEventListener("close", e => {
+  const t = $("toast");
+  if (t && e.target && e.target.tagName === "DIALOG" && t.parentNode === e.target) document.body.append(t);
+}, true);
 function toast(msg, undoFn) {
   const t = $("toast");
+  // Bei offenem Dialog in den Dialog hängen: Außerhalb ist bei einem modalen
+  // Dialog alles gesperrt – „Rückgängig“ wäre dort nicht antippbar.
+  const host = [...document.querySelectorAll("dialog[open]")].pop() || document.body;
+  if (t.parentNode !== host) host.append(t);
   t.replaceChildren();
   t.append(el("span", null, msg));
   if (undoFn) {
@@ -2529,8 +2710,8 @@ function renderQuickPreview() {
   box.replaceChildren();
   if (!p.hits.length) { box.hidden = true; return; }
   const chip = (txt, cls) => box.append(el("span", "pv" + (cls ? " " + cls : ""), txt));
-  if (p.date) chip("📅 " + humanDate(p.date, p.time));
-  else if (p.time) chip("🕘 " + p.time);
+  if (p.date) chip("📅 " + humanDate(p.date, timeRange(p.time, p.end) || null));
+  else if (p.time) chip("🕘 " + timeRange(p.time, p.end));
   if (p.rec) chip("🔄 " + recLabel({ recurrence: p.rec, recurEvery: p.every, recurUnit: p.unit }));
   if (p.catId) { const c = catById(p.catId); if (c) { const e = el("span", "pv cat", "#" + c.name); e.style.background = c.color; box.append(e); } }
   if (p.prio) chip("❗ " + PRIO_LABEL[p.prio]);
@@ -2544,18 +2725,81 @@ function renderQuickPreview() {
 }
 $("t-title").addEventListener("input", () => { if (!$("t-title").value) qaIgnore = false; renderQuickPreview(); });
 
+/* ---------- Uhrzeit von – bis ----------
+   „bis“ ist erst aktiv, wenn eine Anfangszeit steht. Verschiebt man den Beginn,
+   wandert das Ende mit (gleiche Dauer). */
+function syncEnd(prefix) {
+  const st = $(prefix + "-time"), en = $(prefix + "-end");
+  const prev = st.dataset.prev || "";
+  if (st.value && validTime(prev) && st.value !== prev && validEnd(prev, en.value)) {
+    const moved = addMinutes(st.value, hmMin(en.value) - hmMin(prev));
+    en.value = moved || "";
+  }
+  st.dataset.prev = st.value || "";
+  en.disabled = !st.value;
+  if (!st.value) en.value = "";
+  if (prefix === "e") {
+    $("e-dur").hidden = !st.value;
+    $("e-dur-lbl").textContent = validEnd(st.value, en.value) ? durLabel(st.value, en.value) : (en.value ? "Ende liegt vor dem Beginn" : "");
+  }
+}
+["t", "e"].forEach(p => ["input", "change"].forEach(ev => {
+  $(p + "-time").addEventListener(ev, () => syncEnd(p));
+  $(p + "-end").addEventListener(ev, () => syncEnd(p));
+}));
+document.querySelectorAll("#e-dur button").forEach(b => b.onclick = () => {
+  const e = addMinutes($("e-time").value, +b.dataset.m);
+  if (!e) return toast("Das Ende läge nach Mitternacht.");
+  $("e-end").value = e; syncEnd("e");
+});
+/* Ende aus dem Feld: null = keins, false = vor dem Beginn */
+function readEnd(start, endVal) {
+  if (!endVal || !validTime(start)) return null;
+  return validEnd(start, endVal) ? endVal : false;
+}
+/* Ende einer Aufgabe mit Uhrzeit (ohne „bis“: eine Stunde) */
+function taskEnd(t) {
+  const a = new Date(t.dueDate + "T" + t.dueTime + ":00");
+  return validEnd(t.dueTime, t.endTime) ? new Date(t.dueDate + "T" + t.endTime + ":00") : new Date(a.getTime() + 3600e3);
+}
+/* Hinweis, wenn eine Aufgabe mit Zeitspanne mit Unterricht, Aufsicht, Terminen
+   oder anderen Aufgaben kollidiert – nur ein Hinweis, gespeichert wird trotzdem. */
+function overlapHint(t) {
+  if (!t || !t.dueDate || !validEnd(t.dueTime, t.endTime)) return "";
+  const iso = t.dueDate, items = [];
+  if (feat("timetable")) {
+    lessonsOn(iso).forEach(l => {
+      const ex = lessonExOf(l, iso) || {};
+      if (ex.cancel) return;
+      const room = ex.room || l.room;
+      items.push({ start: lessonStart(l, state.settings.slots), end: planEnd(l), label: (ex.subject || l.subject) + (room ? " · " + room : "") });
+    });
+    dutiesOn(iso).forEach(du => { const b = dutyBreak(du); if (b) items.push({ start: b.start, end: b.end, label: "Aufsicht" }); });
+  }
+  if (feat("extCal")) eventsOn(iso).forEach(e => { if (validTime(e.time)) items.push({ start: e.time, end: e.end, label: String(e.title || "Termin") }); });
+  state.tasks.forEach(o => {
+    if (o.id !== t.id && !o.completed && o.dueDate === iso && validTime(o.dueTime)) items.push({ start: o.dueTime, end: o.endTime, label: o.title });
+  });
+  items.sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0);
+  const hit = firstOverlap(t.dueTime, t.endTime, items);
+  return hit ? ` Überschneidet sich mit ${hit.start} ${hit.label}.` : "";
+}
+
 function addTask(dueOverride) {
   const raw = $("t-title").value.trim();
   if (!raw) { $("t-title").focus(); return toast("Bitte einen Titel eingeben."); }
   const p = quickParse();
   const recField = $("t-recurrence").value;
   const rec = p.rec || recField;
+  const dueTime = p.time || $("t-time").value || null;
+  let endTime = p.time && p.end ? p.end : readEnd(dueTime, $("t-end").value);
+  if (endTime === false) { toast("Das Ende liegt vor dem Beginn."); $("t-end").focus(); return; }
   const t = {
     id: uid(), title: p.title || raw,
     categoryId: p.catId || $("t-category").value || null,
     prio: p.prio || $("t-prio").value,
     dueDate: dueOverride || p.date || $("t-date").value || null,
-    dueTime: p.time || $("t-time").value || null,
+    dueTime, endTime,
     remind: $("t-remind").value || "due",
     recurrence: rec,
     recurEvery: p.rec ? (p.every || 1) : Math.max(1, parseInt($("t-rec-every").value, 10) || 1),
@@ -2569,12 +2813,12 @@ function addTask(dueOverride) {
   if (t.recurrence !== "none" && !t.dueDate) t.dueDate = todayISO();
   state.tasks.push(t);
   save();
-  $("t-title").value = ""; $("t-assignee").value = ""; $("t-date").value = ""; $("t-time").value = "";
+  $("t-title").value = ""; $("t-assignee").value = ""; $("t-date").value = ""; $("t-time").value = ""; $("t-end").value = ""; syncEnd("t");
   $("t-recurrence").value = "none"; $("t-remind").value = "due"; syncRecCustom("t");
   qaIgnore = false; renderQuickPreview();
   renderTasks(); renderCalendar(); updateStorageInfo();
   $("t-title").focus();
-  toast("Gespeichert" + (t.dueDate ? " · " + humanDate(t.dueDate, t.dueTime) : "") + ".");
+  toast("Gespeichert" + (t.dueDate ? " · " + humanDate(t.dueDate, timeRange(t.dueTime, t.endTime) || null) : "") + "." + overlapHint(t));
 }
 $("btn-add-task").onclick   = () => addTask();
 $("btn-quick-today").onclick = () => addTask(todayISO());
@@ -2637,7 +2881,7 @@ function postpone(id, days) {
 }
 
 function draftFor(t) {
-  const d = t.dueDate ? deDate(t.dueDate) + (t.dueTime ? " " + t.dueTime : "") : "offen";
+  const d = t.dueDate ? deDate(t.dueDate) + (t.dueTime ? " " + timeRange(t.dueTime, t.endTime) : "") : "offen";
   const c = catName(t.categoryId);
   return [`${c} – ${t.title}`,
     `Guten Tag,\n\nes geht um "${t.title}" (Bereich ${c}, Termin ${d}).\n\n\n\nMit freundlichen Grüßen`];
@@ -2650,7 +2894,7 @@ function openInGoogleCalendar(t) {
   if (!t.dueDate) return toast("Die Aufgabe hat kein Datum.");
   let dates;
   if (t.dueTime) {
-    const a = new Date(t.dueDate + "T" + t.dueTime + ":00"), b = new Date(a.getTime() + 3600e3);
+    const a = new Date(t.dueDate + "T" + t.dueTime + ":00"), b = taskEnd(t);
     const f = d => isoOf(d).replace(/-/g,"") + "T" + String(d.getHours()).padStart(2,"0") + String(d.getMinutes()).padStart(2,"0") + "00";
     dates = f(a) + "/" + f(b);
   } else dates = t.dueDate.replace(/-/g,"") + "/" + addDays(t.dueDate, 1).replace(/-/g,"");
@@ -3005,7 +3249,7 @@ function renderTasks() {
         : t.dueDate === today ? "Heute"
         : daysUntil(t.dueDate) === 1 ? "Morgen"
         : daysUntil(t.dueDate) <= 7 ? "Diese Woche" : "Später";
-      if (g !== lastGroup) { box.append(el("div","grp" + (g === "Überfällig" ? " warn" : ""), g)); lastGroup = g; }
+      if (g !== lastGroup) { box.append(g === "Überfällig" && !t.completed ? overdueHead() : el("div","grp" + (g === "Überfällig" ? " warn" : ""), g)); lastGroup = g; }
     }
     box.append(taskCard(t, today));
   }
@@ -3033,7 +3277,7 @@ function taskCard(t, today) {
   meta.append(cbadge);
   meta.append(el("span","badge pri pri-" + t.prio, PRIO_LABEL[t.prio] || t.prio));
   if (t.dueDate) {
-    const tm = t.dueTime ? " " + t.dueTime : "";
+    const tm = t.dueTime ? " " + timeRange(t.dueTime, t.endTime) : "";
     const lbl = overdue ? `📅 ${deDate(t.dueDate)}${tm} · überfällig` : soon ? "📅 heute" + tm
               : daysUntil(t.dueDate) === 1 ? "📅 morgen" + tm : `📅 ${deDate(t.dueDate)}${tm}`;
     meta.append(el("span", overdue ? "over" : soon ? "soon" : null, lbl));
@@ -3133,7 +3377,7 @@ function weekTaskRow(t, withDate) {
   // stopPropagation, damit das Abhaken nicht zusätzlich den Dialog öffnet.
   cb.onclick = e => { e.stopPropagation(); toggleTask(t.id); };
   row.append(cb);
-  if (t.dueTime) row.append(el("span","tm",t.dueTime));
+  if (t.dueTime) row.append(el("span","tm",timeRange(t.dueTime, t.endTime)));
   row.append(el("span","ti",t.title));
   const bits = [];
   if (withDate && t.dueDate) bits.push(deDate(t.dueDate));
@@ -3145,16 +3389,26 @@ function weekTaskRow(t, withDate) {
   return row;
 }
 
-/* Alle überfälligen offenen Aufgaben gesammelt auf heute ziehen. */
-function bulkOverdueToToday() {
-  const today = todayISO();
+/* Aufräumen: alle überfälligen offenen Aufgaben gesammelt auf heute oder
+   morgen ziehen – ohne Rückfrage, dafür mit „Rückgängig“. */
+function bulkOverdue(days) {
+  const today = todayISO(), to = addDays(today, days);
   const over = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate < today);
   if (!over.length) return;
-  if (!confirm(`${over.length} überfällige Aufgabe(n) auf heute setzen?`)) return;
   const snap = snapshot();
-  over.forEach(t => { t.dueDate = today; });
+  over.forEach(t => { t.dueDate = to; });
   save(); renderAll();
-  toast(over.length + " auf heute gesetzt.", () => restore(snap));
+  toast(`${over.length} ${over.length === 1 ? "Aufgabe" : "Aufgaben"} auf ${days ? "morgen" : "heute"} verschoben.`, () => restore(snap));
+}
+/* Kopfzeile „Überfällig“ mit den Aufräum-Knöpfen (Woche und Aufgabenliste) */
+function overdueHead() {
+  const head = el("div","grp warn ov-head");
+  head.append(el("span", null, "Überfällig"));
+  const b1 = el("button","btn-sm","Auf heute"), b2 = el("button","btn-sm","Auf morgen");
+  b1.onclick = () => bulkOverdue(0); b2.onclick = () => bulkOverdue(1);
+  const bx = el("span", "ov-btns"); bx.append(b1, b2);
+  head.append(bx);
+  return head;
 }
 
 function renderWeek() {
@@ -3172,16 +3426,13 @@ function renderWeek() {
   // Überfällige Aufgaben nur in der aktuellen Woche oben anzeigen.
   const ov = $("wk-overdue"); ov.replaceChildren();
   const today = todayISO();
+  const memos = memoMap();
+  renderReview();
   if (weekOffset === 0) {
     const over = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate < today)
       .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
     if (over.length) {
-      const head = el("div","grp warn","Überfällig");
-      const b = el("button","btn-sm","Alle auf heute");
-      b.style.marginLeft = "10px";
-      b.onclick = bulkOverdueToToday;
-      head.append(b);
-      ov.append(head);
+      ov.append(overdueHead());
       over.slice(0,8).forEach(t => ov.append(weekTaskRow(t, true)));
       if (over.length > 8) ov.append(el("p","hint",`+ ${over.length - 8} weitere unter Aufgaben → Überfällig`));
     }
@@ -3226,9 +3477,9 @@ function renderWeek() {
     if (feat("timetable")) {
       lessonsOn(iso).forEach(l => {
         const ex = lessonExOf(l, iso) || {};
-        const hasNote = !!noteOf(courseOf(l), iso);
+        const hasNote = !!noteOf(courseOf(l), iso), memo = memos.has(l.id + "|" + iso);
         const subj = ex.subject || l.subject, room = ex.room || l.room;
-        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l, end: +l.span === 2 ? planEnd(l) : null, note: hasNote,
+        chips.push({ time: lessonStart(l, state.settings.slots), lesson: l, end: +l.span === 2 ? planEnd(l) : null, note: hasNote, memo,
                      cls: ex.cancel ? "cx" : (ex.subject || ex.room) ? "sub" : "",
                      text: `${subj}${room ? " · " + room : ""}`, color: l.color || "#2563eb" });
       });
@@ -3245,6 +3496,7 @@ function renderWeek() {
         const s = el("span","wd-lesson" + (c.cls ? " " + c.cls : "") + (c.lesson ? " tap" : ""), (c.time ? c.time + (c.end ? "–" + c.end : "") + " " : "") + c.text);
         s.style.background = c.color;
         if (c.note) { const nt = el("span", "nt", "📝"); nt.title = "Notiz vorhanden"; s.append(nt); }
+        if (c.memo) { const nt = el("span", "nt", "📌"); nt.title = "Für diese Stunde gemerkt"; s.append(nt); }
         if (c.lesson || c.sub || c.duty) {
           s.setAttribute("role", "button"); s.tabIndex = 0;
           s.onclick = () => c.lesson ? openLessonDay(c.lesson, iso) : c.sub ? openSubDialog(c.sub) : openDutyDialog(c.duty);
@@ -3313,6 +3565,8 @@ function openTaskDialog(id) {
   $("e-prio").value = t.prio;
   $("e-date").value = t.dueDate || "";
   $("e-time").value = t.dueTime || "";
+  $("e-end").value = t.endTime || "";
+  syncEnd("e");
   $("e-remind").value = t.remind || "due";
   $("e-recurrence").value = t.recurrence || "none";
   $("e-rec-every").value = t.recurEvery || 2;
@@ -3335,6 +3589,8 @@ $("e-save").onclick = () => {
   const title = $("e-title").value.trim();
   if (!title) return toast("Titel darf nicht leer sein.");
   const rec = $("e-recurrence").value;
+  const endTime = readEnd($("e-time").value || null, $("e-end").value);
+  if (endTime === false) { $("e-end").focus(); return toast("Das Ende liegt vor dem Beginn."); }
   const recChanged = rec !== t.recurrence || ($("e-date").value || null) !== t.dueDate
     || Math.max(1, parseInt($("e-rec-every").value, 10) || 1) !== t.recurEvery || $("e-rec-unit").value !== t.recurUnit;
   Object.assign(t, {
@@ -3342,6 +3598,7 @@ $("e-save").onclick = () => {
     prio: $("e-prio").value,
     dueDate: $("e-date").value || (rec !== "none" ? todayISO() : null),
     dueTime: $("e-time").value || null,
+    endTime,
     remind: $("e-remind").value || "due",
     recurrence: rec,
     recurEvery: Math.max(1, parseInt($("e-rec-every").value, 10) || 1),
@@ -3356,7 +3613,7 @@ $("e-save").onclick = () => {
   // Nur wenn sich Wiederholung oder Datum ändern, darf der Durchgang wieder
   // einen Nachfolger bilden – sonst entstünde nach Öffnen/Abhaken ein zweiter.
   if (recChanged) t.spawned = false;
-  save(); $("dlg-task").close(); renderTasks(); renderCalendar(); toast("Gespeichert.");
+  save(); $("dlg-task").close(); renderTasks(); renderCalendar(); renderWeek(); toast("Gespeichert." + overlapHint(t));
 };
 $("e-cancel").onclick = () => $("dlg-task").close();
 $("e-del").onclick = () => {
@@ -3895,6 +4152,7 @@ function planItem(l) {
 function renderTimetable() {
   applyPlanMode();
   renderSubs();
+  renderCountCard();
   if (!feat("timetable")) return;
   const g = $("tt-grid"); g.replaceChildren();
   const list = $("plan-list"); list.replaceChildren();
@@ -4068,10 +4326,18 @@ function openLessonDay(l, iso) {
   $("ld-hw-box").hidden = !s;
   $("ld-exam").hidden = !s;
   $("ld-hw").value = "";
-  const n = nextLesson(state.lessons, state.settings.slots, l.subject, new Date(iso + "T23:59:00"), nextLessonOpts());
+  $("ld-memo").value = "";
+  renderLdMemos();
+  showCount("ld-count", courseOf(l));
+  const n = nextCourseLesson(courseOf(l), ldAfter(l, iso));
   $("ld-hw-hint").textContent = n ? "Fällig zur nächsten Stunde: " + humanDate(n.iso, n.start) + "." : "Keine weitere Stunde in den nächsten Wochen.";
   $("ld-reset").hidden = !lessonExOf(l, iso) && !subOf(l, iso);
   $("dlg-lday").showModal();
+}
+/* Zeitpunkt nach einer Stunde (Ende der Stunde bzw. Doppelstunde) */
+function ldAfter(l, iso) {
+  const e = planEnd(l), s = lessonStart(l, state.settings.slots);
+  return new Date(iso + "T" + (validTime(e) ? e : validTime(s) && s !== "00:00" ? s : "23:59") + ":00");
 }
 let ldMinus = { on: true, hours: 1, blk: null };
 function syncLdMinus() {
@@ -4133,7 +4399,7 @@ function addHomework() {
   const title = $("ld-hw").value.trim();
   if (!title) { $("ld-hw").focus(); return toast("Bitte die Hausaufgabe eingeben."); }
   const { lesson, iso } = ldEdit;
-  const n = nextLesson(state.lessons, state.settings.slots, lesson.subject, new Date(iso + "T23:59:00"), nextLessonOpts());
+  const n = nextCourseLesson(courseOf(lesson), ldAfter(lesson, iso));
   state.tasks.push({ id: uid(), title, categoryId: schoolCatId(), prio: "mittel",
     dueDate: n ? n.iso : addDays(iso, 7), dueTime: null, remind: "due", recurrence: "none",
     recurEvery: 1, recurUnit: "d", recurFromDone: false, assignee: null, subject: lesson.subject,
@@ -4143,7 +4409,7 @@ function addHomework() {
 }
 $("ld-hw-add").onclick = addHomework;
 $("ld-hw").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) addHomework(); };
-$("ld-exam").onclick = () => { $("dlg-lday").close(); openExamDialog(ldEdit.iso, ldEdit.lesson.subject); };
+$("ld-exam").onclick = () => { $("dlg-lday").close(); openExamDialog(ldEdit.iso, ldEdit.lesson.subject, courseOf(ldEdit.lesson)); };
 
 /* ---------- Notizen zur Stunde (Stundenverlauf je Kurs) ----------
    Kurs = Fach + Klasse/Raum. So bleiben Notizen erhalten, wenn der Stundenplan
@@ -4219,6 +4485,8 @@ function openCourseDialog(course) {
   if (!Lic.full()) return showProHint("timetable");
   csCourse = course;
   $("cs-head").textContent = "Stundenverlauf · " + courseLabel(course);
+  showCount("cs-count", course);
+  renderCsMemos();
   renderNoteRows($("cs-list"), course);
   if (!$("dlg-course").open) $("dlg-course").showModal();
 }
@@ -4249,6 +4517,227 @@ function renderLessonNotes(lesson) {
   box.replaceChildren(head, rows);
   renderNoteRows(rows, course, 5);
 }
+
+/* ---------- Kurse: „noch X Stunden bis …“ und „für die nächste Stunde merken“ ----------
+   Lehrkraft: Kurs = Fach + Klasse (Mathe 7b ist nicht Mathe 9a).
+   Schüler: Kurs = Fach – der Raum wechselt oft, das Fach bleibt. */
+const isTeacherProfile = () => state.settings.profile === "teacher";
+function courseMatch(course) {
+  const subj = course.split("|")[0];
+  return isTeacherProfile() ? (l => courseOf(l) === course) : (l => (l.subject || "").trim() === subj);
+}
+/* Optionen für nextLesson/countLessons: Ausfall und Vertretung durch ein anderes Fach zählen nicht */
+function courseOpts(course) {
+  return { ctx: lessonCtx, match: courseMatch(course),
+    cancelled: (l, iso) => { const ex = lessonExOf(l, iso) || {};
+      return !!ex.cancel || (!!ex.subject && ex.subject.trim() !== (l.subject || "").trim()); } };
+}
+function courseRows(course) {
+  const m = courseMatch(course), days = activeDays();
+  return state.lessons.filter(l => planVisible(l) && m(l) && (l.slot == null || !isSchool() || days.indexOf(l.day) > -1));
+}
+/* Nächste Stunde eines Kurses nach einem Zeitpunkt */
+function nextCourseLesson(course, after) {
+  return nextLesson(state.lessons, state.settings.slots, course.split("|")[0], after, courseOpts(course));
+}
+/* Kommende Klassenarbeit/Klausur eines Kurses (aus dem Planer oder am Titel erkannt) */
+function examFor(course) {
+  const today = todayISO(), [subj, room] = course.split("|");
+  const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rx = room ? new RegExp("(^|[^\\p{L}\\d])" + esc(room) + "(?![\\p{L}\\d])", "iu") : null;
+  return state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate >= today && (t.subject || "") === subj
+      && (t.exam || /:\s*(Klassenarbeit|Klausur)$/.test(t.title))
+      && (!isTeacherProfile() || (t.course ? t.course === course : !rx || rx.test(t.title))))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0] || null;
+}
+/* Ziele für „noch X Stunden“: nächste Klassenarbeit, nächste Ferien
+   (ohne Ferien-Daten: Ende des Halbjahres) */
+function courseGoals(course) {
+  const today = todayISO(), out = [];
+  const ex = examFor(course);
+  if (ex) out.push({ to: ex.dueDate, text: (isTeacherProfile() ? "bis zur Klassenarbeit" : "bis zur Klausur") + " (" + DAY_SHORT[dowOf(ex.dueDate)] + " " + parseISO(ex.dueDate).toLocaleDateString("de-DE", { day: "numeric", month: "numeric" }) + ")" });
+  const f = nextFerien(today, ferienList(), FERIEN_NAMES);
+  if (f) out.push({ to: f.from, text: (/ferien$/i.test(f.name) ? "bis zu den " : "bis zur ") + f.name, ferien: f });
+  else {
+    const h = schoolPeriod("half", today);
+    out.push({ to: addDays(h.to, 1), text: h.label.startsWith("1.") ? "bis zum Halbjahresende" : "bis zum Schuljahresende" });
+  }
+  const rows = courseRows(course), now = new Date();
+  return out.filter(g => g.to > today).map(g => ({ ...g, ...countLessons(rows, state.settings.slots, now, g.to, courseOpts(course)) }));
+}
+function countText(course) {
+  if (!isSchool() || !feat("timetable")) return "";
+  const gs = courseGoals(course);
+  if (!gs.length) return "";
+  return "Noch " + gs.map(g => `${g.hours} ${g.hours === 1 ? "Stunde" : "Stunden"} ${g.text}`).join(" · ");
+}
+function showCount(id, course) {
+  const t = countText(course);
+  $(id).textContent = t; $(id).hidden = !t;
+}
+
+/* Merkzettel: erscheint an der nächsten Stunde des Kurses nach der Stunde, in der
+   er geschrieben wurde. Das Ziel wird jedes Mal neu bestimmt – fällt die Stunde
+   aus, rutscht er auf die folgende. */
+function memoTarget(m) {
+  return nextCourseLesson(m.course, new Date(m.after + "T" + m.afterTime + ":00"));
+}
+/* Alle offenen Merkzettel nach Ziel: "stundenId|Datum" → [Merkzettel] */
+function memoMap() {
+  const map = new Map();
+  for (const m of state.lessonMemos || []) {
+    const n = memoTarget(m);
+    if (!n) continue;
+    const k = n.lesson.id + "|" + n.iso;
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(m);
+  }
+  return map;
+}
+const memoDate = n => n ? DAY_SHORT[n.day] + " " + parseISO(n.iso).toLocaleDateString("de-DE", { day: "numeric", month: "numeric" }) + ", " + n.start : "keine weitere Stunde gefunden";
+function memoDone(m) {
+  const snap = snapshot();
+  state.lessonMemos = state.lessonMemos.filter(x => x !== m);
+  save(); afterMemos();
+  toast("Erledigt.", () => { restore(snap); afterMemos(); });
+}
+function afterMemos() {
+  renderWeek();
+  if ($("dlg-lday").open && ldEdit) renderLdMemos();
+  if ($("dlg-course").open && csCourse) renderCsMemos();
+}
+/* Stundendialog: was für diese Stunde gemerkt wurde, und was hier für die nächste gemerkt wird */
+function renderLdMemos() {
+  const { lesson, iso } = ldEdit, course = courseOf(lesson);
+  const box = $("ld-memos"); box.replaceChildren();
+  const mine = memoMap().get(lesson.id + "|" + iso) || [];
+  box.hidden = !mine.length;
+  if (mine.length) {
+    box.append(el("div", "h", "📌 Gemerkt für diese Stunde"));
+    mine.forEach(m => {
+      const r = el("div", "m");
+      const b = el("button", "btn-sm", "✓ Erledigt"); b.type = "button";
+      b.onclick = () => memoDone(m);
+      r.append(el("span", "x", m.text), b);
+      box.append(r);
+    });
+  }
+  const own = $("ld-memo-own"); own.replaceChildren();
+  state.lessonMemos.filter(m => m.course === course && m.after === iso).forEach(m => {
+    const r = el("div", "m");
+    const del = el("button", "btn-sm", "✕"); del.type = "button"; del.setAttribute("aria-label", "Löschen");
+    del.onclick = () => memoDone(m);
+    r.append(el("span", null, "📌"), el("span", "x", m.text), el("span", "d", "→ " + memoDate(memoTarget(m))), del);
+    own.append(r);
+  });
+}
+function addMemo() {
+  const text = $("ld-memo").value.trim();
+  if (!text) { $("ld-memo").focus(); return toast("Bitte eingeben, was du dir merken willst."); }
+  const { lesson, iso } = ldEdit;
+  const end = planEnd(lesson), start = lessonStart(lesson, state.settings.slots);
+  const m = { id: uid(), course: courseOf(lesson), after: iso,
+              afterTime: validTime(end) ? end : validTime(start) && start !== "00:00" ? start : "23:59",
+              text: text.slice(0, 500), createdAt: Date.now() };
+  state.lessonMemos.push(m);
+  save(); $("ld-memo").value = ""; afterMemos();
+  const n = memoTarget(m);
+  toast(n ? "Gemerkt für " + memoDate(n) + "." : "Gemerkt – es gibt in den nächsten Wochen aber keine weitere Stunde.");
+}
+$("ld-memo-add").onclick = addMemo;
+$("ld-memo").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) addMemo(); };
+/* Stundenverlauf: offene Merkzettel des Kurses */
+function renderCsMemos() {
+  const box = $("cs-memos"); box.replaceChildren();
+  const list = state.lessonMemos.filter(m => m.course === csCourse)
+    .map(m => ({ m, n: memoTarget(m) }))
+    .sort((a, b) => (a.n ? a.n.iso + a.n.start : "~").localeCompare(b.n ? b.n.iso + b.n.start : "~"));
+  box.hidden = !list.length;
+  if (!list.length) return;
+  box.append(el("div", "h", "📌 Gemerkt"));
+  list.forEach(({ m, n }) => {
+    const r = el("div", "m");
+    const b = el("button", "btn-sm", "✓"); b.type = "button"; b.setAttribute("aria-label", "Erledigt");
+    b.onclick = () => memoDone(m);
+    r.append(el("span", "x", m.text), el("span", "d", memoDate(n)), b);
+    box.append(r);
+  });
+}
+
+/* Stundenplan: Karte „Stunden bis zu den Ferien“ je Kurs */
+function renderCountCard() {
+  const card = $("card-count");
+  const show = isSchool() && feat("timetable") && Lic.full() && state.lessons.some(planVisible);
+  card.hidden = !show;
+  if (!show) return;
+  const today = todayISO(), f = nextFerien(today, ferienList(), FERIEN_NAMES);
+  const h = schoolPeriod("half", today);
+  const goal = f ? { to: f.from, head: "Stunden bis zu den " + (/ferien$/i.test(f.name) ? f.name : "Ferien"),
+                     sub: `${f.name} ab ${DAY_SHORT[dowOf(f.from)]} ${deDate(f.from)}` }
+                 : { to: addDays(h.to, 1), head: h.label.startsWith("1.") ? "Stunden bis zum Halbjahresende" : "Stunden bis zum Schuljahresende",
+                     sub: "Mit Bundesland und Schulferien (Einstellungen) zählt die App bis zu den nächsten Ferien." };
+  $("cc-head").textContent = goal.head;
+  $("cc-sub").textContent = goal.sub + " · ab jetzt, mit A/B-Wochen, Feiertagen und Ausfällen.";
+  const seen = new Map();
+  state.lessons.filter(planVisible).forEach(l => {
+    const k = isTeacherProfile() ? courseOf(l) : (l.subject || "").trim() + "|";
+    if (!seen.has(k)) seen.set(k, l.color || "#2563eb");
+  });
+  const box = $("cc-list"); box.replaceChildren();
+  [...seen.keys()].sort((a, b) => a.localeCompare(b, "de")).forEach(course => {
+    const rows = courseRows(course), opts = courseOpts(course), now = new Date();
+    const n = countLessons(rows, state.settings.slots, now, goal.to, opts);
+    const ex = examFor(course);
+    const it = el(isTeacherProfile() ? "button" : "div", "cc-item");
+    const dot = el("span", "dot"); dot.style.background = seen.get(course);
+    const c = el("span", "c", courseLabel(course));
+    if (ex && ex.dueDate < goal.to) {
+      const k = countLessons(rows, state.settings.slots, now, ex.dueDate, opts);
+      c.append(el("small", null, `${k.hours} bis zur ${isTeacherProfile() ? "Klassenarbeit" : "Klausur"}`));
+    }
+    it.append(dot, el("span", "n", String(n.hours)), c);
+    if (isTeacherProfile()) { it.type = "button"; it.onclick = () => openCourseDialog(course); }
+    box.append(it);
+  });
+}
+
+/* ---------- Wochenrückblick (sonntags) ---------- */
+function renderReview() {
+  const card = $("wk-review"), today = todayISO(), mo = mondayOf(today);
+  const show = state.settings.weekReview && dowOf(today) === 7 && state.settings.reviewHidden !== mo;
+  card.hidden = !show;
+  if (!show) return;
+  const from = new Date(mo + "T00:00:00").getTime(), next = addDays(mo, 7);
+  const done = state.tasks.filter(t => t.completed && t.completedAt && t.completedAt >= from).length;
+  const open = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate <= today);
+  const coming = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate >= next && t.dueDate <= addDays(next, 6)).length;
+  $("wr-head").textContent = "Wochenrückblick · KW " + isoWeek(parseISO(mo));
+  const bits = [`${done} erledigt`, open.length ? `${open.length} offen` : "nichts offen"];
+  if (isTeacherPlan()) {
+    const rows = state.lessons.filter(planVisible);
+    const held = countLessons(rows, state.settings.slots, new Date(mo + "T00:00:00"), addDays(mo, 7), nextLessonOpts()).hours;
+    const sm = subSummary(state.subLog, mo, today);
+    bits.push(`${held} Std. Unterricht` + (sm.plus || sm.minus ? ` (Vertretung +${sm.plus}, Ausfall −${sm.minus})` : ""));
+  }
+  bits.push(`nächste Woche ${coming} ${coming === 1 ? "Aufgabe" : "Aufgaben"}`);
+  $("wr-text").textContent = bits.join(" · ");
+  $("wr-move").hidden = !open.length;
+  $("wr-move").textContent = open.length === 1 ? "Offene auf Montag" : `${open.length} offene auf Montag`;
+}
+$("wr-move").onclick = () => {
+  const today = todayISO(), mon = addDays(mondayOf(today), 7);
+  const open = state.tasks.filter(t => !t.completed && t.dueDate && t.dueDate <= today);
+  if (!open.length) return;
+  const snap = snapshot();
+  open.forEach(t => { t.dueDate = mon; });
+  save(); renderAll();
+  toast(`${open.length} ${open.length === 1 ? "Aufgabe" : "Aufgaben"} auf Montag verschoben.`, () => restore(snap));
+};
+$("wr-hide").onclick = () => {
+  state.settings.reviewHidden = mondayOf(todayISO());
+  save(); renderReview();
+  toast("Ausgeblendet. Abschalten unter Einstellungen → Darstellung.");
+};
 
 /* ---------- Feste Pausenaufsichten (Lehrkräfte) ---------- */
 let duEdit = null;
@@ -4423,14 +4912,17 @@ $("sub-pdf").onclick = () => {
 
 /* ---------- Klassenarbeit / Klausur planen ---------- */
 let exKind = "teacher";
-function openExamDialog(date, subject) {
+let examCourse = null;   // Kurs „Fach|Klasse“, wenn aus einer Stunde heraus geplant
+function openExamDialog(date, subject, course) {
   if (!Lic.full()) return showProHint("exam");
+  examCourse = course || null;
   exKind = state.settings.profile === "school" ? "student" : "teacher";
   const sel = $("ex-subject"); sel.replaceChildren(new Option("ohne Fach", ""));
   subjectList().forEach(s => sel.append(new Option(s, s)));
   sel.value = subject && subjectList().indexOf(subject) > -1 ? subject : "";
   $("ex-fld-subject").hidden = !subjectList().length;
-  $("ex-title").value = subject || "";
+  const room = examCourse && state.settings.profile === "teacher" ? examCourse.split("|")[1] : "";
+  $("ex-title").value = subject ? subject + (room ? " " + room : "") : "";
   $("ex-date").value = date || addDays(todayISO(), 7);
   renderExamPreview();
   $("dlg-exam").showModal();
@@ -4468,13 +4960,21 @@ $("ex-save").onclick = () => {
   const snap = snapshot();
   const subject = $("ex-subject").value || null, cat = schoolCatId();
   // Uhrzeit der Arbeit: Stunde des Fachs an dem Tag, falls vorhanden
-  const at = subject ? lessonsOn($("ex-date").value).find(l => l.subject === subject) : null;
+  const exCourse = examCourse && examCourse.split("|")[0] === subject ? examCourse : null;
+  // Stunde der Arbeit: aus dem Kurs, sonst die Stunde des Fachs, deren Klasse im Titel steht
+  const cands = subject ? lessonsOn($("ex-date").value).filter(l => l.subject === subject) : [];
+  const ttl = $("ex-title").value;
+  const inTitle = l => l.room && new RegExp("(^|[^\\p{L}\\d])" + l.room.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![\\p{L}\\d])", "iu").test(ttl);
+  const at = exCourse ? cands.find(l => courseOf(l) === exCourse) || null
+           : cands.find(inTitle) || (cands.length === 1 ? cands[0] : null) || cands[0] || null;
+  const atCourse = exCourse || (at && (cands.length === 1 || inTitle(at)) ? courseOf(at) : null);
   for (const x of list) {
     state.tasks.push({ id: uid(), title: x.title, categoryId: cat, prio: x.prio, dueDate: x.dueDate,
       dueTime: x.role === "exam" && at ? lessonStart(at, state.settings.slots) : null,
       remind: x.role === "exam" ? "1d" : "due", recurrence: "none", recurEvery: 1, recurUnit: "d", recurFromDone: false,
       assignee: null, subject, subtasks: x.subtasks.map(t => ({ id: uid(), text: t, done: false })),
-      images: [], note: "", completed: false, createdAt: Date.now() });
+      images: [], note: "", completed: false, createdAt: Date.now(),
+      exam: x.role === "exam", course: atCourse });
   }
   save(); $("dlg-exam").close();
   if ($("dlg-templates").open) $("dlg-templates").close();
@@ -5118,7 +5618,7 @@ $("btn-ics").onclick = () => {
   for (const t of list) {
     let span;
     if (t.dueTime) {
-      const e = new Date(t.dueDate + "T" + t.dueTime + ":00"); e.setHours(e.getHours() + 1);
+      const e = taskEnd(t);
       const endHM = String(e.getHours()).padStart(2,"0") + ":" + String(e.getMinutes()).padStart(2,"0");
       span = [`DTSTART:${loc(t.dueDate, t.dueTime)}`, `DTEND:${loc(isoOf(e), endHM)}`];
     } else span = [`DTSTART;VALUE=DATE:${t.dueDate.replace(/-/g,"")}`, `DTEND;VALUE=DATE:${addDays(t.dueDate, 1).replace(/-/g,"")}`];
@@ -5290,7 +5790,7 @@ async function addTaskToCalendar(t) {
     if (st !== "granted") return toast("Kein Zugriff auf den Kalender. Freigabe in den iOS-Einstellungen.");
     const allDay = !t.dueTime;
     const start = allDay ? new Date(t.dueDate + "T00:00:00") : new Date(t.dueDate + "T" + t.dueTime + ":00");
-    const end = allDay ? new Date(addDays(t.dueDate, 1) + "T00:00:00") : new Date(start.getTime() + 3600e3);
+    const end = allDay ? new Date(addDays(t.dueDate, 1) + "T00:00:00") : taskEnd(t);
     await p.createEvent({ title: t.title, startDate: start.getTime(), endDate: end.getTime(), isAllDay: allDay,
                           description: t.note || undefined });
     toast("Im Kalender eingetragen.");
@@ -5299,7 +5799,7 @@ async function addTaskToCalendar(t) {
 }
 $("e-cal").onclick = () => addTaskToCalendar({
   title: $("e-title").value.trim() || "Aufgabe", dueDate: $("e-date").value || null,
-  dueTime: $("e-time").value || null, note: $("e-note").value.trim() });
+  dueTime: $("e-time").value || null, endTime: readEnd($("e-time").value || null, $("e-end").value) || null, note: $("e-note").value.trim() });
 
 /* ---------- Darstellung ---------- */
 const darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
@@ -5315,6 +5815,7 @@ function applyTheme() {
 }
 if (darkMQ) (darkMQ.addEventListener ? darkMQ.addEventListener("change", applyTheme) : darkMQ.addListener(applyTheme));
 $("set-theme").onchange = e => { state.settings.theme = e.target.value; save(); applyTheme(); };
+$("set-review").onchange = e => { state.settings.weekReview = e.target.checked; state.settings.reviewHidden = ""; save(); renderReview(); };
 
 /* ---------- Einstieg: Wofür nutzt du die App? ---------- */
 function applyProfile(profile, fresh) {
@@ -5378,6 +5879,7 @@ function initUI() {
   applyTheme();
   fillRecRemSelects();
   $("set-theme").value = state.settings.theme || "system";
+  $("set-review").checked = state.settings.weekReview !== false;
   $("set-profile").value = state.settings.profile || "everyday";
   applyPlanMode();
   fillCategorySelects();

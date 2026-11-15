@@ -1,9 +1,12 @@
 /* App-Vorschauvideos für den App Store.
 
      node store/make-previews.js            # beide
-     node store/make-previews.js iphone     # nur eins
+     node store/make-previews.js iphone     # nur ein Gerät
+     node store/make-previews.js schule     # nur ein Video
 
-   Ergebnis: store/out/previews/iphone-886x1920.mp4 und ipad-1200x1600.mp4
+   Ergebnis je Gerät zwei Videos in store/out/previews/:
+     …-1-schule.mp4  Unterrichtsplaner (Lehrkraft) – im Store an erster Stelle
+     …-2-alltag.mp4  private Aufgaben, Gewohnheiten, Einkauf
    – H.264 High, 30 fps, 10 Mbit/s, stilles Stereo-AAC (256 kbit/s, 48 kHz),
    15–30 Sekunden. So verlangt es App Store Connect.
 
@@ -15,15 +18,16 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { chromium, DEVICES, openApp, germanInputs } = require('./device.js');
+const { TODAY_SCHOOL, SCHOOL } = require('./demo-data.js');
 
 const OUT = path.join(__dirname, 'out', 'previews');
 const TMP = path.join(__dirname, 'out', 'tmp');
 const MAX_SEC = 29.5;   // Apple: höchstens 30 s
 
 const TARGETS = {
-  iphone: { file: 'iphone-886x1920.mp4', W: 886, H: 1920, dev: DEVICES.iphone,
+  iphone: { file: 'iphone-886x1920', W: 886, H: 1920, dev: DEVICES.iphone,
             viewport: { width: 443, height: 960 }, scale: 2 },
-  ipad:   { file: 'ipad-1200x1600.mp4', W: 1200, H: 1600, dev: DEVICES.ipad,
+  ipad:   { file: 'ipad-1200x1600', W: 1200, H: 1600, dev: DEVICES.ipad,
             viewport: { width: 900, height: 1200 }, scale: 4 / 3 }
 };
 
@@ -74,12 +78,21 @@ async function prepare(page, dev) {
       }
     };
     // … und vor dem Speichern zurück, damit die Daten stimmen
+    // Gleiches für den Vertretungs-Dialog
+    const openSub = window.openSubDialog;
+    window.openSubDialog = (...a) => {
+      openSub(...a);
+      const i = document.getElementById('sb-date');
+      i.dataset.iso = i.value; i.dataset.typ = 'date'; i.type = 'text';
+      i.value = i.value.split('-').reverse().join('.');
+    };
     window.pvRestoreDates = () => {
-      for (const i of document.querySelectorAll('#dlg-task input[data-iso]')) {
+      for (const i of document.querySelectorAll('dialog input[data-iso]')) {
         i.type = i.dataset.typ || 'date'; i.value = i.dataset.iso; delete i.dataset.iso; delete i.dataset.typ;
       }
     };
     document.getElementById('e-save').addEventListener('pointerdown', () => window.pvRestoreDates(), true);
+    document.getElementById('sb-save').addEventListener('pointerdown', () => window.pvRestoreDates(), true);
   });
 }
 
@@ -103,8 +116,65 @@ const tap = async (p, loc) => {
   await loc.click({ delay: 60 });
 };
 
-/* Das Drehbuch – gleich für iPhone und iPad. */
-async function script(p, dev) {
+/* Drehbuch 1 · Schule (Lehrkraft, „heute“ Di 17.11., Woche A) */
+async function schoolScript(p, dev) {
+  const nav = v => p.locator(`.nav-btn[data-view="${v}"]`);
+  const off = dev.wide ? 30 : dev.status + 70;
+  const today = () => p.locator('#wk-days .week-day.today');
+
+  await cap(p, 'Dein Unterricht auf einen Blick');
+  await wait(p, 1500);
+  if (!dev.wide) { await smoothTo(p, '#wk-days .week-day.today', off + 20); await wait(p, 700); }
+
+  // Stunde antippen: Notiz und Hausaufgabe
+  await cap(p, 'Notizen zu jeder Stunde');
+  await tap(p, today().locator('.wd-lesson', { hasText: 'Mathe · 7b' }));
+  await p.evaluate(() => pvPromote());
+  await wait(p, 500);
+  await tap(p, p.locator('#ld-note'));
+  await p.keyboard.type('Prozente als Brüche – Einstieg mit Rabatt-Plakaten', { delay: 28 });
+  await wait(p, 400);
+  await cap(p, 'Hausaufgabe bis zur nächsten Stunde');
+  await tap(p, p.locator('#ld-hw'));
+  await p.keyboard.type('S. 56 Nr. 4', { delay: 45 });
+  await tap(p, p.locator('#ld-hw-add'));
+  await p.locator('#ld-hw').blur();
+  await wait(p, 1500);
+
+  // Stundenverlauf der Klasse
+  await cap(p, 'Der Stundenverlauf je Klasse');
+  await tap(p, p.locator('#ld-history'));
+  await p.evaluate(() => pvPromote());
+  await wait(p, 2300);
+  await tap(p, p.locator('#cs-close'));
+  await wait(p, 300);
+
+  // Vertretung mit einem Tipp
+  await cap(p, 'Vertretung eintragen – mit einem Tipp');
+  await tap(p, today().locator('.wd-add'));
+  await p.evaluate(() => pvPromote());
+  await wait(p, 400);
+  await tap(p, p.locator('#sb-klass'));
+  await p.keyboard.type('6a', { delay: 60 });
+  await tap(p, p.locator('#sb-subject'));
+  await p.keyboard.type('Deutsch', { delay: 50 });
+  await tap(p, p.locator('#sb-save'));
+  await wait(p, 900);
+
+  // Übersicht Plus/Minus
+  await cap(p, 'Plus- und Minusstunden im Blick');
+  await tap(p, nav('timetable'));
+  await wait(p, 400);
+  await smoothTo(p, '#card-subs', off);
+  await wait(p, 3200);
+
+  await cap(p, 'Ohne Konto · ohne Server · ohne Abo');
+  await tap(p, nav('week'));
+  await wait(p, 2200);
+}
+
+/* Drehbuch 2 · Alltag – gleich für iPhone und iPad. */
+async function everydayScript(p, dev) {
   const nav = v => p.locator(`.nav-btn[data-view="${v}"]`);
   const off = dev.wide ? 30 : dev.status + 70;   // Abstand unter der Einblendung
 
@@ -119,7 +189,7 @@ async function script(p, dev) {
   await tap(p, nav('tasks'));
   await wait(p, 500);
   await tap(p, p.locator('#t-title'));
-  await p.keyboard.type('Laufen Sa 9 Uhr #Sport', { delay: 45 });
+  await p.keyboard.type('Laufen Sa 8–9:30 #Sport', { delay: 45 });
   await wait(p, 800);
   await tap(p, p.locator('#btn-add-task'));
   await p.locator('#t-title').blur();
@@ -158,12 +228,6 @@ async function script(p, dev) {
   if (!dev.wide) await smoothTo(p, '#cal-day-title', off + 260);
   await wait(p, 1200);
 
-  // 7 · Wochenplan
-  await cap(p, 'Wochenplan oder Stundenplan');
-  await tap(p, nav('timetable'));
-  await germanInputs(p);
-  await wait(p, 1500);
-
   // 8 · Einkauf
   await cap(p, 'Einkaufslisten mit Vorschlägen');
   await tap(p, nav('shopping'));
@@ -187,15 +251,20 @@ async function script(p, dev) {
   await wait(p, 2000);
 }
 
-async function record(browser, key) {
-  const t = TARGETS[key];
-  const { ctx, page } = await openApp(browser, t.dev, { viewport: t.viewport, scale: t.scale });
+const VIDEOS = {
+  schule: { suffix: '1-schule', script: schoolScript, opts: { state: SCHOOL, today: TODAY_SCHOOL } },
+  alltag: { suffix: '2-alltag', script: everydayScript, opts: {} }
+};
+
+async function record(browser, key, which) {
+  const t = TARGETS[key], v = VIDEOS[which];
+  const { ctx, page } = await openApp(browser, t.dev, { viewport: t.viewport, scale: t.scale, ...v.opts });
   await page.evaluate(() => document.getElementById('main').scrollTo(0, 0));
   await prepare(page, t.dev);
   // Ansichtswechsel wie in der App mit kurzer Einblendung
   await page.evaluate(() => document.querySelectorAll('.view').forEach(v => v.style.animation = ''));
 
-  const dir = path.join(TMP, 'frames-' + key);
+  const dir = path.join(TMP, 'frames-' + key + '-' + which);
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   const frames = [];
   TAPS = [];
@@ -210,7 +279,7 @@ async function record(browser, key) {
   await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 93, maxWidth: t.W, maxHeight: t.H, everyNthFrame: 1 });
   await page.evaluate(() => document.getElementById('sim-status').style.opacity = '0.999');  // erster Frame
   await page.waitForTimeout(300);
-  await script(page, t.dev);
+  await v.script(page, t.dev);
   const end = Date.now() / 1000;
   await cdp.send('Page.stopScreencast');
   await ctx.close();
@@ -224,15 +293,15 @@ async function record(browser, key) {
     list += `file '${f.file}'\nduration ${Math.max(0.001, next - f.ts).toFixed(4)}\n`;
   });
   list += `file '${frames[frames.length - 1].file}'\n`;
-  const listFile = path.join(TMP, `frames-${key}.txt`);
+  const listFile = path.join(TMP, `frames-${key}-${which}.txt`);
   fs.writeFileSync(listFile, list);
   const total = Math.min(MAX_SEC, lastTs - t0);
   if (lastTs - t0 > MAX_SEC) console.log(`  Achtung: Aufnahme ${(lastTs - t0).toFixed(1)} s, gekürzt auf ${MAX_SEC} s – Ende fehlt`);
   if (total < 15) throw new Error('Video kürzer als 15 s');
-  const wav = path.join(TMP, `musik-${key}.wav`);
+  const wav = path.join(TMP, `musik-${key}-${which}.wav`);
   writeMusic(wav, total, TAPS.map(x => x - t0 + 0.04));
   fs.mkdirSync(OUT, { recursive: true });
-  const out = path.join(OUT, t.file);
+  const out = path.join(OUT, `${t.file}-${v.suffix}.mp4`);
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error',
     '-f', 'concat', '-safe', '0', '-i', listFile,
     '-i', wav,
@@ -302,14 +371,17 @@ function writeMusic(file, seconds, taps) {
 }
 
 async function main() {
-  const keys = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(TARGETS);
+  const args = process.argv.slice(2);
+  const keys = args.filter(a => TARGETS[a]).length ? args.filter(a => TARGETS[a]) : Object.keys(TARGETS);
+  const which = args.filter(a => VIDEOS[a]).length ? args.filter(a => VIDEOS[a]) : Object.keys(VIDEOS);
   fs.mkdirSync(TMP, { recursive: true });
-  for (const k of keys) {
+  if (!args.length) fs.rmSync(OUT, { recursive: true, force: true });
+  for (const k of keys) for (const w of which) {
     // Der Bildschirm-Mitschnitt liefert sonst nur die logische Auflösung
     // (443 × 960 statt 886 × 1920). Mit diesem Schalter rendert Chromium
     // selbst in Gerätepixeln.
     const browser = await chromium.launch({ args: ['--force-device-scale-factor=' + TARGETS[k].scale] });
-    await record(browser, k);
+    await record(browser, k, w);
     await browser.close();
   }
 }

@@ -72,31 +72,31 @@ FÜR SCHULE UND UNTERRICHT
 • Ausfall und Vertretung für einzelne Tage
 • Mehr- und Minderstunden: Vertretungen, Ausfälle und Aufsichten mit Saldo, auch als PDF
 • Notizen zu jeder Stunde, als Stundenverlauf je Kurs
+• „Für die nächste Stunde merken“: der Hinweis erscheint an der nächsten Stunde der Klasse
+• Wie viele Stunden bleiben bis zur Klassenarbeit und bis zu den Ferien – je Kurs
 • Hausaufgaben „bis nächste Mathe“: fällig zur nächsten Stunde, über Ferien hinweg
 • Klassenarbeiten planen: vorbereiten, schreiben, korrigieren mit Rückgabefrist
 • Klausuren: ein Lernplan mit verteilten Einheiten bis zum Termin
 
 SCHREIB EINFACH, WAS ZU TUN IST
-„Zahnarzt morgen 15 Uhr #Privat !“ oder „Müll rausbringen jeden Dienstag“ – die Schnelleingabe erkennt Datum, Uhrzeit, Kategorie, Priorität und Wiederholung von selbst.
+„Zahnarzt morgen 15 Uhr #Privat !“, „Training Di 18–19:30“ oder „Müll rausbringen jeden Dienstag“ – die Schnelleingabe erkennt Datum, Uhrzeit von–bis, Kategorie, Priorität und Wiederholung von selbst.
 
 DEINE WOCHE AUF EINEN BLICK
-Die Startseite zeigt die ganze Woche: Aufgaben, Termine aus deinen Kalendern und deinen Wochenplan, nach Uhrzeit sortiert. Überfälliges steht gesammelt obenauf und lässt sich mit einem Tippen auf heute legen.
+Die Startseite zeigt die ganze Woche: Aufgaben, Termine aus deinen Kalendern und deinen Wochenplan, nach Uhrzeit sortiert. Überfälliges steht gesammelt obenauf und lässt sich mit einem Tippen auf heute oder morgen legen. Sonntags gibt es einen kurzen Wochenrückblick.
 
 AUFGABEN, WIE DU SIE BRAUCHST
 • Eigene Kategorien mit freier Farbwahl, Prioritäten und Notizen
-• Fälligkeitsdatum mit Uhrzeit
+• Fälligkeitsdatum mit Uhrzeit von–bis, etwa fürs Training
 • Erinnerung zur Fälligkeit oder vorab: 15 Minuten, eine Stunde, ein, zwei Tage oder eine Woche
 • Wiederholungen: täglich, werktags, wöchentlich, monatlich, jährlich oder frei („alle 3 Tage“), auf Wunsch ab Erledigung
 • Unterpunkte mit Fortschrittsbalken für größere Vorhaben
-• Fotos zu Aufgaben, etwa vom Zettel, Beleg oder Ersatzteil
+• Fotos zu Aufgaben
 • Vorlagen für Wiederkehrendes wie Urlaub packen oder Wohnung putzen
 • Abhaken, Verschieben und Löschen lassen sich rückgängig machen
+• Ohne Schule wird der Stundenplan zum Wochenplan, etwa fürs Training
 
 KALENDER
 Alle Aufgaben im Monatsraster. Auf Wunsch zeigt die App die Termine deiner Kalender auf dem iPhone oder iPad an und trägt Aufgaben als Termin ein. Alternativ lässt sich ein privater Kalender per Adresse (ICS) einbinden.
-
-WOCHENPLAN
-Ohne Schule? Dann wird daraus ein Wochenplan für Training, Kurse oder Chorprobe.
 
 GEWOHNHEITEN
 Joggen, Lesen, Wasser trinken: Wochenziel festlegen, Tage abhaken und die Serie wachsen sehen.
@@ -110,9 +110,6 @@ Eine tägliche Übersicht zur gewünschten Uhrzeit und Erinnerungen zu jeder Auf
 WIDGET UND SCHNELLZUGRIFF
 Dein Tag auf dem Home-Bildschirm. Lange aufs App-Symbol drücken: neue Aufgabe oder Vertretung.
 
-HELL ODER DUNKEL
-Die App folgt deinem Gerät oder bleibt hell bzw. dunkel.
-
 SICHERUNG
 Jede Woche automatisch in die Dateien-App, dazu Sicherung von Hand, auf Wunsch verschlüsselt (AES-GCM).
 
@@ -122,7 +119,7 @@ PRIVAT VON ANFANG AN
 • Keine Werbung, kein Tracking, keine Analyse
 
 TESTEN UND VOLLVERSION
-Die App ist kostenlos. 30 Tage lang kannst du alle Funktionen kostenlos testen. Danach bleiben die Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen, Unterpunkten, Notizen und Sicherung dauerhaft kostenlos. Feiertage und Ferien sind ebenfalls frei. Kalender samt Gerätekalender, Fotos, Vorlagen, Wochen- und Stundenplan samt A/B-Wochen, Vertretungen und Klassenarbeiten, Gewohnheiten, Einkaufslisten, verschlüsselte Sicherung und Statistik gehören zur Vollversion: ein einmaliger Kauf, kein Abo, mit der Familienfreigabe teilbar. Die Testphase endet von selbst – es wird nichts berechnet und nichts verlängert. Deine Einträge bleiben immer gespeichert.
+Die App ist kostenlos, 30 Tage lang mit allen Funktionen. Danach bleiben Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen, Unterpunkten und Notizen, Feiertage, Ferien und Sicherung frei. Kalender, Fotos, Vorlagen, Wochen- und Stundenplan mit allen Schul-Funktionen, Gewohnheiten, Einkaufslisten und Statistik gehören zur Vollversion: ein einmaliger Kauf, kein Abo, mit Familienfreigabe. Die Testphase endet von selbst, nichts wird berechnet. Deine Einträge bleiben immer gespeichert.
 
 Für iPhone und iPad.
 ```
@@ -138,7 +135,7 @@ Apple ohnehin mit. „aufgaben“ steht trotzdem hier, weil es im Untertitel nic
 Bei der ersten Version im Store bleibt das Feld leer. Für TestFlight-Tester
 („Was soll getestet werden?“):
 ```
-3.1: Ferien und Feiertage aller Bundesländer, A/B-Wochen, Ausfall und Vertretung, Hausaufgaben „bis nächste Mathe“, Klassenarbeiten und Lernpläne. 3.0: allgemeine To-do-App mit Schnelleingabe, Uhrzeiten, Vorab-Erinnerungen, Gewohnheiten, Vorlagen, Fotos, mehreren Einkaufslisten, Gerätekalender und Dunkelmodus. Bitte vor allem Erinnerungen, Kalenderzugriff und den Kauf testen.
+3.1: Ferien und Feiertage aller Bundesländer, A/B-Wochen, Ausfall und Vertretung, Hausaufgaben „bis nächste Mathe“, Klassenarbeiten und Lernpläne, Stundennotizen, Merkzettel für die nächste Stunde, „noch X Stunden bis …“, Aufgaben mit Uhrzeit von–bis, Wochenrückblick. 3.0: allgemeine To-do-App mit Schnelleingabe, Uhrzeiten, Vorab-Erinnerungen, Gewohnheiten, Vorlagen, Fotos, mehreren Einkaufslisten, Gerätekalender und Dunkelmodus. Bitte vor allem Erinnerungen, Kalenderzugriff und den Kauf testen.
 ```
 
 ### Hinweise für die Prüfung (App Review → Notizen)
@@ -198,8 +195,13 @@ Prüfungs-Screenshots: `iap/iap-testphase.png` (Begrüßung mit Testphase) und
 
 | Gerät | Bildschirmfotos | App-Vorschau |
 |---|---|---|
-| iPhone 6,3" (Pflicht) | `screenshots/iphone-6.3/01…09.png` (1206 × 2622) | `previews/iphone-886x1920.mp4` |
-| iPad 13" (Pflicht, da iPad-App) | `screenshots/ipad-13/01…09.png` (2064 × 2752) | `previews/ipad-1200x1600.mp4` |
+| iPhone 6,3" (Pflicht) | `screenshots/iphone-6.3/01…10.png` (1206 × 2622) | `previews/iphone-886x1920-1-schule.mp4`, `…-2-alltag.mp4` |
+| iPad 13" (Pflicht, da iPad-App) | `screenshots/ipad-13/01…10.png` (2064 × 2752) | `previews/ipad-1200x1600-1-schule.mp4`, `…-2-alltag.mp4` |
+
+Reihenfolge: Bilder 01–05 zeigen den Unterrichtsplaner (Woche, Stundenplan,
+Stundennotizen, Plus-/Minusstunden, Klassenarbeit), 06–10 den Alltag. Von den
+Videos kommt „1-schule“ an die erste Stelle – das erste Video läuft in der
+Suche automatisch. Das iPad-Bild 01 zeigt die Woche quer (Spalten).
 
 Größere iPhones (6,9") und kleinere iPads skaliert App Store Connect aus
 diesen Bildern; eigene Fassungen sind nicht nötig. Das Titelbild der

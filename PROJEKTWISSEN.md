@@ -40,6 +40,26 @@
 - **iPad:** ab 1100 px Breite Woche als Spalten Mo–Fr + Wochenende (`#wk-days.cols`).
 - **Schnellaktionen:** `WidgetData.setShortcuts` (je Profil), `SceneDelegate` leitet sie als Link weiter.
 
+## November 2026: Zeitspannen, Kurse, Aufräumen
+
+- **Aufgabe von–bis:** `task.endTime` (nur gültig mit `dueTime` und später als sie, gleicher Tag).
+  Schnelleingabe: „18–19:30“, „18-19 Uhr“, „von 18 bis 19.30“, „18 Uhr 90 Min“, „1,5 Std“.
+  „18-19“ ohne Uhr/Minuten/„von“ bleibt Text (Seitenzahlen). Ende fließt in ICS, Gerätekalender,
+  Google-Link und Widget (`end`). Überschneidung mit Stunde/Aufsicht/Termin/Aufgabe = nur Hinweis.
+- **Kurs:** Lehrkraft = Fach + Klasse (`courseOf`), Schüler = Fach (Raum wechselt). Hausaufgaben aus
+  dem Stunden-Dialog gehen jetzt zur nächsten Stunde *derselben Klasse* (vorher: nächste Stunde des Fachs).
+- **Noch X Stunden:** `countLessons` (CORE) zählt ab jetzt bis vor ein Datum; Doppelstunde 2, Ausfall und
+  Vertretung durch anderes Fach zählen nicht. Ziele: nächste Klassenarbeit (`task.exam`, `task.course`,
+  ältere am Titel „…: Klassenarbeit“ + Klasse im Titel), nächste Ferien (`nextFerien`, ohne Einzeltage),
+  ohne Ferien-Daten Halbjahresende. Karte im Stundenplan, Zeile im Stunden- und Verlaufsdialog.
+- **Merkzettel:** `state.lessonMemos = [{ course, after, afterTime, text }]`. Ziel wird jedes Mal neu
+  bestimmt (nächste Stunde des Kurses nach Ende der Ursprungsstunde) – Ausfall verschiebt ihn. 📌 in
+  Woche und Widget. Nach 120 Tagen verworfen.
+- **Aufräumen:** „Auf heute“/„Auf morgen“ ohne Rückfrage, mit Rückgängig. Sonntags Wochenrückblick
+  (`settings.weekReview`, `reviewHidden` = Montag der ausgeblendeten Woche).
+- **Toast in Dialogen:** Bei offenem modalen Dialog hängt der Hinweis im Dialog (sonst inert, „Rückgängig“
+  nicht antippbar); beim Schließen wandert er zurück. Popover half nicht – auch der ist inert.
+
 ## Fehler im Kauf bis 3.1 (gefunden am 27.10.2026)
 
 - `tools/capacitor-core-shim.js` rief `window.Capacitor.registerPlugin` auf. Die iOS-Brücke

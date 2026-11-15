@@ -10,52 +10,49 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium, DEVICES, openApp, germanInputs } = require('./device.js');
-const { SCHOOL } = require('./demo-data.js');
+const { TODAY_SCHOOL, SCHOOL } = require('./demo-data.js');
 
 const OUT = path.join(__dirname, 'out', 'screenshots');
 const TMP = path.join(__dirname, 'out', 'tmp');
 
 /* Reihenfolge = Reihenfolge im Store. Die ersten drei sieht man in der
-   Suche ohne Antippen – sie müssen allein überzeugen. */
+   Suche ohne Antippen – sie müssen allein überzeugen. Deshalb vorn die
+   Schule (Beispieldaten SCHOOL, Lehrkraft), danach der Alltag (STATE).
+   land: auf dem iPad quer aufgenommen (Wochenspalten). */
 const SCENES = [
-  { id: '01-woche', title: 'Deine Woche auf einen Blick', sub: 'Aufgaben, Kalendertermine und Wochenplan – nach Uhrzeit',
-    go: async p => { await nav(p, 'week'); await p.evaluate(() => { document.getElementById('card-habits').style.display = 'none'; }); } },
-  { id: '02-schule', title: 'Stundenplan mit Ferien und Vertretung', sub: 'Feiertage aller Bundesländer, A/B-Wochen, Ausfall',
-    go: async p => {
-      await nav(p, 'week');
-      await p.evaluate(s => {
-        window.__saved = JSON.stringify(state);
-        state = normalizeState(s); abMemo = {}; weekOffset = 2;
-        initUI(); renderAll();
-        document.querySelectorAll('.view').forEach(x => x.style.animation = 'none');
-      }, SCHOOL);
-      await p.waitForTimeout(150);
-    } },
-  { id: '03-schnelleingabe', title: 'Schreib einfach, was zu tun ist', sub: 'Datum, Uhrzeit, Kategorie und Wiederholung erkennt die App',
+  { id: '01-woche', data: 'school', land: true,
+    title: 'Unterricht und Alltag in einer Woche', sub: 'Stunden, Aufgaben, Termine und Aufsichten – nach Uhrzeit',
+    go: async p => { await nav(p, 'week'); } },
+  { id: '02-stundenplan', data: 'school', title: 'Stundenplan mit A/B-Wochen', sub: 'Doppelstunden, Aufsichten, Ferien und Feiertage aller Länder',
+    go: async p => { await nav(p, 'timetable'); await scrollTo(p, '#tt-grid', 18, true); } },
+  { id: '03-notizen', data: 'school', title: 'Notizen zu jeder Stunde', sub: 'Der Stundenverlauf je Klasse – nach Datum',
+    go: async p => { await nav(p, 'week'); await p.evaluate(() => openCourseDialog('Mathe|7b')); } },
+  { id: '04-stunden', data: 'school', title: 'Plus- und Minusstunden im Blick', sub: 'Vertretung, Ausfall und Aufsicht – als PDF für die Schulleitung',
+    go: async p => { await nav(p, 'timetable'); await scrollTo(p, '#card-subs', 18); } },
+  { id: '05-klassenarbeit', data: 'school', title: 'Klassenarbeit planen', sub: 'Vorbereiten, schreiben, zurückgeben – die Aufgaben legt die App an',
     go: async p => {
       await nav(p, 'tasks');
-      await p.fill('#t-title', 'Arzt Fr 15 Uhr #Privat');
+      await p.evaluate(() => { openExamDialog('2026-12-10', 'Mathe'); document.getElementById('ex-title').value = '7b Prozentrechnung'; renderExamPreview(); document.activeElement.blur(); });
+      await germanInputs(p);
+    } },
+  { id: '06-schnelleingabe', title: 'Schreib einfach, was zu tun ist', sub: 'Datum, Uhrzeit von–bis, Kategorie und Wiederholung erkennt die App',
+    go: async p => {
+      await nav(p, 'tasks');
+      await p.fill('#t-title', 'Fußballtraining Fr 18–19:30 #Sport');
       await p.dispatchEvent('#t-title', 'input');
       await p.evaluate(() => document.activeElement && document.activeElement.blur());
       await p.waitForTimeout(120);
     } },
-  { id: '04-aufgabe', title: 'Alles zu einer Aufgabe', sub: 'Uhrzeit, Erinnerung vorab, Unterpunkte und Notizen',
+  { id: '07-aufgabe', title: 'Alles zu einer Aufgabe', sub: 'Uhrzeit von–bis, Erinnerung vorab, Unterpunkte und Notizen',
     go: async p => { await nav(p, 'tasks'); await p.evaluate(() => openTaskDialog('t01')); await germanInputs(p); } },
-  { id: '05-kalender', title: 'Der Monat im Überblick', sub: 'Mit den Terminen aus deinen Kalendern',
-    go: async p => { await nav(p, 'calendar'); } },
-  { id: '06-gewohnheiten', title: 'Gute Gewohnheiten', sub: 'Wochenziel setzen, abhaken, Serie halten',
-    go: async p => {
-      await nav(p, 'week');
-
-    } },
-  { id: '07-einkauf', title: 'Einkaufslisten, die mitdenken', sub: 'Mehrere Listen, Vorschläge, abhaken und teilen',
-    go: async p => { await nav(p, 'shopping'); } },
-  { id: '08-dunkel', title: 'Hell oder dunkel', sub: 'Passt sich deinem Gerät an',
+  { id: '08-gewohnheiten', title: 'Gute Gewohnheiten', sub: 'Wochenziel setzen, abhaken, Serie halten',
+    go: async p => { await nav(p, 'week'); await scrollTo(p, '#card-habits', 18); } },
+  { id: '09-einkauf', title: 'Einkaufslisten, die mitdenken', sub: 'Vorschläge, abhaken, teilen – auch im Dunkelmodus',
     go: async p => {
       await p.evaluate(() => { state.settings.theme = 'dark'; applyTheme(); });
-      await nav(p, 'week');
+      await nav(p, 'shopping');
     } },
-  { id: '09-privat', title: 'Ohne Konto. Ohne Server.', sub: 'Deine Daten bleiben bei dir – mit verschlüsseltem Backup',
+  { id: '10-privat', title: 'Ohne Konto. Ohne Server.', sub: 'Deine Daten bleiben bei dir – mit verschlüsseltem Backup',
     go: async p => {
       await p.evaluate(() => { state.settings.theme = 'light'; applyTheme(); });
       await nav(p, 'settings');
@@ -67,15 +64,11 @@ const SCENES = [
 
 async function nav(p, view) {
   await p.evaluate(v => {
-    if (window.__saved) {          // nach der Schul-Szene: Beispieldaten zurück
-      state = normalizeState(JSON.parse(window.__saved)); window.__saved = null;
-      abMemo = {}; weekOffset = 0; initUI(); renderAll();
-    }
-    document.querySelectorAll('#view-week .card').forEach(c => c.style.display = '');
     document.getElementById('main').style.paddingBottom = '';
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     switchTo(v);
     document.querySelectorAll('.view').forEach(x => x.style.animation = 'none');
+    document.getElementById('main').scrollTop = 0;
   }, view);
   await p.waitForTimeout(120);
 }
@@ -97,12 +90,18 @@ async function scrollTo(p, sel, gap, card) {
 function stageHtml(dev, img, scene, W, H) {
   const phone = !dev.wide;
   const head = phone ? { top: 170, t: 92, s: 46, gap: 26 } : { top: 170, t: 124, s: 62, gap: 34 };
-  const frameTop = phone ? 560 : 560;
+  let frameTop = phone ? 560 : 560;
   const bottom = phone ? 96 : 120;
   const bezel = phone ? 22 : 30;
-  const frameH = H - frameTop - bottom;
-  const screenH = frameH - 2 * bezel;
-  const screenW = Math.round(screenH * dev.viewport.width / dev.viewport.height);
+  let frameH = H - frameTop - bottom;
+  let screenH = frameH - 2 * bezel;
+  let screenW = Math.round(screenH * dev.viewport.width / dev.viewport.height);
+  if (dev.land) {          // quer: Breite gibt das Maß vor, senkrecht mittig
+    screenW = W - 2 * 110 - 2 * bezel;
+    screenH = Math.round(screenW * dev.viewport.height / dev.viewport.width);
+    frameH = screenH + 2 * bezel;
+    frameTop = Math.round(frameTop + (H - frameTop - bottom - frameH) / 2);
+  }
   const frameW = screenW + 2 * bezel;
   const rOuter = phone ? 118 : 74, rInner = rOuter - bezel;
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -133,21 +132,29 @@ async function main() {
     const dev = DEVICES[key], size = SIZES[key];
     const dir = path.join(OUT, size.dir);
     fs.mkdirSync(dir, { recursive: true });
-    const { ctx, page } = await openApp(browser, dev);
     const raws = [];
+    let cur = null;
     for (const sc of SCENES) {
-      await sc.go(page);
+      const d = sc.land && key === 'ipad' ? DEVICES.ipadLand : dev;
+      const want = (sc.data || 'everyday') + '|' + d.name;
+      if (!cur || cur.want !== want) {
+        if (cur) await cur.ctx.close();
+        const opts = sc.data === 'school' ? { state: SCHOOL, today: TODAY_SCHOOL } : {};
+        cur = { want, ...(await openApp(browser, d, opts)) };
+      }
+      await sc.go(cur.page);
       const f = path.join(TMP, `${key}-${sc.id}.png`);
-      await page.screenshot({ path: f });
-      raws.push([sc, f]);
+      await cur.page.screenshot({ path: f });
+      raws.push([sc, f, d]);
     }
-    await ctx.close();
+    await cur.ctx.close();
 
     const sctx = await browser.newContext({ viewport: { width: size.W, height: size.H }, deviceScaleFactor: 1 });
     const sp = await sctx.newPage();
-    for (const [sc, raw] of raws) {
+    fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+    for (const [sc, raw, d] of raws) {
       const html = path.join(TMP, `stage-${key}.html`);
-      fs.writeFileSync(html, stageHtml(dev, path.basename(raw), sc, size.W, size.H));
+      fs.writeFileSync(html, stageHtml(d, path.basename(raw), sc, size.W, size.H));
       await sp.goto('file://' + html);
       await sp.evaluate(() => document.fonts.ready);
       await sp.waitForFunction(() => [...document.images].every(i => i.complete));

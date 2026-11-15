@@ -18,7 +18,7 @@ const STATE = {
     { id: 'c4', name: 'Sport',    color: '#db2777' }
   ],
   tasks: [
-    t('t01', 'Präsentation fertigstellen', 'c2', 'hoch', '2026-11-05', { dueTime: '14:00', remind: '1h',
+    t('t01', 'Präsentation fertigstellen', 'c2', 'hoch', '2026-11-05', { dueTime: '14:00', endTime: '15:30', remind: '1h',
       note: 'Raum 3.12 · Beamer vorher testen\nZahlen aus dem Q3-Bericht nehmen',
       subtasks: sub(['Gliederung', 1], ['Zahlen Q3 einarbeiten', 1], ['Beispiele ergänzen'], ['Probelauf mit Jana'], ['Handout drucken']) }),
     t('t02', 'Zahnarzt anrufen', 'c1', 'mittel', '2026-11-03', { dueTime: '11:30' }),
@@ -34,6 +34,7 @@ const STATE = {
       subtasks: sub(['Belege sortieren', 1], ['Fahrtkosten eintragen'], ['Abschicken']) }),
     t('t12', 'Reisekosten abrechnen', 'c2', 'mittel', '2026-11-06'),
     t('t13', 'Team-Feedback vorbereiten', 'c2', 'mittel', '2026-11-04', { dueTime: '10:00' }),
+    t('t14', 'Fußballtraining', 'c4', 'mittel', '2026-11-05', { dueTime: '18:00', endTime: '19:30', recurrence: 'weekly' }),
     // Erledigtes aus den letzten Wochen: ergibt eine Serie in der Statistik
     ...['Rechnung bezahlen', 'Einkaufen', 'Joggen', 'Mails beantworten', 'Bad putzen', 'Pflanzen gießen',
         'Bericht schicken', 'Auto tanken', 'Training', 'Wohnung saugen', 'Paket abholen', 'Arzttermin',
@@ -97,32 +98,83 @@ const STATE = {
   }
 };
 
-/* Zweite Szene: Lehrkraft in Sachsen, Woche ab Mo 16.11. (Buß- und Bettag am Mi) */
+/* Schul-Szenen: Lehrkraft (Mathe/Physik) in Sachsen. „Heute“ ist Dienstag,
+   17. November 2026, Woche A. Mittwoch ist Buß- und Bettag (nur Sachsen). */
+const TODAY_SCHOOL = '2026-11-17T07:40:00';
+const L = (id, day, slot, subject, room, color, extra = {}) => Object.assign({ id, day, slot, subject, room, color }, extra);
+const BLUE = '#2563eb', ORANGE = '#d97706', TEAL = '#0891b2', VIOLET = '#7c3aed';
+const note = (course, date, text) => ({ id: 'n' + date + course.length, course, date, text, updatedAt: Date.parse(date + 'T15:00:00') });
+const sb = (id, date, type, hours, slot, klass, subject, notetext = '', extra = {}) =>
+  Object.assign({ id, date, type, hours, slot, klass, subject, room: '', note: notetext, lessonId: null, pairId: null }, extra);
+
 const SCHOOL = {
   version: 3,
-  categories: [{ id: 'u1', name: 'Unterricht', color: '#2563eb' }, { id: 'u2', name: 'Privat', color: '#059669' }],
+  categories: [{ id: 'u1', name: 'Unterricht', color: BLUE }, { id: 'u2', name: 'Privat', color: '#059669' },
+               { id: 'u3', name: 'Haushalt', color: ORANGE }],
   tasks: [
-    t('s1', 'Klassenarbeit 7b: vorbereiten', 'u1', 'mittel', '2026-11-16', { subject: 'Mathe',
+    t('s1', 'Klassenarbeit 7b vorbereiten', 'u1', 'mittel', '2026-11-17', { subject: 'Mathe',
       subtasks: sub(['Aufgaben erstellen', 1], ['Erwartungshorizont'], ['Kopieren']) }),
-    t('s2', 'Elternbriefe einsammeln', 'u1', 'niedrig', '2026-11-17', { subject: 'Deutsch' }),
-    t('s3', 'Klassenarbeit 7b', 'u1', 'hoch', '2026-11-19', { dueTime: '08:00', subject: 'Mathe' }),
-    t('s4', 'Fachkonferenz', 'u1', 'mittel', '2026-11-20', { dueTime: '14:30' })
+    t('s2', 'Zahnarzt anrufen', 'u2', 'mittel', '2026-11-17', { dueTime: '13:30' }),
+    t('s3', 'Arbeitsblatt Prozentrechnung kopieren', 'u1', 'niedrig', '2026-11-19', { subject: 'Mathe' }),
+    t('s4', 'Mathe 7b: Klassenarbeit', 'u1', 'hoch', '2026-11-26', { dueTime: '08:00', subject: 'Mathe', exam: true, course: 'Mathe|7b' }),
+    t('s5', 'Fachkonferenz Mathematik', 'u1', 'mittel', '2026-11-19', { dueTime: '14:30' }),
+    t('s6', 'Protokolle Versuch 3 lesen', 'u1', 'mittel', '2026-11-20', { subject: 'Physik' }),
+    t('s7', 'Geburtstagsgeschenk für Lena', 'u2', 'hoch', '2026-11-21'),
+    t('s8', 'Wäsche waschen', 'u3', 'niedrig', '2026-11-18'),
+    t('s9', 'Wochenplanung', 'u2', 'mittel', '2026-11-22', { recurrence: 'weekly', dueTime: '18:00' }),
+    t('s10', 'Klassenarbeit 7b zurückgeben', 'u1', 'mittel', '2026-12-03', { subject: 'Mathe' })
   ],
   lessons: [
-    { id: 'a1', day: 1, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
-    { id: 'a2', day: 1, slot: 2, subject: 'Deutsch', room: '9a', color: '#059669' },
-    { id: 'a3', day: 2, slot: 1, subject: 'Mathe', room: '9a', color: '#2563eb' },
-    { id: 'a4', day: 2, slot: 3, subject: 'Deutsch', room: '7b', color: '#059669' },
-    { id: 'a5', day: 3, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
-    { id: 'a6', day: 4, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
-    { id: 'a7', day: 4, slot: 4, subject: 'Physik', room: 'R12', color: '#d97706', week: 'A' },
-    { id: 'a8', day: 4, slot: 4, subject: 'Chemie', room: 'R12', color: '#7c3aed', week: 'B' },
-    { id: 'a9', day: 5, slot: 2, subject: 'Deutsch', room: '9a', color: '#059669' }
+    L('a1', 1, 0, 'Mathe', '7b', BLUE, { span: 2 }),
+    L('a2', 1, 2, 'Physik', '9a', ORANGE),
+    L('a3', 1, 4, 'Mathe', '10c', TEAL),
+    L('a4', 2, 0, 'Mathe', '9a', VIOLET),
+    L('a5', 2, 2, 'Physik', '8b', ORANGE, { span: 2 }),
+    L('a6', 2, 4, 'Mathe', '7b', BLUE),
+    L('a7', 3, 0, 'Mathe', '7b', BLUE),
+    L('a8', 3, 2, 'Physik', '9a', ORANGE),
+    L('a9', 4, 0, 'Mathe', '7b', BLUE),
+    L('a10', 4, 2, 'Mathe', '10c', TEAL, { span: 2 }),
+    L('a11', 4, 4, 'Physik-AG', 'R12', '#db2777', { week: 'A' }),
+    L('a12', 4, 4, 'Förderkurs', '7b', '#059669', { week: 'B' }),
+    L('a13', 5, 0, 'Physik', '9a', ORANGE, { span: 2 }),
+    L('a14', 5, 3, 'Mathe', '9a', VIOLET)
   ],
-  lessonEx: { 'a3|2026-11-17': { cancel: true }, 'a9|2026-11-20': { subject: 'Vertretung 8c', room: 'R5' } },
-  settings: { features: { timetable: true, calendar: true, habits: false, extCal: false }, profile: 'teacher',
-              planMode: 'school', theme: 'light', region: 'SN', showFerien: true,
+  duties: [
+    { id: 'd1', day: 2, after: 1, place: 'Schulhof', week: '' },
+    { id: 'd2', day: 4, after: 3, place: 'Pausenhalle', week: '' }
+  ],
+  lessonEx: { 'a4|2026-11-17': { cancel: true } },
+  lessonNotes: [
+    note('Mathe|7b', '2026-11-02', 'Brüche erweitern und kürzen – Einstieg mit Pizza-Bild. Gut mitgemacht, AB 1 zu Ende.'),
+    note('Mathe|7b', '2026-11-05', 'Brüche vergleichen: gleichnamig machen. Viele Fehler beim Hauptnenner – wiederholen.'),
+    note('Mathe|7b', '2026-11-09', 'Hauptnenner geübt (Stationen). Lena und Tim fehlten.'),
+    note('Mathe|7b', '2026-11-10', 'Addition und Subtraktion. HA: S. 54 Nr. 3a–d'),
+    note('Mathe|7b', '2026-11-12', 'Gemischte Zahlen. Kurztest zurückgegeben, Schnitt 2,4.'),
+    note('Mathe|7b', '2026-11-16', 'Wiederholung begonnen, Fragen für die Klassenarbeit gesammelt.'),
+    note('Physik|8b', '2026-11-10', 'Versuch 3: Reibung messen. Gruppen 2 und 5 Protokoll fehlt.')
+  ],
+  subLog: [
+    sb('v1', '2026-09-08', 'plus', 1, 3, '8c', 'Englisch', 'Arbeitsblatt Vokabeln'),
+    sb('v2', '2026-09-24', 'aufsicht', 1, 1, '', '', 'Hofaufsicht für Frau Krause'),
+    sb('v3', '2026-10-01', 'minus', 2, 0, '7b', 'Mathe', 'Wandertag'),
+    sb('v4', '2026-10-07', 'plus', 2, 4, '10a', 'Physik', 'Versuch vorbereitet, Ergebnisse gesichert'),
+    sb('v5', '2026-11-04', 'plus', 1, 5, '6a', 'Deutsch', 'Lesezeit'),
+    sb('v6', '2026-11-11', 'plus', 2, 2, '9b', 'Mathe', 'Übungsaufgaben Prozentrechnung'),
+    sb('v7', '2026-11-13', 'aufsicht', 1, 4, '', '', 'Prüfungsaufsicht'),
+    sb('v8', '2026-11-17', 'minus', 1, 0, '9a', 'Mathe', '9a im Theater', { lessonId: 'a4' }),
+    sb('v9', '2026-11-19', 'plus', 1, 5, '8c', 'Englisch', '')
+  ],
+  extEvents: [
+    { date: '2026-11-17', time: '19:30', title: 'Elternabend 7b', cal: 'Schule', color: '#34c759' },
+    { date: '2026-11-18', time: '10:00', title: 'Laufen mit Jana', cal: 'Privat', color: '#ff2d55' },
+    { date: '2026-11-20', time: '15:00', title: 'Elternsprechtag', cal: 'Schule', color: '#34c759' },
+    { date: '2026-11-22', time: null, title: 'Familienbesuch', cal: 'Familie', color: '#ff9500' }
+  ],
+  shopLists: STATE.shopLists, shopping: STATE.shopping, shopHistory: STATE.shopHistory,
+  settings: { features: { timetable: true, calendar: true, habits: false, extCal: true, shopping: true, reminders: true, stats: true },
+              profile: 'teacher', planMode: 'school', theme: 'light', region: 'SN', showFerien: true, weekDays: 'mofr',
               ab: { on: true, anchor: '2026-11-16', type: 'A', skip: true } }
 };
 
-module.exports = { TODAY, STATE, SCHOOL };
+module.exports = { TODAY, STATE, TODAY_SCHOOL, SCHOOL };

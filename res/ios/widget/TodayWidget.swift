@@ -14,6 +14,7 @@ struct WItem: Decodable, Identifiable, Hashable {
     let id: String
     let kind: String          // "task" | "lesson" | "event"
     let time: String?         // "HH:MM", ohne Uhrzeit nil
+    let end: String?          // Ende einer Aufgabe „HH:MM“ (von–bis), sonst nil
     let title: String
     let color: String         // "#rrggbb"
     let cancelled: Bool?
@@ -105,10 +106,10 @@ struct DayEntry: TimelineEntry {
 
     static func sample(_ date: Date) -> DayEntry {
         DayEntry(date: date, label: "Heute", off: nil, items: [
-            WItem(id: "1", kind: "lesson", time: "08:00", title: "Mathe · 7b", color: "#2563eb", cancelled: nil),
-            WItem(id: "2", kind: "task", time: "11:30", title: "Zahnarzt anrufen", color: "#059669", cancelled: nil),
-            WItem(id: "3", kind: "event", time: "14:00", title: "Team-Meeting", color: "#34c759", cancelled: nil),
-            WItem(id: "4", kind: "task", time: nil, title: "Wäsche waschen", color: "#d97706", cancelled: nil)
+            WItem(id: "1", kind: "lesson", time: "08:00", end: nil, title: "Mathe · 7b", color: "#2563eb", cancelled: nil),
+            WItem(id: "2", kind: "task", time: "11:30", end: nil, title: "Zahnarzt anrufen", color: "#059669", cancelled: nil),
+            WItem(id: "3", kind: "event", time: "14:00", end: nil, title: "Team-Meeting", color: "#34c759", cancelled: nil),
+            WItem(id: "4", kind: "task", time: "18:00", end: "19:30", title: "Fußballtraining", color: "#d97706", cancelled: nil)
         ], overdue: 0, hasData: true)
     }
 }
@@ -205,7 +206,7 @@ struct ItemRow: View {
                     .frame(width: 3, height: small ? 12 : 14)
             }
             if let t = item.time, !small || item.kind != "task" {
-                Text(t)
+                Text(!small && item.end != nil ? t + "–" + item.end! : t)
                     .font(.system(size: small ? 10 : 11, weight: .semibold).monospacedDigit())
                     .foregroundColor(.secondary)
             }

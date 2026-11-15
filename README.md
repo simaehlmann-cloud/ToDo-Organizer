@@ -1,8 +1,10 @@
 # ToDo Organizer
 
-Allgemeine To-do-App (3.0): Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen,
-Wiederholungen, Notizen und Bildern; Wochenübersicht mit Gerätekalender;
-Wochen- oder Stundenplan (Schüler, Lehrkräfte); Gewohnheiten, Vorlagen,
+Privater Planer für Schule und Alltag (3.1): Aufgaben mit Schnelleingabe, Uhrzeit von–bis,
+Erinnerungen, Wiederholungen, Notizen und Bildern; Wochenübersicht mit Gerätekalender und
+Wochenrückblick; Wochen- oder Stundenplan (Schüler, Lehrkräfte) mit Ferien, A/B-Wochen,
+Stundennotizen, Merkzetteln für die nächste Stunde, „noch X Stunden bis …“ und
+Mehr-/Minderstunden; Gewohnheiten, Vorlagen,
 Einkaufslisten mit Vorschlägen; Dunkelmodus – ohne Konto, ohne Server. Alle Daten bleiben auf dem Gerät.
 Läuft als iOS-App für iPhone und iPad (Capacitor), als Android-App (Capacitor, lokal gebaut)
 und als installierbare Web-App (PWA).

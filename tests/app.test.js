@@ -82,7 +82,7 @@ async function open(browser, opt = {}) {
   p.on('pageerror', e => p.errors.push(e.message));
   p.on('console', m => { if (m.type() === 'error') p.errors.push(m.text()); });
   p.on('dialog', d => d.accept(p.nextPrompt != null ? p.nextPrompt : undefined));
-  await p.clock.setFixedTime(new Date(NOW));
+  await p.clock.setFixedTime(new Date(opt.now || NOW));
   if (opt.state) await p.addInitScript(s => localStorage.setItem('studiez-pro-v2', JSON.stringify(s)), opt.state);
   if (opt.ios) await p.addInitScript(iosMocks, opt.ios);
   if (opt.dark) await p.emulateMedia({ colorScheme: 'dark' });
@@ -858,6 +858,196 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     ok(!(await p.isVisible('#bk-banner')), 'erste Woche: kein Hinweis');
     ok(!(await p.isVisible('#bk-auto-row')), 'im Browser keine automatische Sicherung');
     await ctx.close();
+  }
+
+  console.log('23 · Uhrzeit von – bis');
+  {
+    const st = { version: 3, settings: { profile: 'everyday' },
+      tasks: [{ id: 'eb', title: 'Elternabend', dueDate: '2026-11-03', dueTime: '18:30', prio: 'mittel', createdAt: 1 }] };
+    const { ctx, p } = await open(browser, { state: st });
+    await go(p, 'tasks');
+    await p.fill('#t-title', 'Fußballtraining Di 18–19:30');
+    await p.dispatchEvent('#t-title', 'input');
+    ok(/18:00–19:30/.test(await p.textContent('#qa-preview')), 'Vorschau zeigt 18:00–19:30');
+    await p.press('#t-title', 'Enter');
+    let t = await lastTask(p);
+    ok(t.title === 'Fußballtraining' && t.dueDate === '2026-11-03' && t.dueTime === '18:00' && t.endTime === '19:30', 'Spanne gespeichert');
+    ok(/Überschneidet sich mit 18:30 Elternabend/.test(await p.textContent('#toast')), 'Hinweis auf Überschneidung');
+    ok(/18:00–19:30/.test(await p.locator('#task-list .task', { hasText: 'Fußballtraining' }).textContent()), 'Liste zeigt die Spanne');
+    await go(p, 'week');
+    ok(await p.locator('#wk-days .wd-task .tm', { hasText: '18:00–19:30' }).count() === 1, 'Woche zeigt die Spanne');
+    const wi = await S(p, () => widgetSnapshot().days[0].items.find(i => i.title === 'Fußballtraining'));
+    ok(wi && wi.time === '18:00' && wi.end === '19:30', 'Widget bekommt das Ende');
+    ok(await S(p, id => { const e = taskEnd(state.tasks.find(x => x.id === id)); return e.getHours() * 60 + e.getMinutes(); }, t.id) === 19 * 60 + 30, 'Kalender-Ende aus der Spanne');
+    // Dialog: Dauer, Beginn verschieben, Fehler
+    await S(p, id => openTaskDialog(id), t.id);
+    ok(await p.inputValue('#e-end') === '19:30' && await p.isVisible('#e-dur') && /1 Std\. 30 Min\./.test(await p.textContent('#e-dur-lbl')), 'Dialog zeigt Ende und Dauer');
+    await p.fill('#e-time', '17:00'); await p.dispatchEvent('#e-time', 'input');
+    ok(await p.inputValue('#e-end') === '18:30', 'Beginn verschoben – Ende wandert mit');
+    await p.click('#e-dur button[data-m="120"]');
+    ok(await p.inputValue('#e-end') === '19:00', 'Dauer 2 Std. setzt das Ende');
+    await p.fill('#e-end', '16:00'); await p.dispatchEvent('#e-end', 'input');
+    await p.click('#e-save');
+    ok(await p.$eval('#dlg-task', d => d.open) && /vor dem Beginn/.test(await p.textContent('#toast')), 'Ende vor Beginn wird nicht gespeichert');
+    await p.fill('#e-end', '18:15'); await p.dispatchEvent('#e-end', 'input'); await p.click('#e-save');
+    t = await S(p, id => state.tasks.find(x => x.id === id), t.id);
+    ok(t.dueTime === '17:00' && t.endTime === '18:15', 'geänderte Spanne gespeichert');
+    await S(p, id => openTaskDialog(id), t.id);
+    await p.fill('#e-time', ''); await p.dispatchEvent('#e-time', 'input');
+    ok(await p.$eval('#e-end', e => e.disabled && !e.value) && await p.isHidden('#e-dur'), 'ohne Beginn kein Ende');
+    await p.click('#e-save');
+    t = await S(p, id => state.tasks.find(x => x.id === id), t.id);
+    ok(t.dueTime === null && t.endTime === null, 'Uhrzeit entfernt → Ende auch');
+    // Formularfelder
+    await go(p, 'tasks');
+    await p.click('#btn-more');
+    ok(await p.$eval('#t-end', e => e.disabled), '„bis“ gesperrt ohne Anfangszeit');
+    await p.fill('#t-title', 'Lesen'); await p.fill('#t-date', '2026-11-05');
+    await p.fill('#t-time', '09:00'); await p.dispatchEvent('#t-time', 'input');
+    await p.fill('#t-end', '10:00'); await p.click('#btn-add-task');
+    t = await lastTask(p);
+    ok(t.title === 'Lesen' && t.dueTime === '09:00' && t.endTime === '10:00', 'Formular: von – bis');
+    ok(await p.inputValue('#t-end') === '' && await p.$eval('#t-end', e => e.disabled), 'Formular danach leer');
+    // Wiederholung übernimmt die Spanne
+    await p.fill('#t-title', 'Training jeden Do 18-19:30 Uhr'); await p.press('#t-title', 'Enter');
+    t = await lastTask(p);
+    await S(p, id => toggleTask(id), t.id);
+    const nx = await lastTask(p);
+    ok(t.recurrence !== 'none' && nx.id !== t.id && nx.dueDate === '2026-11-12' && nx.endTime === '19:30', 'Folgetermin behält die Spanne');
+    // Altbestand und ungültige Werte
+    const nm = await S(p, () => normalizeState({ tasks: [{ title: 'a', dueTime: '18:00', endTime: '17:00' }, { title: 'b', endTime: '10:00' }, { title: 'c', dueTime: '08:00', endTime: '09:00' }] }).tasks.map(x => x.endTime));
+    ok(JSON.stringify(nm) === JSON.stringify([null, null, '09:00']), 'ungültige Enden werden verworfen');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('24 · Noch X Stunden, für die nächste Stunde merken');
+  {
+    const lessons = [{ id: 'a', day: 2, slot: 4, subject: 'Mathe', room: '7b', color: '#2563eb' },
+                     { id: 'b', day: 4, slot: 0, subject: 'Mathe', room: '7b', color: '#2563eb' },
+                     { id: 'c', day: 3, slot: 2, subject: 'Mathe', room: '9a', color: '#7c3aed' },
+                     { id: 'd', day: 5, slot: 2, subject: 'Physik', room: '7b', color: '#d97706', span: 2 }];
+    const tasks = [{ id: 'x7', title: 'Mathe 7b: Klassenarbeit', subject: 'Mathe', dueDate: '2026-11-19', exam: true, course: 'Mathe|7b', prio: 'hoch', createdAt: 1 },
+                   { id: 'x9', title: 'Mathe 9a: Klassenarbeit', subject: 'Mathe', dueDate: '2026-11-25', prio: 'hoch', createdAt: 1 }];
+    const st = { version: 3, lessons, tasks, settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true, features: { timetable: true } } };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: st });
+    await go(p, 'week');
+    // Di 3.11., 10:15 – Mathe 7b heute 11:50 kommt noch. Weihnachtsferien NI ab 23.12.
+    await p.locator('#wk-days .week-day.today .wd-lesson', { hasText: 'Mathe · 7b' }).click();
+    const cnt = await p.textContent('#ld-count');
+    ok(/Noch 5 Stunden bis zur Klassenarbeit \(Do 19\.11\.\) · 15 Stunden bis zu den Weihnachtsferien/.test(cnt), 'Stundendialog: ' + cnt);
+    // Merken
+    await p.fill('#ld-memo', 'Test zurückgeben'); await p.click('#ld-memo-add');
+    let M = await S(p, () => state.lessonMemos);
+    ok(M.length === 1 && M[0].course === 'Mathe|7b' && M[0].after === '2026-11-03' && M[0].afterTime === '12:35', 'Merkzettel angelegt');
+    ok(/Test zurückgeben/.test(await p.textContent('#ld-memo-own')) && /Do 5\.11\., 08:00/.test(await p.textContent('#ld-memo-own')), 'zeigt Ziel: Do 5.11.');
+    await p.click('#ld-close');
+    const pins = await p.$$eval('#wk-days .wd-lesson', e => e.filter(x => x.textContent.includes('📌')).map(x => x.textContent));
+    ok(pins.length === 1 && /08:00 Mathe · 7b/.test(pins[0]), '📌 an der nächsten 7b-Stunde (nicht 9a)');
+    const wtitle = await S(p, () => widgetSnapshot().days[2].items.find(i => i.id === 'lb').title);
+    ok(/📌/.test(wtitle), 'Widget zeigt 📌');
+    // Hausaufgabe aus der 9a geht zur nächsten 9a-Stunde, nicht zur 7b
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe · 9a' }).click();
+    ok(/Mi 11\.11\.|Mittwoch|11\.11/.test(await p.textContent('#ld-hw-hint')), 'Hausaufgabe 9a: nächste 9a-Stunde ' + await p.textContent('#ld-hw-hint'));
+    await p.fill('#ld-hw', 'S. 12 Nr. 3'); await p.click('#ld-hw-add');
+    ok((await lastTask(p)).dueDate === '2026-11-11', 'Hausaufgabe am 11.11.');
+    await p.click('#ld-close');
+    // Donnerstag fällt aus → Merkzettel und Zählung rutschen weiter
+    await p.locator('#wk-days .wd-lesson', { hasText: '08:00 Mathe · 7b' }).click();
+    ok(/Test zurückgeben/.test(await p.textContent('#ld-memos')), 'Zielstunde zeigt den Merkzettel');
+    await p.check('#ld-cancel'); await p.click('#ld-save');
+    ok(await S(p, () => memoTarget(state.lessonMemos[0]).iso) === '2026-11-10', 'Ausfall: Merkzettel rutscht auf Di 10.11.');
+    ok(await p.locator('#wk-days .wd-lesson .nt', { hasText: '📌' }).count() === 0, 'diese Woche kein 📌 mehr');
+    await p.locator('#wk-days .week-day.today .wd-lesson', { hasText: 'Mathe · 7b' }).click();
+    ok(/Noch 4 Stunden bis zur Klassenarbeit .* 14 Stunden/.test(await p.textContent('#ld-count')), 'Ausfall zählt nicht mit');
+    await p.click('#ld-close');
+    // Erledigt in der Zielstunde, mit Rückgängig
+    await S(p, () => { weekOffset = 1; renderWeek(); });
+    await p.locator('#wk-days .wd-lesson', { hasText: 'Mathe · 7b' }).first().click();
+    await p.locator('#ld-memos button').click();
+    ok((await S(p, () => state.lessonMemos.length)) === 0 && await p.isHidden('#ld-memos'), 'erledigt');
+    await p.click('#toast .undo');
+    ok((await S(p, () => state.lessonMemos.length)) === 1, 'Rückgängig');
+    await p.click('#ld-close');
+    // Stundenverlauf zeigt Zählung und Merkzettel
+    await S(p, () => openCourseDialog('Mathe|7b'));
+    ok(await p.isVisible('#cs-count') && /Test zurückgeben/.test(await p.textContent('#cs-memos')), 'Stundenverlauf: Zählung und Merkzettel');
+    await p.click('#cs-close');
+    // Stundenplan-Karte
+    await go(p, 'timetable');
+    ok(await p.isVisible('#card-count') && /Weihnachtsferien/.test(await p.textContent('#cc-head')), 'Karte „Stunden bis zu den Weihnachtsferien“');
+    const items = await p.$$eval('#cc-list .cc-item', e => e.map(x => x.querySelector('.c').firstChild.textContent + '=' + x.querySelector('.n').textContent));
+    ok(JSON.stringify(items) === JSON.stringify(['Mathe · 7b=14', 'Mathe · 9a=7', 'Physik · 7b=14']), 'je Kurs: ' + items.join(', '));
+    ok(/4 bis zur Klassenarbeit/.test(await p.textContent('#cc-list')), 'Klassenarbeit davor erwähnt');
+    // 9a-Arbeit nur über den Titel erkannt
+    ok(await S(p, () => (examFor('Mathe|9a') || {}).id) === 'x9' && await S(p, () => (examFor('Mathe|7b') || {}).id) === 'x7', 'Klassenarbeit dem richtigen Kurs zugeordnet');
+    // Klassenarbeit aus der Stunde heraus: Kurs wird gespeichert
+    await go(p, 'week'); await S(p, () => { weekOffset = 0; renderWeek(); });
+    await p.locator('#wk-days .week-day.today .wd-lesson', { hasText: 'Mathe · 7b' }).click();
+    await p.click('#ld-exam');
+    ok(await p.inputValue('#ex-title') === 'Mathe 7b', 'Titel mit Klasse vorbelegt');
+    await p.fill('#ex-date', '2026-12-10'); await p.dispatchEvent('#ex-date', 'input');
+    await p.click('#ex-save');
+    const ex = await S(p, () => state.tasks.filter(t => t.exam && t.dueDate === '2026-12-10'));
+    ok(ex.length === 1 && ex[0].course === 'Mathe|7b' && ex[0].dueTime === '08:00', 'neue Klassenarbeit mit Kurs und Uhrzeit');
+    // Ohne Ferien-Daten: bis Halbjahresende
+    await S(p, () => { state.settings.showFerien = false; save(); renderTimetable(); });
+    ok(/Halbjahresende/.test(await p.textContent('#cc-head')), 'ohne Ferien: Halbjahresende');
+    // Export/Import
+    ok((await S(p, () => normalizeState(JSON.parse(JSON.stringify(state))).lessonMemos.length)) === 1, 'Merkzettel überstehen Export/Import');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('25 · Aufräumen und Wochenrückblick');
+  {
+    const tk = (id, title, due, extra) => Object.assign({ id, title, dueDate: due, prio: 'mittel', createdAt: 1 }, extra || {});
+    const st = { version: 3, settings: { profile: 'everyday' },
+      tasks: [tk('o1', 'Alt 1', '2026-11-01'), tk('o2', 'Alt 2', '2026-10-30'), tk('h1', 'Heute', '2026-11-03')] };
+    const { ctx, p } = await open(browser, { state: st });
+    await go(p, 'week');
+    ok(await p.locator('#wk-overdue .ov-head button').count() === 2, 'Überfällig: „Auf heute“ und „Auf morgen“');
+    let dialogs = 0; p.on('dialog', () => dialogs++);
+    await p.click('#wk-overdue .ov-head button:has-text("Auf morgen")');
+    let D = await S(p, () => state.tasks.map(t => t.dueDate));
+    ok(JSON.stringify(D) === JSON.stringify(['2026-11-04', '2026-11-04', '2026-11-03']) && dialogs === 0, 'beide auf morgen, ohne Rückfrage');
+    await p.click('#toast .undo');
+    D = await S(p, () => state.tasks.map(t => t.dueDate));
+    ok(D[0] === '2026-11-01' && D[1] === '2026-10-30', 'Rückgängig');
+    await go(p, 'tasks');
+    await p.click('#task-list .ov-head button:has-text("Auf heute")').catch(() => {});
+    D = await S(p, () => state.tasks.map(t => t.dueDate));
+    ok(D[0] === '2026-11-03' && D[1] === '2026-11-03', 'auch in der Aufgabenliste');
+    ok(await p.isHidden('#wk-review'), 'dienstags kein Wochenrückblick');
+    // Hinweise liegen bei offenem Dialog im Dialog (antippbar) und wandern danach zurück
+    await S(p, () => { openTaskDialog('h1'); toast('Test'); });
+    ok(await S(p, () => $('toast').parentNode.id) === 'dlg-task', 'Hinweis im offenen Dialog');
+    await p.click('#e-cancel').catch(() => S(p, () => $('dlg-task').close()));
+    await p.waitForTimeout(80);
+    ok(await S(p, () => $('toast').parentNode === document.body), 'nach dem Schließen wieder außen');
+    await ctx.close();
+
+    // Sonntag, 8.11. abends
+    const mon = new Date('2026-11-02T09:00:00').getTime();
+    const st2 = { version: 3, settings: { profile: 'everyday' },
+      tasks: [tk('d1', 'Erledigt 1', '2026-11-03', { completed: true, completedAt: mon }), tk('d2', 'Erledigt 2', '2026-11-05', { completed: true, completedAt: mon + 864e5 }),
+              tk('d0', 'Letzte Woche', '2026-10-28', { completed: true, completedAt: mon - 3 * 864e5 }),
+              tk('op', 'Offen', '2026-11-06'), tk('n1', 'Nächste 1', '2026-11-10'), tk('n2', 'Nächste 2', '2026-11-15')] };
+    const r2 = await open(browser, { state: st2, now: '2026-11-08T18:00:00' });
+    const q = r2.p;
+    await go(q, 'week');
+    ok(await q.isVisible('#wk-review'), 'sonntags: Wochenrückblick');
+    const txt = await q.textContent('#wk-review');
+    ok(/KW 45/.test(txt) && /2 erledigt/.test(txt) && /1 offen/.test(txt) && /nächste Woche 2 Aufgaben/.test(txt), 'Inhalt: ' + txt.replace(/\s+/g, ' '));
+    await q.click('#wr-move');
+    ok((await S(q, () => state.tasks.find(t => t.id === 'op').dueDate)) === '2026-11-09', 'Offene auf Montag');
+    ok(await q.isHidden('#wr-move'), 'danach nichts mehr offen');
+    await q.click('#wr-hide');
+    ok(await q.isHidden('#wk-review') && (await S(q, () => state.settings.reviewHidden)) === '2026-11-02', 'ausgeblendet für diese Woche');
+    await S(q, () => { state.settings.reviewHidden = ''; state.settings.weekReview = false; save(); renderWeek(); });
+    ok(await q.isHidden('#wk-review'), 'abgeschaltet');
+    ok(!q.errors.length, 'keine Fehler ' + q.errors.join(' | '));
+    await r2.ctx.close();
   }
 
   console.log('16 · Schule ohne Vollversion');

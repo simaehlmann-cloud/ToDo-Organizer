@@ -22,7 +22,10 @@ const DEVICES = {
      11"-iPads (860 pt breit). Auf 1032 pt wäre die Schrift im Store-Bild
      winzig; das Layout ist dasselbe. */
   ipad:   { name: 'iPad 13"', viewport: { width: 860, height: 1147 }, scale: 2.4,
-            status: 24, home: 20, wide: true }
+            status: 24, home: 20, wide: true },
+  /* iPad quer (11"): ab 1100 pt zeigt die Woche Spalten */
+  ipadLand: { name: 'iPad quer', viewport: { width: 1180, height: 820 }, scale: 2.4,
+            status: 24, home: 20, wide: true, land: true }
 };
 
 function chromeCss(dev) {
@@ -69,22 +72,23 @@ async function openApp(browser, dev, opts = {}) {
     hasTouch: true, isMobile: !dev.wide, locale: 'de-DE', timezoneId: 'Europe/Berlin'
   });
   const page = await ctx.newPage();
-  await page.clock.setFixedTime(new Date(TODAY));
+  await page.clock.setFixedTime(new Date(opts.today || TODAY));
   await page.addInitScript(state => {
     try { localStorage.setItem('studiez-pro-v2', JSON.stringify(state)); } catch {}
-  }, STATE);
+  }, opts.state || STATE);
   for (const [fn, arg] of (opts.init || [])) await page.addInitScript(fn, arg);
   await page.goto(APP);
   await page.addStyleTag({ content: chromeCss(dev) });
-  await page.evaluate(({ icons, wide }) => {
+  await page.evaluate(({ icons, wide, day }) => {
     const s = document.createElement('div');
     s.id = 'sim-status';
-    s.innerHTML = `<span>${wide ? '9:41&nbsp;&nbsp;Di. 3. Nov.' : '9:41'}</span><span class="r">${icons}</span>`;
+    s.innerHTML = `<span>${wide ? '9:41&nbsp;&nbsp;' + day : '9:41'}</span><span class="r">${icons}</span>`;
     const h = document.createElement('div'); h.id = 'sim-home';
     document.body.append(s, h);
     // Startansicht ohne Animation
     document.querySelectorAll('.view').forEach(v => v.style.animation = 'none');
-  }, { icons: ICONS(dev.wide), wide: dev.wide });
+  }, { icons: ICONS(dev.wide), wide: dev.wide,
+       day: new Date(opts.today || TODAY).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '') });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(150);
   return { ctx, page };
