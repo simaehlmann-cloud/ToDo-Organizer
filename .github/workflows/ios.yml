@@ -186,6 +186,15 @@ jobs:
           fi
           echo "widget=$WIDGET" >> "$GITHUB_OUTPUT"
 
+          # ---- iCloud-Abgleich: nur, wenn das App-Profil iCloud (Schlüssel-Wert-Speicher) enthält ----
+          if /usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.ubiquity-kvstore-identifier' "$INHALT" >/dev/null 2>&1; then
+            echo "icloud=true" >> "$GITHUB_OUTPUT"
+            echo "iCloud im Profil: $(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.ubiquity-kvstore-identifier' "$INHALT")"
+          else
+            echo "icloud=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Das App-Profil enthält kein iCloud – Build ohne iCloud-Abgleich. Einrichten: APPSTORE-CONNECT.md, Abschnitt 10."
+          fi
+
           rm -f "$ZERT" "$PROFIL" "$INHALT"
           echo "profil_name=$NAME" >> "$GITHUB_OUTPUT"
           echo "vorhanden=true" >> "$GITHUB_OUTPUT"
@@ -219,26 +228,44 @@ jobs:
           PROFILE_NAME: ${{ steps.signieren.outputs.profil_name }}
           WIDGET_PROFILE_NAME: ${{ steps.signieren.outputs.widget_profil_name }}
           WIDGET_AN: ${{ steps.signieren.outputs.widget }}
+          ICLOUD_AN: ${{ steps.signieren.outputs.icloud }}
         run: |
           set -e
           # Icon (randlos, ohne Alpha) und Privacy-Manifest
           cp res/ios/icon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
           cp res/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
           # Brücke zu iOS (Widget-Daten, Schnellaktionen) und eigener SceneDelegate: immer
-          cp res/ios/app/WidgetDataPlugin.swift res/ios/app/SceneDelegate.swift ios/App/App/
+          cp res/ios/app/WidgetDataPlugin.swift res/ios/app/CloudSyncPlugin.swift res/ios/app/ToDoIntents.swift res/ios/app/SceneDelegate.swift ios/App/App/
+          # Englische Rückfragen (Kalender, Kamera, Fotos)
+          mkdir -p ios/App/App/en.lproj && cp res/ios/app/en.lproj/*.strings ios/App/App/en.lproj/
+          # Berechtigungen: nur, was das Profil auch hergibt
+          ENT=ios/App/App/App.entitlements
+          rm -f "$ENT"
           # Heute-Widget: App-Gruppe und Erweiterung
           if [ "$WIDGET_AN" = "true" ]; then
             export WIDGET=1
-            cp res/ios/app/App.entitlements ios/App/App/
+            cp res/ios/app/App.entitlements "$ENT"
             mkdir -p ios/App/TodayWidget && cp res/ios/widget/* ios/App/TodayWidget/
           fi
+          # iCloud-Abgleich (Schlüssel-Wert-Speicher)
+          if [ "$ICLOUD_AN" = "true" ]; then
+            export ICLOUD=1
+            /usr/libexec/PlistBuddy -c 'Add :com.apple.developer.ubiquity-kvstore-identifier string $(TeamIdentifierPrefix)de.maehlmann.todoorganizer' "$ENT"
+          fi
+          [ -f "$ENT" ] && { echo "--- App.entitlements ---"; cat "$ENT"; }
           ruby tools/ios-setup.rb
 
           P=ios/App/App/Info.plist
           setze() { /usr/libexec/PlistBuddy -c "Delete :$1" "$P" 2>/dev/null || true
                     /usr/libexec/PlistBuddy -c "Add :$1 $2 $3" "$P"; }
           setze CFBundleDisplayName string "$APP_NAME"
+          # Für die App: Ist dieser Build mit iCloud-Berechtigung gebaut?
+          if [ "$ICLOUD_AN" = "true" ]; then setze TOICloudSync bool true; else setze TOICloudSync bool false; fi
           setze CFBundleDevelopmentRegion string de
+          # Deutsch und Englisch: Ohne „en“ meldet iOS der Web-App auf englischen
+          # Geräten Deutsch (navigator.language folgt den Lokalisierungen der App)
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleLocalizations" "$P" 2>/dev/null || true
+          plutil -insert CFBundleLocalizations -json '["de","en"]' "$P"
           # Nur Standard-Verschlüsselung (AES-GCM des Systems für das Backup):
           # ausgenommen, also false. Sonst fragt jeder Upload nach.
           setze ITSAppUsesNonExemptEncryption bool false
@@ -311,9 +338,13 @@ jobs:
             [ -s ios/App/App/public/purchase.js ] || { echo "::error::purchase.js fehlt im App-Paket."; FEHLER=1; }
           fi
           grep -q '@ebarooni/capacitor-calendar' "$SPM" || { echo "::error::Kalender-Plugin fehlt im Xcode-Projekt."; FEHLER=1; }
+          grep -q '@capawesome/capacitor-badge' "$SPM" || { echo "::error::Plugin für die Zahl am Symbol fehlt im Xcode-Projekt."; FEHLER=1; }
           for k in NSCalendarsFullAccessUsageDescription NSCameraUsageDescription NSPhotoLibraryUsageDescription NSRemindersFullAccessUsageDescription; do
             [ "$(holen $k)" != "FEHLT" ] || { echo "::error::$k fehlt in der Info.plist."; FEHLER=1; }
           done
+          grep -q 'en.lproj/InfoPlist.strings' "$PBX" || { echo "::error::Englische Rückfragen (en.lproj) fehlen im Xcode-Projekt."; FEHLER=1; }
+          plutil -lint ios/App/App/en.lproj/*.strings || { echo "::error::en.lproj: .strings-Datei fehlerhaft."; FEHLER=1; }
+          /usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations" ios/App/App/Info.plist | grep -q en || { echo "::error::CFBundleLocalizations ohne en."; FEHLER=1; }
           for p in local-notifications filesystem share app status-bar; do
             grep -q "@capacitor/$p\"" "$SPM" || { echo "::error::Plugin @capacitor/$p fehlt im Xcode-Projekt."; FEHLER=1; }
           done
@@ -322,6 +353,10 @@ jobs:
             && echo "Brücke WidgetDataPlugin angemeldet." \
             || { echo "::error::WidgetDataPlugin fehlt in packageClassList (capacitor.config.json)."; FEHLER=1; }
           grep -q 'WidgetDataPlugin.swift in Sources' "$PBX" || { echo "::error::WidgetDataPlugin.swift nicht im App-Ziel."; FEHLER=1; }
+          jq -e '.packageClassList | index("CloudSyncPlugin")' ios/App/App/capacitor.config.json > /dev/null \
+            || { echo "::error::CloudSyncPlugin fehlt in packageClassList."; FEHLER=1; }
+          grep -q 'CloudSyncPlugin.swift in Sources' "$PBX" || { echo "::error::CloudSyncPlugin.swift nicht im App-Ziel."; FEHLER=1; }
+          grep -q 'ToDoIntents.swift in Sources' "$PBX" || { echo "::error::ToDoIntents.swift (Siri) nicht im App-Ziel."; FEHLER=1; }
           grep -q 'shortcutItem' ios/App/App/SceneDelegate.swift || { echo "::error::SceneDelegate ohne Schnellaktionen."; FEHLER=1; }
           if grep -q 'TodayWidget.appex in Embed Foundation Extensions' "$PBX"; then
             echo "Heute-Widget eingebaut."

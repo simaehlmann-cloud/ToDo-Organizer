@@ -99,7 +99,8 @@ jobs:
             const fs = require("fs"), c = JSON.parse(fs.readFileSync("capacitor.config.json", "utf8"));
             c.android = Object.assign({}, c.android, { backgroundColor: "#e9ecf0", includePlugins: [
               "@capacitor/app", "@capacitor/filesystem", "@capacitor/local-notifications", "@capacitor/share",
-              "@capacitor/status-bar", "@ebarooni/capacitor-calendar", "@capgo/capacitor-share-target"] });
+              "@capacitor/status-bar", "@ebarooni/capacitor-calendar", "@capgo/capacitor-share-target",
+              "@capawesome/capacitor-badge"] });
             fs.writeFileSync("capacitor.config.json", JSON.stringify(c, null, 2));'
           npx cap add android
           npx cap sync android
@@ -119,6 +120,7 @@ jobs:
           done
           grep -q 'capgo-capacitor-share-target' android/capacitor.settings.gradle || { echo "::error::Teilen-Plugin fehlt."; FEHLER=1; }
           grep -q 'ebarooni-capacitor-calendar' android/capacitor.settings.gradle || { echo "::error::Kalender-Plugin fehlt."; FEHLER=1; }
+          grep -q 'capawesome-capacitor-badge' android/capacitor.settings.gradle || { echo "::error::Plugin für die Zahl am Symbol fehlt."; FEHLER=1; }
           [ -s android/app/src/main/assets/public/purchase.js ] || { echo "::error::purchase.js fehlt im App-Paket."; FEHLER=1; }
           echo "--- capacitor.settings.gradle ---"; cat android/capacitor.settings.gradle
           exit $FEHLER
