@@ -1,0 +1,8 @@
+/* Englische Texte für die Rückfragen von iOS (Info.plist hat die deutschen). */
+"NSCalendarsFullAccessUsageDescription" = "ToDo Organizer shows events from your calendars in the week view and adds tasks to your calendar when you ask. Everything stays on your device.";
+"NSCalendarsUsageDescription" = "ToDo Organizer shows events from your calendars in the week view and adds tasks to your calendar when you ask. Everything stays on your device.";
+"NSCalendarsWriteOnlyAccessUsageDescription" = "ToDo Organizer adds tasks to your calendar as events when you ask.";
+"NSRemindersFullAccessUsageDescription" = "ToDo Organizer does not read or change entries in the Reminders app. The calendar integration only includes this option technically.";
+"NSRemindersUsageDescription" = "ToDo Organizer does not read or change entries in the Reminders app. The calendar integration only includes this option technically.";
+"NSCameraUsageDescription" = "Use the camera to take a photo for a task if you like. The photo stays on your device.";
+"NSPhotoLibraryUsageDescription" = "You can add a photo from your library to a task. Only the photo you pick is used, and it stays on your device.";

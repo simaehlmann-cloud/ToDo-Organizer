@@ -25,12 +25,15 @@ res/ios/                      App-Icon 1024 px, Privacy-Manifest
 res/ios/widget/, res/ios/app/ Heute-Widget (Swift) und Brücke in der App
 tools/ios-setup.rb            passt das erzeugte Xcode-Projekt an
 tools/make-purchase-js.js     bündelt das Kauf-Plugin zu purchase.js
-tools/make-ferien.js          trägt die Schulferien aller Länder in index.html ein
+tools/make-ferien.js          trägt Schulferien (DE) und Feiertage/Ferien (AT, CH) in index.html ein
+tools/make-i18n.js            setzt die englische Oberfläche aus tools/i18n/ in index.html ein
 make-icons.py                 zeichnet das iOS-Icon
 make-legal-pages.js           erzeugt docs/ aus den Rechtstexten
 validate.js                   statische Prüfung
 tests/core.test.js            Kernlogik: Datumsrechnung, Wiederholung, Schnelleingabe, Erinnerungen
 tests/app.test.js             Ablauftest im Browser: Bedienung, Testphase, Kauf, Sperren, Kalender
+tests/i18n.test.js            englische Oberfläche: findet deutsche Reste, Schnelleingabe englisch
+tests/ios-mocks.js            nachgebildete iOS-Plugins für die Browsertests
 .github/workflows/ios.yml     iOS-Build, Signierung, Upload nach App Store Connect
 APPSTORE-CONNECT.md           einmalige Einrichtung bei Apple und GitHub
 store/STORE-TEXTE.md          Store-Texte, Kategorien, Prüfnotizen zum Hineinkopieren
@@ -49,6 +52,8 @@ node make-legal-pages.js   # nach jeder Änderung an einem Rechtstext
 node validate.js           # Version, Produkt-IDs, Rechtstexte, Icon, Workflow
 node tests/core.test.js    # Kernlogik, ohne Browser
 node tests/app.test.js     # Bedienung, Testphase, Kauf, Sperren mit simuliertem iOS
+node tests/i18n.test.js    # Englisch: deutsche Reste (--list zeigt sie), Sprachwechsel
+node tools/make-i18n.js    # nach jeder Änderung in tools/i18n/
 ```
 
 Für den Ablauftest einmalig: `npm install --no-save playwright@1.63.0 && npx playwright install chromium`.

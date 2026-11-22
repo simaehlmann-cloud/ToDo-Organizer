@@ -13,6 +13,8 @@ import Foundation
 import UIKit
 import Capacitor
 import WidgetKit
+import StoreKit
+import WebKit
 
 @objc(WidgetDataPlugin)
 public class WidgetDataPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -21,8 +23,47 @@ public class WidgetDataPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "set", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setShortcuts", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setShortcuts", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "takePending", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise)
     ]
+
+    private var pendingObserver: NSObjectProtocol?
+
+    public override func load() {
+        // Sprache des Geräts für die Web-App (Deutsch/Englisch). navigator.language
+        // folgt nur den Lokalisierungen der App – ein französisches iPhone meldete
+        // sonst Deutsch statt Englisch. Gilt ab dem ersten Laden der Seite.
+        let lang = (Locale.preferredLanguages.first ?? "").filter { $0.isLetter || $0 == "-" }
+        let script = WKUserScript(source: "window.TO_SYSLANG = \"\(lang)\";", injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        bridge?.webView?.configuration.userContentController.addUserScript(script)
+        // Siri hat eine Aufgabe vorgemerkt, während die App schon lief
+        pendingObserver = NotificationCenter.default.addObserver(forName: Notification.Name("ToDoPendingTasks"), object: nil, queue: .main) { [weak self] _ in
+            self?.notifyListeners("pending", data: [:])
+        }
+    }
+
+    /// Apples Bewertungsdialog anbieten. iOS entscheidet selbst, ob er erscheint
+    /// (höchstens dreimal im Jahr); in TestFlight erscheint er nie.
+    @objc func requestReview(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                SKStoreReviewController.requestReview(in: scene)
+                call.resolve(["asked": true])
+            } else {
+                call.resolve(["asked": false])
+            }
+        }
+    }
+
+    /// Von Siri/Kurzbefehlen vorgemerkte Aufgaben abholen (und löschen)
+    @objc func takePending(_ call: CAPPluginCall) {
+        let key = "todo.pendingTasks"
+        let list = UserDefaults.standard.stringArray(forKey: key) ?? []
+        UserDefaults.standard.removeObject(forKey: key)
+        call.resolve(["items": list])
+    }
 
     static let group = "group.de.maehlmann.todoorganizer"
     static let key = "snapshot"

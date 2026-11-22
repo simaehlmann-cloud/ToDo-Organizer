@@ -67,7 +67,7 @@ Der private Planer für Schule und Alltag: Stundenplan, Hausaufgaben und Klassen
 
 FÜR SCHULE UND UNTERRICHT
 • Stundenplan mit eigenen Zeiten, Fächern, Klassen und Räumen
-• Ferien und Feiertage aller 16 Bundesländer – Stunden fallen dort automatisch weg
+• Ferien und Feiertage für Deutschland, Österreich und die Schweiz – Stunden fallen dort automatisch weg
 • A/B-Wochen, auf Wunsch ohne Ferienwochen gezählt
 • Ausfall und Vertretung für einzelne Tage
 • Mehr- und Minderstunden: Vertretungen, Ausfälle und Aufsichten mit Saldo, auch als PDF
@@ -96,7 +96,7 @@ AUFGABEN, WIE DU SIE BRAUCHST
 • Ohne Schule wird der Stundenplan zum Wochenplan, etwa fürs Training
 
 KALENDER
-Alle Aufgaben im Monatsraster. Auf Wunsch zeigt die App die Termine deiner Kalender auf dem iPhone oder iPad an und trägt Aufgaben als Termin ein. Alternativ lässt sich ein privater Kalender per Adresse (ICS) einbinden.
+Alle Aufgaben im Monatsraster, mit den Terminen deiner Kalender auf dem Gerät – auch Google – und bis zu acht Kalender-Abos (Schule, Verein) in eigener Farbe.
 
 GEWOHNHEITEN
 Joggen, Lesen, Wasser trinken: Wochenziel festlegen, Tage abhaken und die Serie wachsen sehen.
@@ -135,7 +135,7 @@ Apple ohnehin mit. „aufgaben“ steht trotzdem hier, weil es im Untertitel nic
 Bei der ersten Version im Store bleibt das Feld leer. Für TestFlight-Tester
 („Was soll getestet werden?“):
 ```
-3.1: Ferien und Feiertage aller Bundesländer, A/B-Wochen, Ausfall und Vertretung, Hausaufgaben „bis nächste Mathe“, Klassenarbeiten und Lernpläne, Stundennotizen, Merkzettel für die nächste Stunde, „noch X Stunden bis …“, Aufgaben mit Uhrzeit von–bis, Wochenrückblick. 3.0: allgemeine To-do-App mit Schnelleingabe, Uhrzeiten, Vorab-Erinnerungen, Gewohnheiten, Vorlagen, Fotos, mehreren Einkaufslisten, Gerätekalender und Dunkelmodus. Bitte vor allem Erinnerungen, Kalenderzugriff und den Kauf testen.
+3.1: Ferien und Feiertage aller Bundesländer, A/B-Wochen, Ausfall und Vertretung, Hausaufgaben „bis nächste Mathe“, Klassenarbeiten und Lernpläne, Stundennotizen, Merkzettel für die nächste Stunde, „noch X Stunden bis …“, Aufgaben mit Uhrzeit von–bis, Wochenrückblick, mehrere Kalender-Abos, Zahl am App-Symbol. 3.0: allgemeine To-do-App mit Schnelleingabe, Uhrzeiten, Vorab-Erinnerungen, Gewohnheiten, Vorlagen, Fotos, mehreren Einkaufslisten, Gerätekalender und Dunkelmodus. Bitte vor allem Erinnerungen, Kalenderzugriff und den Kauf testen.
 ```
 
 ### Hinweise für die Prüfung (App Review → Notizen)
@@ -154,7 +154,7 @@ Permissions: calendar access is only requested when the user turns on "Geräteka
 
 To test the end of the trial quickly: Settings → "Info, Datenschutz und Impressum" (on iPad: "Info" in the sidebar) → tap the line "Version 3.1" seven times. The trial then lasts 3 minutes instead of 30 days. Tapping seven times again switches back.
 
-Network access happens only if the user enters their own ICS calendar URL in Settings, and for StoreKit. School holiday dates are bundled in the app (OpenHolidays API data, ODbL); nothing is fetched.
+Network access happens only if the user enters their own ICS calendar subscription URLs in Settings (up to eight), and for StoreKit. The optional app icon badge count is computed on the device. School holiday dates are bundled in the app (OpenHolidays API data, ODbL); nothing is fetched.
 ```
 
 ### Kontakt für die Prüfung
@@ -188,6 +188,121 @@ Alle Funktionen dauerhaft freischalten, ohne Abo
 Prüfungs-Screenshots: `iap/iap-testphase.png` (Begrüßung mit Testphase) und
 `iap/iap-vollversion.png` (Karte „Vollversion“ nach Ablauf), erzeugt mit
 `node store/make-iap-shots.js`.
+
+---
+
+## Englisch (zweite Lokalisierung, seit Update 13)
+
+Die App ist jetzt zweisprachig. In App Store Connect bei der App oben rechts
+neben „Deutsch“ die Sprache **Englisch (UK)** und **Englisch (USA)** hinzufügen
+(beide mit denselben Texten) und dort einfügen. Screenshots dürfen zunächst die
+deutschen bleiben; englische lassen sich später nachreichen.
+
+### Name EN (max. 30)
+```
+ToDo Organizer
+```
+
+### Untertitel EN (max. 30)
+```
+Planner for school and life
+```
+
+### Werbetext EN (max. 170)
+```
+Timetable with holidays, A/B weeks and covers, homework “until next Maths”, plus tasks, shopping and habits. No account, no subscription.
+```
+
+### Beschreibung EN (max. 4000)
+```
+The private planner for school and everyday life: timetable, homework and exams together with tasks, events, shopping and habits – for pupils, students, teachers and anyone who wants their week under control. ToDo Organizer needs no account and no server: all your data stays on your device.
+
+FOR SCHOOL AND TEACHING
+• Timetable with your own times, subjects, classes and rooms
+• Public and school holidays for Germany, Austria and Switzerland – lessons are dropped automatically
+• A/B weeks, optionally not counting holiday weeks
+• Cancellations and covers for single days
+• Extra and missed lessons: covers, cancellations and duties with a balance, also as PDF
+• Notes for every lesson, as a lesson log per class
+• “Note for the next lesson”: the reminder appears on the class's next lesson
+• How many lessons are left until the test and the holidays – per class
+• Homework “until next Maths”: due at the next lesson, across holidays
+• Plan tests: prepare, write, mark with a hand-back deadline
+• Exams: a study plan with sessions spread out until the date
+
+JUST TYPE WHAT NEEDS DOING
+“Dentist tomorrow 3pm #Personal !”, “Training Tue 6–7:30pm” or “Take out the bins every Tuesday” – quick entry recognises date, time from–to, category, priority and repeat by itself.
+
+YOUR WEEK AT A GLANCE
+The start screen shows the whole week: tasks, events from your calendars and your weekly plan, sorted by time. Overdue items are collected at the top and move to today or tomorrow with one tap. On Sundays there's a short weekly review.
+
+TASKS THE WAY YOU NEED THEM
+• Your own categories in any colour, priorities and notes
+• Due date with a time from–to, e.g. for training
+• Reminder when due or earlier: 15 minutes, an hour, one or two days or a week
+• Repeats: daily, weekdays, weekly, monthly, yearly or custom (“every 3 days”), optionally from completion
+• Subtasks with a progress bar for bigger plans
+• Photos on tasks
+• Templates for recurring routines like packing for a holiday or cleaning the flat
+• Checking off, moving and deleting can be undone
+• Without school, the timetable becomes a weekly plan, e.g. for training
+
+CALENDAR
+All tasks in a month grid, with events from the calendars on your device – including Google – and up to eight calendar subscriptions (school, club) in their own colours.
+
+HABITS
+Jogging, reading, drinking water: set a weekly goal, tick off days and watch your streak grow.
+
+SHOPPING LISTS
+Several lists, e.g. for the supermarket and the pharmacy. The app suggests what you buy often. Tick items off in the shop, tidy up, share the list.
+
+REMINDERS
+A daily summary at the time you choose and reminders for every task – even when the app is closed. Reschedule or check off right from the notification.
+
+WIDGET, SIRI AND SHORTCUTS
+Your day on the home screen. Long-press the app icon: new task or cover lesson. Optional number of due tasks on the app icon.
+
+IPHONE AND IPAD IN SYNC
+With iCloud sync your data stays the same on all your devices – via your own iCloud account, no third-party server.
+
+BACKUP
+Automatically to the Files app every week, plus manual backup, optionally encrypted (AES-GCM).
+
+PRIVATE FROM THE START
+• No account, no sign-up
+• No server: your entries only leave the device when you export or share them yourself
+• No ads, no tracking, no analytics
+
+TRY IT AND FULL VERSION
+The app is free, with all features for 30 days. Afterwards, tasks with quick entry, times, reminders, repeats, subtasks and notes, public and school holidays and backup stay free. Calendar, photos, templates, weekly plan and timetable with all school features, habits, shopping lists and statistics are part of the full version: a one-time purchase, no subscription, with Family Sharing. The trial ends by itself, nothing is charged. Your entries are always kept.
+
+In English and German. For iPhone and iPad.
+```
+
+### Schlüsselwörter EN (max. 100)
+```
+todo,tasks,timetable,homework,school,teacher,exam,reminder,shopping list,calendar,habits,holidays
+```
+
+### In-App-Käufe EN – Testphase Anzeigename (max. 35)
+```
+30-day trial
+```
+
+### In-App-Käufe EN – Testphase Beschreibung (max. 55)
+```
+Try every feature free for 30 days
+```
+
+### In-App-Käufe EN – Vollversion Anzeigename (max. 35)
+```
+Full version
+```
+
+### In-App-Käufe EN – Vollversion Beschreibung (max. 55)
+```
+Unlock every feature for good, no subscription
+```
 
 ---
 

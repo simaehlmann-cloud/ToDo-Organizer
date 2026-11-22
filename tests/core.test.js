@@ -35,7 +35,7 @@ function load(nowStr) {
   }
   const ctx = { Date: FakeDate, console };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, buildTablePdf, pdfFit, pdfText, hmMin, addMinutes, validEnd, timeRange, durLabel, firstOverlap, countLessons, nextFerien, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS };', ctx);
+  vm.runInContext(code + '\n;globalThis.__ = { isoOf, todayISO, addDays, dowOf, mondayOf, nextDue, recLabel, parseQuick, reminderAt, habitWeek, habitStreak, lessonStart, nextLesson, addMonths, parseISO, matchSubject, easterSunday, publicHolidays, holidayName, ferienName, dayOff, isFerienWeek, abWeekOf, lessonOn, planExam, subValue, subSummary, schoolPeriod, slotLabel, lessonBlock, breaksOf, occupies, buildTablePdf, pdfFit, pdfText, hmMin, addMinutes, validEnd, timeRange, durLabel, firstOverlap, countLessons, nextFerien, strHash, syncTrack, syncMerge, syncOrder, FERIEN, FERIEN_NAMES, FERIEN_BIS, REGIONS, REGIONS_EXTRA, regionName };', ctx);
   return { ...ctx.__, now: new FakeDate() };
 }
 
@@ -185,7 +185,7 @@ eq(C.holidayName('2025-05-08', 'BE'), '80. Jahrestag des Kriegsendes', 'einmalig
 eq(Object.keys(C.publicHolidays(2026, 'BE')).every(k => k.startsWith('2026')), true, 'nur Tage des Jahres');
 
 console.log('Ferien');
-eq(Object.keys(C.FERIEN).length, 16, '16 Länder');
+eq(Object.keys(C.FERIEN).filter(r => /^[A-Z]{2}$/.test(r)).length, 16, '16 Länder');
 eq(C.FERIEN_BIS >= '2029-08-01', true, 'Daten reichen mindestens bis Sommer 2029');
 const F = r => (iso => C.dayOff(iso, r, C.FERIEN[r], C.FERIEN_NAMES));
 eq(F('NI')('2026-10-20').ferien, 'Herbstferien', 'NI Herbstferien 2026');
@@ -199,7 +199,8 @@ eq(C.isFerienWeek('2026-11-02', '', null, null), false, 'ohne Land nie Ferien');
 for (const r of Object.keys(C.FERIEN)) {
   const ok = C.FERIEN[r].every(x => /^\d{4}-\d{2}-\d{2}$/.test(x[0]) && x[1] >= x[0] && C.FERIEN_NAMES[x[2]]);
   const sommer = C.FERIEN[r].some(x => C.FERIEN_NAMES[x[2]] === 'Sommerferien' && x[0].startsWith('2027'));
-  eq(ok && sommer, true, r + ': Daten gültig, Sommerferien 2027 vorhanden');
+  if (/^[A-Z]{2}$/.test(r)) eq(ok && sommer, true, r + ': Daten gültig, Sommerferien 2027 vorhanden');
+  else eq(ok, true, r + ': Daten gültig');
   eq(C.FERIEN[r].every((x, i, l) => !i || x[0] > l[i - 1][1]), true, r + ': keine doppelten oder überlappenden Zeiträume');
 }
 
@@ -363,6 +364,100 @@ const kl = [{ id: 'k1', day: 2, slot: 4, subject: 'Mathe', room: '9a' }, { id: '
 eq(C.nextLesson(kl, slots, 'Mathe', C.now, { match: l => l.room === '7b' }).iso, '2026-11-05', 'nur Klasse 7b');
 eq(C.nextLesson(kl, slots, 'Mathe', C.now, { match: l => l.room === '9a' }).iso, '2026-11-03', '9a heute 11:50');
 eq(C.nextLesson(kl, slots, 'Mathe', new Date('2026-11-03T12:35:00'), { match: l => l.room === '9a' }).iso, '2026-11-06', 'nach dem Ende der Stunde: Fr');
+
+console.log('Abgleich zwischen Geräten');
+{
+  const T0 = 1000, T1 = 2000, T2 = 3000;
+  // Gerät A: zwei Aufgaben, merkt sich Stand
+  let mA = C.syncTrack(null, { a: { t: 'Eins' }, b: { t: 'Zwei' } }, T0);
+  eq([mA.u.a, mA.u.b, Object.keys(mA.t).length], [T0, T0, 0], 'erste Erfassung');
+  // A ändert b, löscht a
+  mA = C.syncTrack(mA, { b: { t: 'Zwei!' } }, T1);
+  eq([mA.u.b, mA.t.a], [T1, T1], 'Änderung und Grabstein');
+  // unveränderte Einträge behalten ihre Zeit
+  const mA2 = C.syncTrack(mA, { b: { t: 'Zwei!' } }, T2);
+  eq([mA2.u.b, mA2.t.a], [T1, T1], 'nichts geändert → Zeiten bleiben');
+  // Zusammenführen: Gegenseite (iCloud) hat a (alt, T0), b (alt), c (neu von B)
+  const remote = { i: { a: { t: 'Eins' }, b: { t: 'Zwei' }, c: { t: 'Drei' } }, u: { a: T0, b: T0, c: T1 }, t: {} };
+  const r = C.syncMerge({ items: { b: { t: 'Zwei!' } }, meta: mA }, remote);
+  eq(Object.keys(r.items).sort(), ['b', 'c'], 'a gelöscht, c dazu');
+  eq([r.items.b.t, r.meta.t.a, r.localChanged, r.remoteChanged], ['Zwei!', T1, true, true], 'neuere Fassung gewinnt, Grabstein bleibt');
+  // B hat a später noch bearbeitet → a lebt wieder
+  const r2 = C.syncMerge({ items: {}, meta: { h: {}, u: {}, t: { a: T1 } } }, { i: { a: { t: 'Eins neu' } }, u: { a: T2 }, t: {} });
+  eq(r2.items.a && r2.items.a.t, 'Eins neu', 'Änderung nach dem Löschen gewinnt');
+  // nichts zu tun
+  const same = C.syncTrack(null, { x: { v: 1 } }, T0);
+  const r3 = C.syncMerge({ items: { x: { v: 1 } }, meta: same }, { i: { x: { v: 1 } }, u: { x: T0 }, t: {} });
+  eq([r3.localChanged, r3.remoteChanged], [false, false], 'gleicher Stand: keine Änderung');
+  // leere Gegenseite → hochladen
+  const r4 = C.syncMerge({ items: { x: { v: 1 } }, meta: same }, null);
+  eq([r4.localChanged, r4.remoteChanged, r4.meta.u.x], [false, true, T0], 'leeres iCloud → hochladen');
+  // gleich alt, verschieden: beide Geräte entscheiden gleich
+  const L = { items: { k: { v: 'L' } }, meta: C.syncTrack(null, { k: { v: 'L' } }, T1) };
+  const R = { i: { k: { v: 'R' } }, u: { k: T1 }, t: {} };
+  const rL = C.syncMerge(L, R).items.k.v;
+  const rR = C.syncMerge({ items: { k: { v: 'R' } }, meta: C.syncTrack(null, { k: { v: 'R' } }, T1) }, { i: { k: { v: 'L' } }, u: { k: T1 }, t: {} }).items.k.v;
+  eq(rL, rR, 'Gleichstand eindeutig');
+  // Grabsteine verfallen nach 120 Tagen
+  const old = C.syncTrack({ h: {}, u: {}, t: { z: T0 } }, {}, T0 + 121 * 864e5);
+  eq(Object.keys(old.t), [], 'alte Grabsteine verfallen');
+  eq(C.syncOrder(new Set(['n', 'b', 'a']), ['a', 'b'], ['n', 'a', 'b']), ['a', 'b', 'n'], 'Reihenfolge: bekannte zuerst, neue dahinter');
+  eq(C.strHash('abc') === C.strHash('abc') && C.strHash('abc') !== C.strHash('abd'), true, 'Prüfsumme');
+}
+
+console.log('Österreich und Schweiz');
+eq(C.holidayName('2026-10-26', 'AT-WI'), 'Nationalfeiertag', 'AT: Nationalfeiertag');
+eq(C.holidayName('2026-12-08', 'AT-TI'), 'Mariä Empfängnis', 'AT: Mariä Empfängnis');
+eq(C.holidayName('2026-10-03', 'AT-WI'), null, 'AT: kein Tag der Deutschen Einheit');
+eq(C.holidayName('2026-08-01', 'CH-ZH'), 'Bundesfeiertag', 'CH: Bundesfeiertag');
+eq(C.holidayName('2026-01-06', 'CH-TI'), 'Dreikönigstag', 'CH-TI: Dreikönigstag');
+eq(C.holidayName('2026-01-06', 'CH-ZH'), null, 'CH-ZH: kein Dreikönigstag');
+eq(C.ferienName('2026-02-03', C.FERIEN['AT-WI'], C.FERIEN_NAMES), 'Semesterferien', 'Wien: Semesterferien Februar');
+eq(C.ferienName('2026-02-03', C.FERIEN['AT-OÖ'], C.FERIEN_NAMES), null, 'Oberösterreich: später');
+eq(C.ferienName('2026-07-20', C.FERIEN['CH-ZH'], C.FERIEN_NAMES), 'Sommerferien', 'Zürich: Sommerferien (Volksschule)');
+eq(C.ferienName('2026-05-15', C.FERIEN['CH-ZH'], C.FERIEN_NAMES), null, 'Zürich: Auffahrtsbrücke nur Mittelschulen → nicht dabei');
+eq([C.regionName('NI'), C.regionName('AT-WI'), C.regionName('CH-ZH'), C.regionName('XX')], ['Niedersachsen', 'Wien', 'Zürich', null], 'Regionsnamen');
+eq(Object.keys(C.REGIONS_EXTRA).length, 35, '9 Bundesländer + 26 Kantone');
+eq(C.dayOff('2026-08-01', 'CH-BE', C.FERIEN['CH-BE'], C.FERIEN_NAMES).holiday, 'Bundesfeiertag', 'dayOff mit Kanton');
+
+console.log('Englische Schnelleingabe');
+{
+  const E = (t, o) => { const r = C.parseQuick(t, Object.assign({ now: C.now, categories: cats, en: true }, o)); delete r.hits; return r; };
+  const subsE = ['Mathe', 'Physics', 'Biology'];
+  eq(E('Call dentist tomorrow 9am'), exp({ title: 'Call dentist', date: '2026-11-04', time: '09:00' }), 'tomorrow 9am');
+  eq(E('Football training Thu 6-7:30pm'), exp({ title: 'Football training', date: '2026-11-05', time: '18:00', end: '19:30' }), 'Thu 6-7:30pm');
+  eq(E('Meeting next Monday at 14:30 for 90 min'), exp({ title: 'Meeting', date: '2026-11-09', time: '14:30', end: '16:00' }), 'next Monday, at 14:30, 90 min');
+  eq(E('Gym every Wednesday 7pm'), exp({ title: 'Gym', date: '2026-11-04', time: '19:00', rec: 'weekly' }), 'every Wednesday 7pm');
+  eq(E('Water plants every 3 days'), exp({ title: 'Water plants', date: '2026-11-03', rec: 'custom', every: 3, unit: 'd' }), 'every 3 days');
+  eq(E('Pay rent monthly #Privat !high'), exp({ title: 'Pay rent', date: '2026-11-03', rec: 'monthly', catId: 'c1', prio: 'hoch' }), 'monthly, #cat, !high');
+  eq(E('Mum birthday Nov 20th'), exp({ title: 'Mum birthday', date: '2026-11-20' }), 'Nov 20th');
+  eq(E('Exam on the 5th of December'), exp({ title: 'Exam', date: '2026-12-05' }), '5th of December');
+  eq(E('Report 12/1').date, '2027-01-12', '12/1 = 12. Januar (Tag/Monat, nächstes Jahr)');
+  eq(E('Report 12/1', { us: true }).date, '2026-12-01', '12/1 = 1. Dezember (USA)');
+  eq(E('Dinner tonight').time, '19:00', 'tonight → abends');
+  eq(E('Call Tom in 2 weeks').date, '2026-11-17', 'in 2 weeks');
+  eq(E('Buy sun cream'), exp({ title: 'Buy sun cream' }), '„sun“ ist kein Sonntag');
+  eq(E('Sun cream and towels'), exp({ title: 'Sun cream and towels' }), '„Sun cream“ am Anfang: kein Sonntag');
+  eq(E('Read May newsletter'), exp({ title: 'Read May newsletter' }), '„May“ ohne Zahl ist kein Datum');
+  eq(E('Today review notes today').date, '2026-11-03', 'today doppelt');
+  eq(E('Today review notes today').title, 'review notes today', 'nicht verbrauchtes „today“ bleibt englisch');
+  eq(E('Homework until next Mathe', { subjects: subsE, lessonDate: () => ({ iso: '2026-11-06' }) }).subject, 'Mathe', 'until next <Fach>');
+  eq(E('Lab report for next Physics', { subjects: subsE, lessonDate: () => ({ iso: '2026-11-06' }) }).date, '2026-11-06', 'for next <Fach> → nächste Stunde');
+  eq(E('Lunch at noon').time, '12:00', 'noon');
+  eq(E('Run 12-1pm').time + '–' + E('Run 12-1pm').end, '12:00–13:00', '12-1pm');
+  eq(E('Shift 11-1pm').time, '11:00', '11-1pm beginnt vormittags');
+  eq(E('Page 13-15'), exp({ title: 'Page 13-15' }), 'Seitenzahlen bleiben');
+  eq(C.parseQuick('Training Di 18 Uhr', { now: C.now, en: true }).time, '18:00', 'deutsche Angaben gehen auch auf Englisch');
+  eq(E('Laundry weekdays'), exp({ title: 'Laundry', date: '2026-11-03', rec: 'weekdays' }), 'weekdays');
+  // Englische Titel, die wie deutsche Kürzel aussehen
+  eq(E('Do laundry'), exp({ title: 'Do laundry' }), '„Do“ ist kein Donnerstag');
+  eq(E('Call Mo about rent'), exp({ title: 'Call Mo about rent' }), '„Mo“ ist kein Montag');
+  eq(E('Mi casa cleaning'), exp({ title: 'Mi casa cleaning' }), '„Mi“ ist kein Mittwoch');
+  eq(E('Am I done'), exp({ title: 'Am I done' }), '„Am“ bleibt im Titel');
+  eq(E('Fr. Smith meeting'), exp({ title: 'Fr. Smith meeting' }), '„Fr.“ ist kein Freitag');
+  eq(E('So tired, sleep early'), exp({ title: 'So tired, sleep early' }), '„So“ ist kein Sonntag');
+  eq(C.parseQuick('Wäsche Do', { now: C.now }).date, '2026-11-05', 'auf Deutsch bleibt „Do“ Donnerstag');
+}
 
 console.log('PDF');
 const rowsP = Array.from({ length: 80 }, (_, i) => ['Di 03.11.26', '3. Std', 'Vertretung', '8c', 'Mathe', '+1', 'Notiz (' + i + ') äöü € – „Zitat“']);

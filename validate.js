@@ -165,14 +165,44 @@ if (!wf.includes('CFBundleURLSchemes') || !html.includes('todoorganizer:')) E('L
 if (!html.includes('/* ==FERIEN-BEGIN==') || !html.includes('/* ==FERIEN-END== */')) E('FERIEN-Block fehlt – node tools/make-ferien.js ausführen');
 else {
   const bis = (html.match(/FERIEN_BIS = "(\d{4}-\d{2}-\d{2})"/) || [])[1] || '';
-  const regionen = (html.slice(html.indexOf('const FERIEN = {'), html.indexOf('/* ==FERIEN-END== */')).match(/^  [A-Z]{2}: \[/gm) || []).length;
+  const fb = html.slice(html.indexOf('const FERIEN = {'), html.indexOf('/* ==FERIEN-END== */'));
+  const ferienTeil = fb.slice(0, fb.indexOf('};'));
+  const regionen = (ferienTeil.match(/^  [A-Z]{2}: \[/gm) || []).length;
   if (regionen !== 16) E('FERIEN: ' + regionen + ' statt 16 Länder');
+  const atch = (ferienTeil.match(/^  "(AT|CH)-[^"]+": \[/gm) || []).length;
+  if (atch !== 35) E('FERIEN: ' + atch + ' statt 35 Regionen in Österreich/Schweiz');
+  if (!fb.includes('const FEIERTAGE_EXTRA = {')) E('FEIERTAGE_EXTRA fehlt (Österreich/Schweiz)');
   const inEinemJahr = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
   if (!bis) E('FERIEN_BIS fehlt');
   else if (bis < inEinemJahr) console.log('Hinweis: Ferientermine reichen nur bis ' + bis + ' – tools/make-ferien.js mit neuen Daten ausführen.');
   if (!/OpenHolidays/.test(html.slice(html.indexOf('id="view-about"')))) E('Quellenangabe OpenHolidays (ODbL) fehlt auf der Info-Seite');
 }
-for (const f of ['tests/core.test.js', 'tests/app.test.js']) if (!gibt(f)) E(f + ' fehlt');
+for (const f of ['tests/core.test.js', 'tests/app.test.js', 'tests/i18n.test.js', 'tests/ios-mocks.js']) if (!gibt(f)) E(f + ' fehlt');
+
+// ---- Englisch: Übersetzungsblock aktuell, Englisch-Dateien fürs Gerät vorhanden --------
+{
+  const r = require('child_process').spawnSync(process.execPath, ['tools/make-i18n.js', '--check'], { encoding: 'utf8' });
+  if (r.status !== 0) E((r.stderr || r.stdout || 'make-i18n.js --check').trim());
+  if (!/const T = s => I18N\.tr\(s\);/.test(html)) E('index.html: T() fehlt');
+  if (!gibt('res/ios/app/en.lproj/InfoPlist.strings')) E('res/ios/app/en.lproj/InfoPlist.strings fehlt (englische Rückfragen)');
+  else {
+    const ip = lies('res/ios/app/en.lproj/InfoPlist.strings');
+    for (const k of ['NSCalendarsFullAccessUsageDescription', 'NSCameraUsageDescription', 'NSPhotoLibraryUsageDescription', 'NSRemindersFullAccessUsageDescription'])
+      if (!ip.includes('"' + k + '"')) E('en.lproj/InfoPlist.strings: ' + k + ' fehlt');
+  }
+  if (!wf.includes('CFBundleLocalizations')) E('ios.yml: CFBundleLocalizations (de, en) fehlt');
+  for (const f of ['InfoPlist.strings', 'AppShortcuts.strings', 'Localizable.strings']) {
+    const pf = 'res/ios/app/en.lproj/' + f;
+    if (!gibt(pf)) { E(pf + ' fehlt'); continue; }
+    lies(pf).replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map(z => z.trim()).filter(Boolean).forEach(z => {
+      if (!/^"(?:[^"\\]|\\.)*" = "(?:[^"\\]|\\.)*";$/.test(z)) E(pf + ': Zeile ungültig: ' + z.slice(0, 60));
+    });
+  }
+  // Siri-Sätze: jeder englische Schlüssel muss in ToDoIntents.swift als deutscher Satz stehen
+  const intents = lies('res/ios/app/ToDoIntents.swift');
+  for (const m of lies('res/ios/app/en.lproj/AppShortcuts.strings').matchAll(/^"([^"]+)" =/gm))
+    if (!intents.includes('"' + m[1].replace('${applicationName}', '\\(.applicationName)') + '"')) E('AppShortcuts.strings: „' + m[1] + '“ steht nicht in ToDoIntents.swift');
+}
 for (const dep of ['@ebarooni/capacitor-calendar', '@capacitor/status-bar'])
   if (!pkg.dependencies[dep]) E('package.json: ' + dep + ' fehlt');
 

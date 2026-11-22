@@ -179,3 +179,31 @@ Meldung ab, welches Profil neu erzeugt werden muss.
 
 Auf dem iPhone: Home-Bildschirm lange drücken → „+“ → „ToDo Organizer“ → Heute.
 
+
+## 10. iCloud-Abgleich einrichten (einmalig)
+
+Der Abgleich zwischen iPhone und iPad nutzt den iCloud-Schlüssel-Wert-Speicher
+des Nutzers – kein eigener Server, kein Container nötig. Ohne diese Schritte
+baut der signierte Lauf wie bisher; die App zeigt dann „ohne iCloud gebaut“.
+
+developer.apple.com → Certificates, Identifiers & Profiles:
+
+1. **App-ID erweitern:** Identifiers → `de.maehlmann.todoorganizer` →
+   **iCloud** anhaken. Darunter genügt „Compatible with Xcode 5“ bzw. die
+   Voreinstellung (Schlüssel-Wert-Speicher, **kein** Container nötig) → Save.
+   (Apple warnt, dass Profile ungültig werden – das ist gewollt.)
+2. **Profil neu erzeugen:** Profiles → App-Store-Profil der App → Edit → Save →
+   Download. (Das Widget-Profil bleibt, wie es ist.)
+3. **Secret ersetzen:** `IOS_PROVISIONING_PROFILE` mit dem neuen Profil
+   (base64, wie in Abschnitt 4).
+4. Actions → Run workflow. Im Schritt „Signierung einrichten“ steht dann
+   „iCloud im Profil: …“, die App zeigt unter Einstellungen → iCloud-Abgleich
+   den Schalter.
+
+Auf beiden Geräten: in iOS bei iCloud angemeldet sein, in der App den Schalter
+einschalten. Beim zweiten Gerät fragt die App, ob zusammengeführt oder der
+iCloud-Stand übernommen werden soll. Grenze von Apple: 1 MB Daten insgesamt
+(reicht für Jahre an Aufgaben; Fotos werden nicht abgeglichen).
+
+Datenschutz: Die Daten liegen im iCloud-Konto des Nutzers bei Apple
+(Ende-zu-Ende nur mit „Erweitertem Datenschutz“); der Entwickler hat keinen Zugriff.

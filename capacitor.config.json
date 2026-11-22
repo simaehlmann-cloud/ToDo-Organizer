@@ -5,5 +5,11 @@
   "ios": {
     "contentInset": "never",
     "backgroundColor": "#e9ecf0"
+  },
+  "plugins": {
+    "Badge": {
+      "persist": true,
+      "autoClear": false
+    }
   }
 }

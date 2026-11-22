@@ -11,6 +11,8 @@
 #                            die Brücke (WidgetDataPlugin) und Schnellaktionen
 #                            kommen immer ins Projekt
 #   WIDGET_PROFILE_NAME      Profil des Widgets (de.maehlmann.todoorganizer.widget)
+#   ICLOUD=1                 iCloud-Abgleich: App.entitlements enthält den
+#                            Schlüssel-Wert-Speicher (vom Workflow erzeugt)
 #
 # Die Dateien (res/ios/app, res/ios/widget) kopiert der Workflow vorher nach
 # ios/App/App bzw. ios/App/TodayWidget – SceneDelegate.swift ersetzt dabei
@@ -60,21 +62,49 @@ end
 # Ein eigener Startbildschirm im Storyboard hilft in Capacitor 8 NICHT: Der
 # SceneDelegate erzeugt CAPBridgeViewController im Code, das Storyboard bleibt
 # unbenutzt (deshalb kam das Widget bis Build 3.1 ohne Daten).
-r = gruppe.files.find { |x| x.path == 'WidgetDataPlugin.swift' } || gruppe.new_reference('WidgetDataPlugin.swift')
-ziel.source_build_phase.add_file_reference(r, true) unless ziel.source_build_phase.files_references.include?(r)
+# Ebenso der iCloud-Abgleich (CloudSyncPlugin; ohne Berechtigung meldet er nur „nicht eingerichtet“)
+# und Siri/Kurzbefehle (ToDoIntents.swift, App Intents ab iOS 16).
+%w[WidgetDataPlugin.swift CloudSyncPlugin.swift ToDoIntents.swift].each do |datei|
+  r = gruppe.files.find { |x| x.path == datei } || gruppe.new_reference(datei)
+  ziel.source_build_phase.add_file_reference(r, true) unless ziel.source_build_phase.files_references.include?(r)
+end
+# ---- Englisch (seit 3.1, Update 13) ---------------------------------------------
+# Die Web-App ist zweisprachig. iOS meldet der Web-App die Sprache nur, wenn die
+# App sie als Lokalisierung führt (CFBundleLocalizations setzt der Workflow);
+# en.lproj/InfoPlist.strings liefert die englischen Rückfragen (Kalender, Kamera, Fotos).
+# AppShortcuts.strings und Localizable.strings: Siri-Sätze und Kurzbefehl-Titel auf Englisch.
+%w[InfoPlist.strings AppShortcuts.strings Localizable.strings].each do |datei|
+  unless File.exist?("ios/App/App/en.lproj/#{datei}")
+    warn "en.lproj/#{datei} fehlt – nur deutsch"
+    next
+  end
+  vg = gruppe.children.find { |x| x.isa == 'PBXVariantGroup' && x.name == datei } ||
+       gruppe.new_variant_group(datei)
+  en = vg.files.find { |x| x.path == "en.lproj/#{datei}" } || vg.new_reference("en.lproj/#{datei}")
+  en.name = 'en'
+  en.last_known_file_type = 'text.plist.strings'
+  ziel.resources_build_phase.add_file_reference(vg, true) unless ziel.resources_build_phase.files_references.include?(vg)
+end
+projekt.root_object.known_regions = (projekt.root_object.known_regions | %w[de en])
+
 require 'json'
 cfg_pfad = 'ios/App/App/capacitor.config.json'
 cfg = JSON.parse(File.read(cfg_pfad))
-cfg['packageClassList'] = (cfg['packageClassList'] || []) | ['WidgetDataPlugin']
+cfg['packageClassList'] = (cfg['packageClassList'] || []) | ['WidgetDataPlugin', 'CloudSyncPlugin']
 File.write(cfg_pfad, JSON.pretty_generate(cfg) + "\n")
+
+# ---- Berechtigungen (App-Gruppe fürs Widget, iCloud) ------------------------------
+if ENV['WIDGET'] == '1' || ENV['ICLOUD'] == '1'
+  abort('App.entitlements fehlt') unless File.exist?('ios/App/App/App.entitlements')
+  gruppe.files.find { |x| x.path == 'App.entitlements' } || gruppe.new_reference('App.entitlements')
+  ziel.build_configurations.each { |c| c.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements' }
+end
 
 # ---- Heute-Widget ---------------------------------------------------------------
 widget = ENV['WIDGET'] == '1'
 if widget
   WIDGET_ID = APP_ID + '.widget'
-  # 1 · App-Gruppe für die App
-  gruppe.files.find { |x| x.path == 'App.entitlements' } || gruppe.new_reference('App.entitlements')
-  ziel.build_configurations.each { |c| c.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements' }
+  # 1 · App-Gruppe für die App: steht in App.entitlements (siehe oben)
 
   # 2 · Widget-Erweiterung als eigenes Ziel
   wz = projekt.targets.find { |t| t.name == 'TodayWidget' } ||
@@ -124,5 +154,5 @@ if widget
 end
 
 projekt.save
-puts "Heute-Widget: #{widget ? 'eingebaut' : 'nicht eingebaut'}"
+puts "Heute-Widget: #{widget ? 'eingebaut' : 'nicht eingebaut'}, iCloud-Abgleich: #{ENV['ICLOUD'] == '1' ? 'ja' : 'nein'}"
 puts "Xcode-Projekt angepasst (Version #{ENV['MARKETING_VERSION']}, Build #{ENV['CURRENT_PROJECT_VERSION']}, signiert: #{signieren})"

@@ -29,8 +29,18 @@ struct WDay: Decodable {
 
 struct WSnapshot: Decodable {
     let v: Int
+    let lang: String?         // "de" | "en" – Sprache der App (seit Update 13)
     let days: [WDay]
     let overdue: Int
+}
+
+/// Sprache des Widgets: wie in der App eingestellt, sonst wie das Gerät
+enum WLang {
+    static var en: Bool {
+        if let l = WidgetStore.load()?.lang { return l == "en" }
+        return !(Locale.preferredLanguages.first ?? "de").hasPrefix("de")
+    }
+    static func t(_ de: String, _ en: String) -> String { WLang.en ? en : de }
 }
 
 enum WidgetStore {
@@ -66,9 +76,9 @@ enum WidgetStore {
 
     static func hint() -> String {
         switch read() {
-        case .noGroup: return "Widget ohne App-Gruppe – bitte dem Entwickler melden."
-        case .unreadable: return "Daten nicht lesbar – bitte die App einmal öffnen."
-        default: return "Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag."
+        case .noGroup: return WLang.t("Widget ohne App-Gruppe – bitte dem Entwickler melden.", "Widget without app group – please tell the developer.")
+        case .unreadable: return WLang.t("Daten nicht lesbar – bitte die App einmal öffnen.", "Data not readable – please open the app once.")
+        default: return WLang.t("Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag.", "Open ToDo Organizer once – then your day appears here.")
         }
     }
 }
@@ -101,15 +111,15 @@ struct DayEntry: TimelineEntry {
     var hint: String = ""
 
     static func empty(_ date: Date) -> DayEntry {
-        DayEntry(date: date, label: "Heute", off: nil, items: [], overdue: 0, hasData: false, hint: WidgetStore.hint())
+        DayEntry(date: date, label: WLang.t("Heute", "Today"), off: nil, items: [], overdue: 0, hasData: false, hint: WidgetStore.hint())
     }
 
     static func sample(_ date: Date) -> DayEntry {
-        DayEntry(date: date, label: "Heute", off: nil, items: [
-            WItem(id: "1", kind: "lesson", time: "08:00", end: nil, title: "Mathe · 7b", color: "#2563eb", cancelled: nil),
-            WItem(id: "2", kind: "task", time: "11:30", end: nil, title: "Zahnarzt anrufen", color: "#059669", cancelled: nil),
-            WItem(id: "3", kind: "event", time: "14:00", end: nil, title: "Team-Meeting", color: "#34c759", cancelled: nil),
-            WItem(id: "4", kind: "task", time: "18:00", end: "19:30", title: "Fußballtraining", color: "#d97706", cancelled: nil)
+        DayEntry(date: date, label: WLang.t("Heute", "Today"), off: nil, items: [
+            WItem(id: "1", kind: "lesson", time: "08:00", end: nil, title: WLang.t("Mathe · 7b", "Maths · 7b"), color: "#2563eb", cancelled: nil),
+            WItem(id: "2", kind: "task", time: "11:30", end: nil, title: WLang.t("Zahnarzt anrufen", "Call dentist"), color: "#059669", cancelled: nil),
+            WItem(id: "3", kind: "event", time: "14:00", end: nil, title: WLang.t("Team-Meeting", "Team meeting"), color: "#34c759", cancelled: nil),
+            WItem(id: "4", kind: "task", time: "18:00", end: "19:30", title: WLang.t("Fußballtraining", "Football training"), color: "#d97706", cancelled: nil)
         ], overdue: 0, hasData: true)
     }
 }
@@ -167,9 +177,9 @@ struct Provider: TimelineProvider {
         for d in snap.days where d.iso < iso {
             overdue += d.items.filter { $0.kind == "task" }.count
         }
-        return DayEntry(date: date, label: day?.label ?? "Heute", off: day?.off,
+        return DayEntry(date: date, label: day?.label ?? WLang.t("Heute", "Today"), off: day?.off,
                         items: items, overdue: overdue, hasData: day != nil,
-                        hint: day == nil ? "Öffne die App, um diesen Tag zu laden." : "")
+                        hint: day == nil ? WLang.t("Öffne die App, um diesen Tag zu laden.", "Open the app to load this day.") : "")
     }
 }
 
@@ -241,7 +251,7 @@ struct TodayView: View {
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 if entry.overdue > 0 {
-                    Text(small ? "\(entry.overdue) !" : "\(entry.overdue) überfällig")
+                    Text(small ? "\(entry.overdue) !" : WLang.t("\(entry.overdue) überfällig", "\(entry.overdue) overdue"))
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.red)
                 }
@@ -253,13 +263,13 @@ struct TodayView: View {
                     .lineLimit(1)
             }
             if !entry.hasData {
-                Text(entry.hint.isEmpty ? "Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag." : entry.hint)
+                Text(entry.hint.isEmpty ? WLang.t("Öffne den ToDo Organizer einmal – dann erscheint hier dein Tag.", "Open ToDo Organizer once – then your day appears here.") : entry.hint)
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Spacer(minLength: 0)
             } else if entry.items.isEmpty {
                 Spacer(minLength: 0)
-                Text("Für heute ist nichts mehr offen.")
+                Text(WLang.t("Für heute ist nichts mehr offen.", "Nothing left open for today."))
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                 Spacer(minLength: 0)
@@ -268,7 +278,7 @@ struct TodayView: View {
                     ItemRow(item: item, small: small)
                 }
                 if entry.items.count > maxItems {
-                    Text("+ \(entry.items.count - maxItems) weitere")
+                    Text(WLang.t("+ \(entry.items.count - maxItems) weitere", "+ \(entry.items.count - maxItems) more"))
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
                 }
@@ -302,8 +312,8 @@ struct TodayWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             TodayView(entry: entry).widgetBackground()
         }
-        .configurationDisplayName("Heute")
-        .description("Fällige Aufgaben, Stunden und Termine von heute.")
+        .configurationDisplayName(WLang.t("Heute", "Today"))
+        .description(WLang.t("Fällige Aufgaben, Stunden und Termine von heute.", "Today's due tasks, lessons and events."))
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

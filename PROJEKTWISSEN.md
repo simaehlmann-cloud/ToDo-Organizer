@@ -40,6 +40,66 @@
 - **iPad:** ab 1100 px Breite Woche als Spalten Mo–Fr + Wochenende (`#wk-days.cols`).
 - **Schnellaktionen:** `WidgetData.setShortcuts` (je Profil), `SceneDelegate` leitet sie als Link weiter.
 
+## Update 13: breiteres Publikum (22.11.2026)
+
+**Englisch.** Block `==I18N-BEGIN==` in index.html, erzeugt mit `node tools/make-i18n.js` aus
+`tools/i18n/engine.js` (Laufzeit), `en.js` (Wörterbuch, ganzer Text eines Textknotens) und
+`en-rules.js` (Regeln für zusammengesetzte Sätze). Die App bleibt auf Deutsch geschrieben; ein
+MutationObserver übersetzt Textknoten und placeholder/title/aria-label vor dem Zeichnen.
+- Nutzerinhalte mit `ul()` statt `el()` anlegen (setzt `translate="no"`), feste Wörter darin vorher mit `T()`.
+- Was nicht im DOM landet (Mitteilungen, Widget-JSON, Teilen, PDF, .ics, Mails, Schnellaktionen) geht durch `T()`.
+- Neue deutsche Texte: in `tools/i18n/en.js` bzw. `en-rules.js` ergänzen, `make-i18n.js` ausführen,
+  `node tests/i18n.test.js --list` zeigt deutsche Reste. `validate.js` prüft, dass der Block aktuell ist.
+- Sprache: Einstellungen → „Sprache · Language“, nur auf dem Gerät (`localStorage["todo-lang"]`,
+  nicht in iCloud). „Automatisch“: Deutsch bei deutscher Gerätesprache, sonst Englisch.
+  Datumsformat `LOC` (de-DE, en-US auf US-Geräten, sonst en-GB); 12-Stunden-Uhr: Klasse `h12`.
+- iOS meldet `navigator.language` nur in den Sprachen der App → `CFBundleLocalizations` = de, en
+  (Workflow), dazu `window.TO_SYSLANG` aus WidgetDataPlugin. Englische Rückfragen:
+  `res/ios/app/en.lproj/InfoPlist.strings`. Widget und Siri lesen `lang` aus widget.json.
+- Schnelleingabe englisch: `enQuick()` im Kern übersetzt „tomorrow 9am“, „Tue 6-7:30pm“,
+  „every 3 days“, „Nov 20th“, „until next Maths“ … in die deutschen Angaben von `parseQuick`;
+  nicht verbrauchte Wörter kommen im Titel englisch zurück. Abkürzungen (Sun, Sat …) nur groß
+  und vor Zahl/Ende („Sun cream“ bleibt Titel).
+- Neue Nutzer auf englischem Gerät bekommen Kategorien, Vorlagen und Einkaufsliste englisch.
+- Bleibt deutsch: Siri-Sprachbefehle (Kurzbefehle-App geht), technische Angaben für Rückfragen,
+  Rechtstexte (Datenschutz/Impressum), Store-Bilder.
+
+**iCloud-Abgleich** (iPhone ↔ iPad): `Sync`-Modul, Schlüssel-Wert-Speicher `v1.<Sammlung>` mit
+`{i,u,t,o}`; Zusammenführen je Eintrag (neuer `u` gewinnt), Löschmarken 120 Tage. Gerätebezogene
+Einstellungen und Abo-Termine bleiben lokal. Grenze 960 KB. Einrichtung: APPSTORE-CONNECT.md, Abschnitt 10.
+
+Nach der unabhängigen Prüfung (22.11.) gilt beim Abgleich:
+- Erstes Zusammenführen auf einem Gerät: bei gleicher id gewinnt iCloud; Kategorien, Einkaufslisten
+  und Vorlagen mit gleicher id, aber anderem Namen bekommen hier eine neue id (`Sync.separate`).
+- Wieder einschalten nutzt die alte Merkliste (keine Frage, Löschungen von anderswo bleiben).
+- Einstellungen werden je Schlüssel abgeglichen; Kalender-Abos ohne `lastSync`/`error`.
+- Größe wird vor dem Übernehmen geprüft; der Zustand wird sofort gesichert, erst dann die Merkliste.
+- Nach über 110 Tagen ohne Abgleich gilt früher Abgeglichenes, das in iCloud fehlt, als gelöscht.
+- Hashes vom normalisierten Zustand (`Sync.snap`), sonst pendelt Ergänztes hin und her.
+- Dialoge suchen ihren Eintrag beim Speichern per id (`fresh()`); Rückgängig verfällt, sobald ein
+  Abgleich etwas übernommen hat (`dropUndo`). Siri legt Aufgaben direkt an, ohne Formular und Dialoge.
+
+**Österreich und Schweiz:** Regionen „AT-WI“, „CH-ZH“ …; Daten in `REGIONS_EXTRA`, `FEIERTAG_NAMES`,
+`FEIERTAGE_EXTRA` (tools/make-ferien.js). **Profile** Studium, Familie, Training/Verein (Wochenplan
+statt Stundenplan). **Schuljahres-Assistent** (`openYearDialog`). **Siri** (ToDoIntents.swift,
+Warteschlange über `WidgetData.takePending`). **Bewertungsbitte** einmal je Version nach 14 Tagen
+und 15 erledigten Aufgaben.
+
+## Kalender-Abos und Zahl am Symbol (22.11.2026)
+
+- `settings.extCals = [{ id, name, url, color, on, lastSync, error, added }]` (max. 8). Das frühere
+  Einzel-Abo (`extCalUrl`) wird beim Laden als `abo1` übernommen, seine Termine bekommen `calId`.
+  Termine ohne `calId` (Demo-Daten) bleiben sichtbar. `aboEvent()` setzt Name/Farbe, blendet
+  ausgeschaltete Abos aus. ICS liefert jetzt `end` (DTEND am selben Tag oder DURATION) und `location`.
+- Laden: beim Start und beim Zurückkehren in die App, wenn > 6 h her (nur in der App; im Browser
+  scheitert es oft an CORS). Hinweis in der Woche, wenn ein Abo > 3 Tage alt ist („Später“ = 1 Tag).
+- Google: geführter Dialog (Weg 1 Gerätekalender mit Schritten je iOS/Android, Weg 2 geheime
+  iCal-Adresse). Google-Webadresse und öffentliche Adresse werden erkannt. Keine Google-Anmeldung
+  in der App (bewusst: kein Server, kein Prüfverfahren).
+- Zahl am Symbol: `@capawesome/capacitor-badge@8.0.4` (iOS SPM + Android/ShortcutBadger).
+  `settings.badge` = today | overdue | off. Aktualisiert bei jedem Speichern und beim Wechsel in den
+  bzw. aus dem Hintergrund; über Nacht neu Fälliges erst beim nächsten Öffnen.
+
 ## Android-Bau auf GitHub (15.11.2026)
 
 - `android.yml`: ubuntu-latest, Java 21, `@capacitor/android@8.5.3` und

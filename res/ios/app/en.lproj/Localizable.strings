@@ -1,0 +1,7 @@
+/* Englische Titel der Siri-Kurzbefehle (ToDoIntents.swift) */
+"Neue Aufgabe" = "New task";
+"Legt im ToDo Organizer eine neue Aufgabe an. Datum und Uhrzeit im Text werden erkannt." = "Adds a new task to ToDo Organizer. Date and time in the text are recognised.";
+"Aufgabe" = "Task";
+"Was soll ich eintragen?" = "What should I add?";
+"Was steht heute an?" = "What's on today?";
+"Liest die heutigen Aufgaben, Stunden und Termine vor." = "Reads out today's tasks, lessons and events.";

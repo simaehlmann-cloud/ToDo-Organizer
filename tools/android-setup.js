@@ -78,6 +78,17 @@ write('values/todo_strings.xml', `<?xml version="1.0" encoding="utf-8"?>
     <string name="sc_shopping_short">Einkaufsliste</string>
 </resources>
 `);
+// Sprachen: Android nimmt „values“ für jede Sprache ohne eigenen Ordner. Deshalb
+// steht Englisch in values (auch für Französisch usw.) und Deutsch in values-de.
+write('values-de/todo_strings.xml', read(path.join(RES, 'values', 'todo_strings.xml')));
+write('values/todo_strings.xml', `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sc_task_short">New task</string>
+    <string name="sc_week_short">Week</string>
+    <string name="sc_timetable_short">Timetable</string>
+    <string name="sc_shopping_short">Shopping list</string>
+</resources>
+`);
 const sc = (id, slug, label) => `    <shortcut
         android:shortcutId="${id}"
         android:enabled="true"

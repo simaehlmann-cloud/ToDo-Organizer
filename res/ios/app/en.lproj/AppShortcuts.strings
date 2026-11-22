@@ -1,0 +1,7 @@
+/* Siri-Sätze auf Englisch. Schlüssel = deutsche Sätze aus ToDoIntents.swift (Entwicklungssprache Deutsch). */
+"Neue Aufgabe in ${applicationName}" = "New task in ${applicationName}";
+"${applicationName} neue Aufgabe" = "${applicationName} new task";
+"Aufgabe in ${applicationName} eintragen" = "Add a task in ${applicationName}";
+"Was steht heute an in ${applicationName}" = "What's on today in ${applicationName}";
+"${applicationName} heute" = "${applicationName} today";
+"Mein Tag in ${applicationName}" = "My day in ${applicationName}";

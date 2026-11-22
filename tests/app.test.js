@@ -22,64 +22,10 @@ const TRIAL = 'de.maehlmann.todoorganizer.testphase';
 let fails = 0, n = 0;
 const ok = (c, m) => { n++; if (!c) { fails++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); };
 
-/* ---- Nachbildungen der iOS-Plugins ---- */
-function iosMocks(o) {
-  o = o || {};
-  window.__log = { notif: [], cal: [], sb: [], widget: [] };
-  const own = Object.assign({}, o.owned || {});
-  const handlers = { approved: [], finished: [], productUpdated: [], receiptUpdated: [] };
-  const products = {};
-  const fire = (ev, x) => handlers[ev].forEach(f => f(x));
-  const tx = (id, date) => ({ products: [{ id }], purchaseDate: new Date(date), finish() { fire('finished', this); } });
-  const chain = {};
-  for (const k of Object.keys(handlers)) chain[k] = f => { handlers[k].push(f); return chain; };
-  const P = {
-    LocalNotifications: {
-      checkPermissions: async () => ({ display: 'granted' }), requestPermissions: async () => ({ display: 'granted' }),
-      getPending: async () => ({ notifications: [] }), cancel: async () => {},
-      schedule: async x => { window.__log.notif = x.notifications; }, registerActionTypes: async () => {}, addListener: () => {},
-      checkExactNotificationSetting: async () => ({ exact_alarm: window.__exact || 'denied' }),
-      changeExactNotificationSetting: async () => { window.__exact = 'granted'; return { exact_alarm: 'granted' }; }
-    },
-    StatusBar: { setStyle: async x => { window.__log.sb.push(x.style); } },
-    WidgetData: { set: async x => { window.__log.widget.push(x.json); }, status: async () => ({ group: true, bytes: (window.__log.widget.slice(-1)[0] || '').length }),
-      setShortcuts: async x => { window.__log.shortcuts = x.items; return { count: x.items.length }; } },
-    Share: { share: async x => { window.__log.share = x.text || x.files; } },
-    Filesystem: { writeFile: async x => { (window.__log.fs = window.__log.fs || []).push([x.directory, x.path, (x.data || '').length]); return { uri: 'file:///' + x.path }; },
-                  copy: async x => { (window.__log.fs = window.__log.fs || []).push(['copy', x.from, x.to]); } },
-    App: { addListener: () => {} },
-    CapacitorCalendar: {
-      checkPermission: async () => ({ result: o.calGranted ? 'granted' : 'prompt' }),
-      requestFullCalendarAccess: async () => ({ result: 'granted' }),
-      listCalendars: async () => ({ result: [{ id: 'k1', title: 'Privat (iCloud)', color: '#ff2d55' }, { id: 'k2', title: 'Arbeit', color: '#34c759' }] }),
-      listEventsInRange: async r => {
-        window.__log.cal.push(['list', r.from, r.to]);
-        const at = (d, h, m) => new Date(2026, 10, d, h, m).getTime();
-        return { result: [
-          { id: 'e1', title: 'Elternabend', calendarId: 'k1', startDate: at(4, 19, 0), endDate: at(4, 20, 30), isAllDay: false },
-          { id: 'e2', title: 'Messe', calendarId: 'k2', startDate: at(5, 0, 0), endDate: at(7, 0, 0), isAllDay: true },
-          { id: 'e3', title: 'Team-Meeting', calendarId: 'k2', startDate: at(3, 14, 0), endDate: at(3, 15, 0), isAllDay: false }
-        ] };
-      },
-      createEvent: async x => { window.__log.cal.push(['create', x.title, x.isAllDay, x.startDate]); return { id: 'new1' }; }
-    }
-  };
-  if (o.platform === 'android') delete P.WidgetData;
-  window.Capacitor = { getPlatform: () => o.platform || 'ios', isNativePlatform: () => true, Plugins: P };
-  window.CdvPurchase = {
-    ProductType: { NON_CONSUMABLE: 'nc' }, Platform: { APPLE_APPSTORE: 'ios-appstore' }, ErrorCode: { PAYMENT_CANCELLED: 6777006 },
-    store: {
-      register(l) { l.forEach(p => products[p.id] = { id: p.id, get owned() { return p.id in own; }, pricing: { price: p.id.endsWith('testphase') ? 'Gratis' : '2,99 €' },
-        getOffer() { return { order: async () => { own[p.id] = Date.now(); fire('approved', tx(p.id, own[p.id])); } }; } }); },
-      when() { return chain; }, error() {},
-      async initialize() { for (const id of Object.keys(own)) fire('approved', tx(id, own[id])); },
-      get(id) { return products[id]; }, async restorePurchases() {}
-    }
-  };
-}
+const { iosMocks } = require('./ios-mocks');
 
 async function open(browser, opt = {}) {
-  const ctx = await browser.newContext({ viewport: opt.wide ? { width: 1100, height: 900 } : { width: 390, height: 844 }, locale: 'de-DE', timezoneId: 'Europe/Berlin' });
+  const ctx = await browser.newContext({ viewport: opt.wide ? { width: 1100, height: 900 } : { width: 390, height: 844 }, locale: opt.locale || 'de-DE', timezoneId: 'Europe/Berlin' });
   const p = await ctx.newPage();
   p.errors = [];
   p.on('pageerror', e => p.errors.push(e.message));
@@ -87,6 +33,7 @@ async function open(browser, opt = {}) {
   p.on('dialog', d => d.accept(p.nextPrompt != null ? p.nextPrompt : undefined));
   await p.clock.setFixedTime(new Date(opt.now || NOW));
   if (opt.state) await p.addInitScript(s => localStorage.setItem('studiez-pro-v2', JSON.stringify(s)), opt.state);
+  if (opt.before) await opt.before(p);
   if (opt.ios) await p.addInitScript(iosMocks, opt.ios);
   if (opt.dark) await p.emulateMedia({ colorScheme: 'dark' });
   await p.goto(FILE);
@@ -1077,6 +1024,370 @@ const lastTask = p => S(p, () => state.tasks[state.tasks.length - 1]);
     const { ctx, p } = await open(browser, { ios: {} });
     await go(p, 'settings'); await S(p, () => updateReminderStatus()); await p.waitForTimeout(50);
     ok(await p.isHidden('#rem-android'), 'iOS: kein Android-Hinweis');
+    await ctx.close();
+  }
+
+  console.log('27 · Kalender-Abos und Zahl am Symbol');
+  {
+    // Übernahme des früheren Einzel-Abos
+    {
+      const { ctx, p } = await open(browser);
+      const m = await S(p, () => normalizeState({ settings: { extCalUrl: 'webcal://x.de/a.ics', extCalLastSync: 5 }, extEvents: [{ date: '2026-11-04', title: 'Alt' }] }));
+      ok(m.settings.extCals.length === 1 && m.settings.extCals[0].id === 'abo1' && m.settings.extCals[0].lastSync === 5 && m.extEvents[0].calId === 'abo1', 'früheres Abo übernommen');
+      const m2 = await S(p, () => normalizeState({ extEvents: [{ date: '2026-11-04', title: 'Demo', cal: 'Arbeit' }] }));
+      ok(!m2.extEvents[0].calId && m2.settings.extCals.length === 0, 'Termine ohne Abo bleiben');
+      await ctx.close();
+    }
+    const ICS_A = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:t1', 'SUMMARY:Training', 'DTSTART:20261103T180000', 'DTEND:20261103T193000', 'LOCATION:Sporthalle', 'RRULE:FREQ=WEEKLY;COUNT=4', 'END:VEVENT',
+                   'BEGIN:VEVENT', 'UID:t2', 'SUMMARY:Turnier', 'DTSTART:20261107T090000Z', 'DURATION:PT2H30M', 'END:VEVENT',
+                   'BEGIN:VEVENT', 'UID:t3', 'SUMMARY:Ausflug', 'DTSTART;VALUE=DATE:20261105', 'DTEND;VALUE=DATE:20261106', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const ICS_B = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:s1\r\nSUMMARY:Konferenz\r\nDTSTART:20261104T143000\r\nDTEND:20261104T160000\r\nEND:VEVENT\r\nEND:VCALENDAR';
+    const ics = { 'https://verein.de/k.ics': ICS_A, 'https://schule.de/k.ics': ICS_B, 'https://calendar.google.com/calendar/ical/abc/private-1/basic.ics': ICS_B.replace('Konferenz', 'Google-Termin').replace('s1', 'g1') };
+    const st = { version: 3, settings: { profile: 'everyday', features: { extCal: true, calendar: true } },
+      tasks: [{ id: 'a', title: 'Heute', dueDate: '2026-11-03', prio: 'mittel', createdAt: 1 }, { id: 'b', title: 'Heute 2', dueDate: '2026-11-03', prio: 'mittel', createdAt: 1 },
+              { id: 'c', title: 'Alt', dueDate: '2026-11-01', prio: 'mittel', createdAt: 1 }, { id: 'd', title: 'Morgen', dueDate: '2026-11-04', prio: 'mittel', createdAt: 1 }] };
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 }, ics }, state: st });
+    await p.waitForTimeout(600);
+    ok(await S(p, () => window.__log.badge) === 3, 'Zahl am Symbol: heute + überfällig = 3');
+    await S(p, id => toggleTask(id), 'a'); await p.waitForTimeout(600);
+    ok(await S(p, () => window.__log.badge) === 2, 'abgehakt → 2');
+    await go(p, 'settings');
+    ok(await p.isVisible('#badge-row'), 'Einstellung sichtbar');
+    await p.selectOption('#set-badge', 'overdue'); await p.waitForTimeout(100);
+    ok(await S(p, () => window.__log.badge) === 1, 'nur überfällig → 1');
+    await p.selectOption('#set-badge', 'off'); await p.waitForTimeout(100);
+    ok(await S(p, () => window.__log.badge) === 0, 'aus → keine Zahl');
+    // Abos
+    await p.fill('#abo-name', 'Verein'); await p.fill('#abo-url', 'webcal://verein.de/k.ics'); await p.click('#btn-abo-add');
+    await p.waitForTimeout(150);
+    await p.fill('#abo-name', 'Schule'); await p.fill('#abo-url', 'https://schule.de/k.ics'); await p.click('#btn-abo-add');
+    await p.waitForTimeout(150);
+    const cals = await S(p, () => state.settings.extCals.map(c => c.name + '|' + c.color + '|' + !!c.lastSync));
+    ok(cals.length === 2 && /^Verein\|#9333ea\|true$/.test(cals[0]) && /^Schule\|#0891b2\|true$/.test(cals[1]), 'zwei Abos mit eigener Farbe: ' + cals.join(', '));
+    ok((await p.$$('#abo-list .abo')).length === 2 && /Termine · aktualisiert/.test(await p.textContent('#abo-list')), 'Liste zeigt Status');
+    const ev = await S(p, () => ({ tr: eventsOn('2026-11-10').find(e => e.title === 'Training'), tu: eventsOn('2026-11-07').find(e => e.title === 'Turnier'),
+                                    au: eventsOn('2026-11-05').find(e => e.title === 'Ausflug'), ko: eventsOn('2026-11-04').find(e => e.title === 'Konferenz') }));
+    ok(ev.tr && ev.tr.time === '18:00' && ev.tr.end === '19:30' && ev.tr.location === 'Sporthalle' && ev.tr.cal === 'Verein' && ev.tr.color === '#9333ea', 'Serie mit Ende, Ort, Name, Farbe');
+    ok(ev.tu && ev.tu.time === '10:00' && ev.tu.end === '12:30', 'UTC-Zeit und DURATION');
+    ok(ev.au && ev.au.time === null && ev.au.end === null, 'ganztägig ohne Zeiten');
+    ok(ev.ko && ev.ko.cal === 'Schule' && ev.ko.end === '16:00', 'zweites Abo');
+    ok(await S(p, () => eventsOn('2026-12-01').filter(e => e.title === 'Training').length) === 0, 'COUNT begrenzt die Serie');
+    // Überschneidung mit Abo-Termin
+    await go(p, 'tasks');
+    await p.fill('#t-title', 'Laufen Di 19-20 Uhr'); await p.press('#t-title', 'Enter');
+    ok(/Überschneidet sich mit 18:00 Training/.test(await p.textContent('#toast')), 'Überschneidung mit Abo-Termin erkannt');
+    // Woche: Farbe des Abos
+    await go(p, 'week');
+    const chip = await p.$eval('#wk-days .wd-lesson, #wk-days .wd-ev', e => e.textContent).catch(() => '');
+    ok(await S(p, () => [...document.querySelectorAll('#wk-days *')].some(x => /Training/.test(x.textContent) && x.children.length < 4)), 'Abo-Termin in der Woche');
+    // Ausschalten, Farbe, Entfernen + Rückgängig
+    await go(p, 'settings');
+    await p.locator('#abo-list .abo').first().locator('.abo-on').uncheck();
+    ok(await S(p, () => eventsOn('2026-11-03').filter(e => e.title === 'Training').length) === 0, 'ausgeschaltet → unsichtbar');
+    await p.locator('#abo-list .abo').first().locator('.abo-on').check();
+    await p.locator('#abo-list .abo').nth(1).locator('button.danger').click();
+    ok(await S(p, () => state.settings.extCals.length === 1 && !state.extEvents.some(e => e.title === 'Konferenz')), 'Abo entfernt samt Terminen');
+    await p.click('#toast .undo');
+    ok(await S(p, () => state.settings.extCals.length === 2 && state.extEvents.some(e => e.title === 'Konferenz')), 'Rückgängig');
+    // Falsche Adressen
+    await p.fill('#abo-url', 'https://calendar.google.com/calendar/u/0/r'); await p.click('#btn-abo-add');
+    ok(/Geheime Adresse im iCal-Format/.test(await p.textContent('#toast')), 'Google-Webadresse erkannt');
+    await p.fill('#abo-url', 'https://schule.de/k.ics'); await p.click('#btn-abo-add');
+    ok(/gibt es schon/.test(await p.textContent('#toast')), 'doppeltes Abo abgelehnt');
+    await p.fill('#abo-name', 'Kaputt'); await p.fill('#abo-url', 'https://nix.de/k.ics'); await p.click('#btn-abo-add');
+    await p.waitForTimeout(150);
+    ok(/404/.test(await p.textContent('#abo-list')), 'Fehler wird am Abo angezeigt');
+    await S(p, () => { const c = state.settings.extCals.find(x => x.name === 'Kaputt'); state.settings.extCals = state.settings.extCals.filter(x => x !== c); save(); renderAbos(); });
+    // Geführte Einrichtung
+    await p.click('#btn-gcal-guide');
+    ok(await p.$eval('#dlg-gcal', d => d.open) && await p.isVisible('#gc-dev') && /Kalender-Accounts/.test(await p.textContent('#gc-dev-steps')), 'Anleitung für iPhone');
+    await p.fill('#gc-url', 'https://calendar.google.com/calendar/ical/abc/public/basic.ics'); await p.dispatchEvent('#gc-url', 'input');
+    ok(/öffentliche Adresse/.test(await p.textContent('#gc-msg')), 'Hinweis auf öffentliche Adresse');
+    await p.fill('#gc-name', 'Google privat');
+    await p.fill('#gc-url', 'https://calendar.google.com/calendar/ical/abc/private-1/basic.ics'); await p.click('#gc-add');
+    await p.waitForTimeout(150);
+    ok(!(await p.$eval('#dlg-gcal', d => d.open)) && await S(p, () => eventsOn('2026-11-04').some(e => e.title === 'Google-Termin' && e.cal === 'Google privat')), 'Google-Abo hinzugefügt und geladen');
+    // Veraltet
+    await S(p, () => { state.settings.extCals[0].lastSync = Date.now() - 4 * 864e5; save(); renderWeek(); });
+    await go(p, 'week');
+    ok(await p.isVisible('#cal-stale') && /„Verein“ wurde seit 4 Tagen/.test(await p.textContent('#cst-text')), 'Hinweis: Abo veraltet');
+    await p.click('#cst-load'); await p.waitForTimeout(150);
+    ok(await p.isHidden('#cal-stale'), 'nach dem Laden weg');
+    await S(p, () => { state.settings.extCals[0].lastSync = Date.now() - 5 * 864e5; save(); renderWeek(); });
+    await p.click('#cst-later');
+    ok(await p.isHidden('#cal-stale'), '„Später“ blendet aus');
+    // Beim Zurückkehren in die App: fällige Abos neu laden
+    await S(p, () => { state.settings.calStaleHidden = 0; state.settings.extCals.forEach(c => c.lastSync = Date.now() - 7 * 3600e3); window.__log.http = []; });
+    await S(p, () => refreshAbos(false)); await p.waitForTimeout(150);
+    ok((await S(p, () => window.__log.http.length)) === 3, 'nach 6 Stunden alle Abos neu geladen');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+  {
+    // Android: Anleitung für Android
+    const { ctx, p } = await open(browser, { ios: { platform: 'android' } });
+    await go(p, 'settings'); await p.click('#btn-gcal-guide');
+    ok(/Konto synchronisieren/.test(await p.textContent('#gc-dev-steps')), 'Anleitung für Android');
+    await ctx.close();
+  }
+
+  console.log('28 · iCloud-Abgleich');
+  {
+    const cloud = {};
+    const before = async p => {
+      await p.exposeFunction('__cloudGet', () => cloud);
+      await p.exposeFunction('__cloudSet', v => { Object.assign(cloud, v); });
+    };
+    const tk = (id, title, extra) => Object.assign({ id, title, prio: 'mittel', createdAt: 1 }, extra || {});
+    const stA = { version: 3, settings: { profile: 'everyday', badge: 'today' }, categories: [{ id: 'pa', name: 'Privat', color: '#059669' }],
+      tasks: [tk('x', 'Von A eins', { categoryId: 'pa' }), tk('y', 'Von A zwei')] };
+    const stB = { version: 3, settings: { profile: 'everyday', badge: 'off' }, categories: [{ id: 'pb', name: 'Privat', color: '#059669' }],
+      tasks: [tk('z1', 'Von B eins', { categoryId: 'pb' }), tk('z2', 'Von B zwei'), tk('z3', 'Von B drei')] };
+    const A = await open(browser, { before, ios: { owned: { [FULL]: 1 }, cloud: true }, state: stA });
+    const B = await open(browser, { before, ios: { owned: { [FULL]: 1 }, cloud: true }, state: stB });
+    const run = q => S(q.p, () => Sync.run());
+    await go(A.p, 'settings');
+    ok(await A.p.isVisible('#card-sync') && /Aus/.test(await A.p.textContent('#sync-status')), 'A: Abgleich-Karte, aus');
+    await A.p.check('#sync-on'); await A.p.waitForTimeout(150);
+    ok(cloud['v1.tasks'] && /Von A eins/.test(cloud['v1.tasks']), 'A hat hochgeladen');
+    ok(/KB von 1024 KB/.test(await A.p.textContent('#sync-status')), 'Status mit Größe');
+    // B: in iCloud liegen Daten → Frage
+    await go(B.p, 'settings');
+    await B.p.check('#sync-on'); await B.p.waitForTimeout(150);
+    ok(await B.p.$eval('#dlg-sync', d => d.open), 'B: Frage Zusammenführen / iCloud');
+    await B.p.click('#sy-merge'); await B.p.waitForTimeout(200);
+    let tb = await S(B.p, () => state.tasks.map(t => t.title).sort());
+    ok(JSON.stringify(tb) === JSON.stringify(['Von A eins', 'Von A zwei', 'Von B drei', 'Von B eins', 'Von B zwei']), 'B: beide Seiten zusammen');
+    const catsB = await S(B.p, () => state.categories.filter(c => c.name === 'Privat'));
+    ok(catsB.length === 1 && await S(B.p, () => state.tasks.filter(t => t.categoryId === state.categories.find(c => c.name === 'Privat').id).length) === 2, 'doppelte Kategorie zusammengelegt, Aufgaben umgehängt');
+    ok(await S(B.p, () => state.settings.badge) === 'off', 'Geräte-Einstellung bleibt auf dem Gerät');
+    await run(A);
+    let ta = await S(A.p, () => state.tasks.map(t => t.title).sort());
+    ok(ta.length === 5, 'A bekommt Bs Aufgaben');
+    ok(await S(A.p, () => state.settings.badge) === 'today', 'A behält seine Zahl-Einstellung');
+    // Gleichzeitige Änderungen an verschiedenen Aufgaben
+    await A.p.clock.setFixedTime(new Date('2026-11-03T11:00:00'));
+    await B.p.clock.setFixedTime(new Date('2026-11-03T11:00:00'));
+    await S(A.p, () => { state.tasks.find(t => t.id === 'y').title = 'Von A zwei (geändert)'; save(); });
+    await S(B.p, () => { state.tasks.find(t => t.id === 'z2').title = 'Von B zwei (geändert)'; save(); });
+    await run(A); await run(B); await run(A);
+    ta = await S(A.p, () => state.tasks.map(t => t.title).sort()); tb = await S(B.p, () => state.tasks.map(t => t.title).sort());
+    ok(JSON.stringify(ta) === JSON.stringify(tb) && ta.includes('Von A zwei (geändert)') && ta.includes('Von B zwei (geändert)'), 'beide Änderungen auf beiden Geräten');
+    // Löschen setzt sich durch
+    await A.p.clock.setFixedTime(new Date('2026-11-03T12:00:00'));
+    await S(A.p, () => { state.tasks = state.tasks.filter(t => t.id !== 'x'); save(); });
+    await run(A); await run(B);
+    ok(!(await S(B.p, () => state.tasks.some(t => t.id === 'x'))), 'gelöscht auf A → weg auf B');
+    // Änderungsmeldung von iCloud → B gleicht von selbst ab
+    await A.p.clock.setFixedTime(new Date('2026-11-03T12:30:00'));
+    await S(A.p, () => { state.tasks.push({ id: 'n1', title: 'Neu auf A', prio: 'mittel', createdAt: 5 }); save(); });
+    await run(A);
+    await S(B.p, () => window.__cloudChange({ keys: ['v1.tasks'] })); await B.p.waitForTimeout(150);
+    ok(await S(B.p, () => state.tasks.some(t => t.title === 'Neu auf A')), 'Änderung von iCloud kommt ohne Zutun an');
+    ok(await B.p.locator('#task-list .task, #wk-days .wd-task').filter({ hasText: 'Neu auf A' }).count() >= 0, 'Oberfläche neu gezeichnet');
+    // Abo-Termine bleiben lokal
+    await S(A.p, () => { state.extEvents = [{ date: '2026-11-03', title: 'Abo-Termin', calId: 'q' }]; save(); }); await run(A);
+    ok(!/Abo-Termin/.test(JSON.stringify(cloud)), 'geladene Abo-Termine gehen nicht nach iCloud');
+    // Zu groß
+    await S(A.p, () => { state.tasks.push({ id: 'big', title: 'Groß', note: 'x'.repeat(4900), prio: 'mittel', createdAt: 1 }); for (let i = 0; i < 120; i++) state.tasks.push({ id: 'b' + i, title: 'Viel ' + i, note: 'y'.repeat(4900), prio: 'mittel', createdAt: 1 }); save(); });
+    const before2 = cloud['v1.tasks'];
+    await run(A);
+    ok(/Zu viele Daten/.test(await A.p.textContent('#sync-status')) && cloud['v1.tasks'] === before2, 'zu groß: nichts geschrieben, Hinweis');
+    await S(A.p, () => { state.tasks = state.tasks.filter(t => !/^b\d|^big$/.test(t.id)); save(); });
+    await run(A);
+    ok(!/Zu viele/.test(await A.p.textContent('#sync-status')), 'danach wieder in Ordnung');
+    // Drittes Gerät: nur den iCloud-Stand übernehmen
+    const stC = { version: 3, settings: { profile: 'everyday' }, tasks: [tk('c1', 'Nur auf C'), tk('c2', 'C2'), tk('c3', 'C3')] };
+    const Cd = await open(browser, { before, ios: { owned: { [FULL]: 1 }, cloud: true }, state: stC });
+    await Cd.p.waitForTimeout(150);
+    ok(await Cd.p.$eval('#dlg-sync', d => d.open), 'neues Gerät: Angebot beim Start');
+    await Cd.p.click('#sy-take'); await Cd.p.waitForTimeout(200);
+    const tc = await S(Cd.p, () => state.tasks.map(t => t.title));
+    ok(!tc.includes('Nur auf C') && tc.includes('Neu auf A'), 'C: iCloud-Stand übernommen');
+    ok(/Neu auf A/.test(cloud['v1.tasks']) && !/Nur auf C/.test(cloud['v1.tasks']), 'iCloud unverändert');
+    for (const q of [A, B, Cd]) ok(!q.p.errors.length, 'keine Fehler ' + q.p.errors.join(' | '));
+    await A.ctx.close(); await B.ctx.close(); await Cd.ctx.close();
+  }
+  {
+    // Prüfung 22.11.: Zusammenführen auf neuem Gerät, Aus/Ein, Dialoge, Rückgängig, Abos, lange nicht abgeglichen
+    const cloud = {};
+    const before = async p => {
+      await p.exposeFunction('__cloudGet', () => cloud);
+      await p.exposeFunction('__cloudSet', v => { Object.assign(cloud, v); });
+    };
+    const tk = (id, title, extra) => Object.assign({ id, title, prio: 'mittel', createdAt: 1 }, extra || {});
+    const stA = { version: 3, settings: { profile: 'teacher', slots: ['07:50-08:35', '08:40-09:25'], region: 'NI',
+        extCals: [{ id: 'k1', name: 'Verein', url: 'https://x.test/a.ics', color: '#123456', on: true, lastSync: 111, error: '' }] },
+      categories: [{ id: 'c1', name: 'Unterricht', color: '#2563eb' }],
+      lessons: [{ id: 'L1', day: 2, slot: 0, subject: 'Mathe', room: '7b' }],
+      tasks: [tk('t1', 'Klausur korrigieren', { categoryId: 'c1' }), tk('t2', 'Elternbrief')], shopLists: [{ id: 's1', name: 'Supermarkt' }] };
+    const A = await open(browser, { before, ios: { owned: { [FULL]: 1 }, cloud: true }, state: stA });
+    await go(A.p, 'settings'); await A.p.check('#sync-on'); await A.p.waitForTimeout(150);
+    // Neues iPad: Standarddaten (c1 = „Privat“, s1 = „Einkauf“, andere Zeiten) + eine eigene Aufgabe
+    const stB = { version: 3, settings: { profile: 'everyday', slots: ['08:00-08:45'] }, categories: [{ id: 'c1', name: 'Privat', color: '#059669' }],
+      tasks: [tk('b1', 'Auf dem iPad', { categoryId: 'c1' })], shopLists: [{ id: 's1', name: 'Einkauf' }] };
+    const B = await open(browser, { before, ios: { owned: { [FULL]: 1 }, cloud: true }, state: stB });
+    await B.p.waitForTimeout(150);
+    if (!(await B.p.$eval('#dlg-sync', d => d.open))) { await go(B.p, 'settings'); await B.p.check('#sync-on'); await B.p.waitForTimeout(150); }
+    await B.p.click('#sy-merge'); await B.p.waitForTimeout(250);
+    const sb = await S(B.p, () => ({ slots: state.settings.slots, prof: state.settings.profile, cats: state.categories.map(c => c.id + ':' + c.name),
+      t1: (state.categories.find(c => c.id === state.tasks.find(t => t.id === 't1').categoryId) || {}).name,
+      b1: (state.categories.find(c => c.id === state.tasks.find(t => t.id === 'b1').categoryId) || {}).name,
+      lists: state.shopLists.map(l => l.name).sort() }));
+    ok(JSON.stringify(sb.slots) === JSON.stringify(['07:50-08:35', '08:40-09:25']) && sb.prof === 'teacher', 'Zusammenführen: Einstellungen vom iPhone gewinnen ' + JSON.stringify(sb.slots));
+    ok(sb.t1 === 'Unterricht' && sb.b1 === 'Privat', 'Kategorien mit gleicher id bleiben getrennt: ' + sb.cats.join(', '));
+    ok(sb.lists.join() === 'Einkauf,Supermarkt', 'Einkaufslisten getrennt: ' + sb.lists.join());
+    await S(A.p, () => Sync.run()); await A.p.waitForTimeout(100);
+    ok(await S(A.p, () => (state.categories.find(c => c.id === state.tasks.find(t => t.id === 't1').categoryId) || {}).name) === 'Unterricht', 'iPhone: Kategorie unverändert');
+    // Abos: Ladezeit bleibt je Gerät
+    const bAbo = await S(B.p, () => state.settings.extCals[0] || {});
+    ok(bAbo.id === 'k1' && bAbo.lastSync !== 111 && !/lastSync/.test(cloud['v1.settings'] || ''), 'Abo kommt an, Ladezeit nicht übertragen ' + JSON.stringify([bAbo.lastSync, /lastSync/.test(cloud['v1.settings'] || '')]));
+    ok(await S(A.p, () => state.settings.extCals[0].lastSync) === 111, 'A behält seine Ladezeit');
+    // Einstellungen je Schlüssel: A ändert Region, B ändert Zeiten → beides bleibt
+    await A.p.clock.setFixedTime(new Date('2026-11-03T11:00:00')); await B.p.clock.setFixedTime(new Date('2026-11-03T11:00:00'));
+    await S(A.p, () => { state.settings.region = 'BY'; save(); });
+    await S(B.p, () => { state.settings.weekReview = false; save(); });
+    await S(A.p, () => Sync.run()); await S(B.p, () => Sync.run()); await S(A.p, () => Sync.run());
+    ok(await S(A.p, () => state.settings.region + '|' + state.settings.weekReview) === 'BY|false' && await S(B.p, () => state.settings.region + '|' + state.settings.weekReview) === 'BY|false', 'verschiedene Einstellungen auf zwei Geräten: beide bleiben');
+    // Aus und wieder ein: Änderungen und Löschungen des anderen Geräts bleiben
+    await S(B.p, () => { Sync.d.on = false; Sync.save(); });
+    await A.p.clock.setFixedTime(new Date('2026-11-03T12:00:00'));
+    await S(A.p, () => { state.tasks.find(t => t.id === 't2').title = 'Elternbrief (neu)'; state.tasks = state.tasks.filter(t => t.id !== 'b1'); save(); });
+    await S(A.p, () => Sync.run());
+    await B.p.clock.setFixedTime(new Date('2026-11-03T12:30:00'));
+    await go(B.p, 'settings'); await B.p.uncheck('#sync-on').catch(() => {}); await B.p.check('#sync-on'); await B.p.waitForTimeout(250);
+    ok(!(await B.p.$eval('#dlg-sync', d => d.open)), 'wieder einschalten: keine Frage');
+    const tb = await S(B.p, () => state.tasks.map(t => t.title));
+    ok(tb.includes('Elternbrief (neu)') && !tb.includes('Auf dem iPad'), 'wieder ein: Änderung und Löschung von A bleiben ' + tb.join(', '));
+    // Stunden-Dialog offen, Abgleich kommt dazwischen, Speichern → Stunde bleibt
+    await S(B.p, () => openLessonDialog(state.lessons.find(l => l.id === 'L1'), 2, 0));
+    await A.p.clock.setFixedTime(new Date('2026-11-03T13:00:00'));
+    await S(A.p, () => { state.tasks.push({ id: 'n9', title: 'Neu', prio: 'mittel', createdAt: 2 }); save(); }); await S(A.p, () => Sync.run());
+    await S(B.p, () => Sync.run());
+    await B.p.fill('#l-room', '7c'); await B.p.click('#l-save'); await B.p.waitForTimeout(100);
+    ok(await S(B.p, () => state.lessons.map(l => l.id + ':' + l.room).join()) === 'L1:7c', 'Stunde nach Abgleich gespeichert, nicht gelöscht');
+    // Rückgängig nach einem Abgleich verfällt
+    await S(B.p, () => { const snap = snapshot(); state.tasks = state.tasks.filter(t => t.id !== 't2'); save(); toast('Gelöscht.', () => restore(snap)); });
+    await S(A.p, () => { state.tasks.push({ id: 'n10', title: 'Noch neuer', prio: 'mittel', createdAt: 3 }); save(); }); await S(A.p, () => Sync.run());
+    await S(B.p, () => Sync.run());
+    ok(!(await B.p.$('#toast .undo')), 'Rückgängig nach Abgleich nicht mehr angeboten');
+    // Lange nicht abgeglichen: anderswo Gelöschtes kommt nicht zurück
+    await S(A.p, () => { state.tasks = state.tasks.filter(t => t.id !== 'n9'); save(); }); await S(A.p, () => Sync.run());
+    const cl = JSON.parse(cloud['v1.tasks']); delete cl.t.n9; cloud['v1.tasks'] = JSON.stringify(cl);   // Löschmarke verfallen
+    await S(B.p, () => { Sync.d.last = Date.now() - 200 * 864e5; Sync.save(); });
+    await S(B.p, () => Sync.run());
+    ok(!(await S(B.p, () => state.tasks.some(t => t.id === 'n9'))) && !/"n9"/.test(cloud['v1.tasks']), 'nach langer Pause: Gelöschtes bleibt gelöscht');
+    ok(await S(B.p, () => state.tasks.some(t => t.id === 'n10')), '… Neues bleibt');
+    for (const q of [A, B]) ok(!q.p.errors.length, 'keine Fehler ' + q.p.errors.join(' | '));
+    await A.ctx.close(); await B.ctx.close();
+  }
+  {
+    // ohne iCloud-Berechtigung / Android / Browser: Karte passend
+    const { ctx, p } = await open(browser, { ios: {} });
+    await go(p, 'settings');
+    ok(await p.isHidden('#card-sync'), 'ohne Plugin keine Karte');
+    await ctx.close();
+  }
+
+  console.log('29 · Weitere Profile und Österreich/Schweiz');
+  for (const [prof, cat, tpl] of [['study', 'Uni', 'Hausarbeit schreiben'], ['family', 'Kinder', 'Kindergeburtstag'], ['coach', 'Verein', 'Spieltag vorbereiten']]) {
+    const { ctx, p } = await open(browser, { profile: false });
+    await p.selectOption('#ob-region', 'AT-WI');
+    await p.click(`.choice[data-profile="${prof}"]`);
+    await p.waitForTimeout(100);
+    if (await p.$eval('#dlg-pro', d => d.open)) await p.click('#dlg-pro-later');
+    const st = await S(p, () => ({ c: state.categories.map(x => x.name), tt: state.settings.features.timetable, m: state.settings.planMode,
+      t: state.templates.map(x => x.title), r: state.settings.region, pr: state.settings.profile }));
+    ok(st.pr === prof && st.c.includes(cat) && st.tt && st.m === 'week' && st.t.includes(tpl) && st.r === 'AT-WI',
+       prof + ': Kategorien, Wochenplan, Vorlagen, Region ' + JSON.stringify(st));
+    ok(await p.textContent('#nav-plan-label') === 'Wochenplan', prof + ': Reiter „Wochenplan“');
+    await go(p, 'settings');
+    ok(await p.inputValue('#set-profile') === prof && await p.inputValue('#set-region') === 'AT-WI', prof + ': Einstellungen zeigen Profil und Region');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+  {
+    // Österreich/Schweiz in der Woche
+    const st = { version: 3, settings: { profile: 'teacher', planMode: 'school', region: 'CH-ZH', showFerien: true, features: { timetable: true } },
+      lessons: [{ id: 'l1', day: 1, slot: 0, subject: 'Mathe', room: '5a', color: '#2563eb' }] };
+    const { ctx, p } = await open(browser, { state: st, now: '2026-07-27T09:00:00' });
+    await go(p, 'week');
+    ok(/Sommerferien/.test(await p.textContent('#wk-days')), 'Zürich: Sommerferien in der Woche');
+    await S(p, () => { weekOffset = 1; renderWeek(); });
+    ok(/Bundesfeiertag/.test(await p.textContent('#wk-days')) || /Sommerferien/.test(await p.textContent('#wk-days')), 'Woche mit 1. August');
+    await go(p, 'settings');
+    ok(await p.$$eval('#set-region optgroup', g => g.map(x => x.label).join()) === 'Deutschland,Österreich,Schweiz', 'Auswahl nach Ländern gruppiert');
+    ok(/Datensatz/.test(await p.textContent('#region-hint')), 'Hinweis zur Quelle der Feiertage');
+    const n = await S(p, () => normalizeState({ settings: { region: 'AT-WI', profile: 'unbekannt' } }).settings);
+    ok(n.region === 'AT-WI' && n.profile === 'everyday', 'Region AT gültig, unbekanntes Profil → Alltag');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('30 · Schuljahreswechsel');
+  {
+    const L = (id, day, slot, subject, room) => ({ id, day, slot, subject, room, color: '#2563eb' });
+    const st = { version: 3, settings: { profile: 'teacher', planMode: 'school', region: 'NI', showFerien: true, features: { timetable: true },
+        ab: { on: true, anchor: '2026-01-05', type: 'A', skip: true } },
+      lessons: [L('a', 1, 0, 'Mathe', '7b'), L('b', 2, 1, 'Physik', '9a')],
+      duties: [{ id: 'd', day: 2, after: 1, place: 'Hof', week: '' }],
+      lessonEx: { 'a|2026-06-01': { cancel: true }, 'a|2026-08-17': { cancel: true } },
+      lessonNotes: [{ id: 'n1', course: 'Mathe|7b', date: '2026-06-01', text: 'Alt', updatedAt: 1 }, { id: 'n2', course: 'Mathe|7b', date: '2026-08-17', text: 'Neu', updatedAt: 1 }],
+      lessonMemos: [{ id: 'm', course: 'Mathe|7b', after: '2026-06-01', afterTime: '08:45', text: 'x', createdAt: 1 }],
+      tasks: [{ id: 't1', title: 'Alt erledigt', dueDate: '2026-06-10', completed: true, completedAt: 1, prio: 'mittel', createdAt: 1 },
+              { id: 't2', title: 'Alt offen', dueDate: '2026-06-10', prio: 'mittel', createdAt: 1 },
+              { id: 't3', title: 'Neu erledigt', dueDate: '2026-08-20', completed: true, completedAt: 2, prio: 'mittel', createdAt: 1 }] };
+    // NI: Sommerferien 2026 enden am 12.8. → Hinweis in den ersten Schulwochen
+    const { ctx, p } = await open(browser, { state: st, ios: { owned: { [FULL]: 1 } }, now: '2026-08-20T10:00:00' });
+    await go(p, 'timetable');
+    ok(await p.isVisible('#year-banner'), 'Hinweis nach den Sommerferien');
+    await p.click('#yb-open');
+    ok(await p.$eval('#dlg-year', d => d.open) && await p.inputValue('#yr-date') === '2026-08-13', 'Stichtag: Tag nach den Sommerferien');
+    ok(await p.isVisible('#yr-duty-row') && await p.isVisible('#yr-ab-row'), 'Aufsichten und A/B angeboten');
+    await p.check('#yr-notes'); await p.check('#yr-duties'); await p.selectOption('#yr-ab', 'B');
+    ok(/1 abgehakte Aufgaben/.test(await p.textContent('#yr-sum')) && /2 Notizen\/Merkzettel/.test(await p.textContent('#yr-sum')), 'Zusammenfassung: ' + await p.textContent('#yr-sum'));
+    await p.click('#yr-go'); await p.waitForTimeout(150);
+    const r = await S(p, () => ({ t: state.tasks.map(x => x.id), n: state.lessonNotes.map(x => x.id), m: state.lessonMemos.length, d: state.duties.length,
+      ex: Object.keys(state.lessonEx), l: state.lessons.length, ab: state.settings.ab, done: state.settings.yearDone }));
+    ok(JSON.stringify(r.t) === '["t2","t3"]', 'alte erledigte Aufgaben weg, offene bleiben');
+    ok(JSON.stringify(r.n) === '["n2"]' && r.m === 0 && r.d === 0, 'alte Notizen, Merkzettel, Aufsichten entfernt');
+    ok(JSON.stringify(r.ex) === '["a|2026-08-17"]' && r.l === 2, 'alte Ausnahmen weg, Stundenplan behalten');
+    ok(r.ab.anchor === '2026-08-10' && r.ab.type === 'B' && r.done === '2026-08-13', 'A/B neu gesetzt');
+    ok(/Mathe · 7b.*\nAlt/.test(String(await S(p, () => window.__log.share))), 'alte Notizen vorher geteilt');
+    ok(await p.isHidden('#year-banner'), 'Hinweis danach weg');
+    await p.click('#toast .undo');
+    ok(await S(p, () => state.lessonNotes.length === 2 && state.duties.length === 1), 'Rückgängig');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('31 · Siri, Bewertung');
+  {
+    const { ctx, p } = await open(browser, { ios: { owned: { [FULL]: 1 } }, state: { version: 3, settings: { profile: 'everyday' } } });
+    await S(p, () => { window.__pending = ['Zahnarzt anrufen morgen 9 Uhr', 'Milch kaufen']; window.__pendingFn(); });
+    await p.waitForTimeout(200);
+    const t = await S(p, () => state.tasks.map(x => x.title + '|' + (x.dueDate || '') + '|' + (x.dueTime || '')));
+    ok(t.includes('Zahnarzt anrufen|2026-11-04|09:00') && t.includes('Milch kaufen||'), 'Siri-Aufgaben angelegt, Datum erkannt: ' + t.join(', '));
+    ok(/2 Aufgaben von Siri/.test(await p.textContent('#toast')), 'Hinweis');
+    // Siri während einer Eingabe: Formular und offener Dialog bleiben unberührt
+    await go(p, 'tasks');
+    await p.fill('#t-title', 'Halb getippt');
+    await S(p, () => openTaskDialog(state.tasks[0].id));
+    await S(p, () => { window.__pending = ['Brot holen']; window.__pendingFn(); });
+    await p.waitForTimeout(200);
+    ok(await S(p, () => state.tasks.some(x => x.title === 'Brot holen')) && await p.inputValue('#t-title') === 'Halb getippt'
+       && await p.$eval('#dlg-task', d => d.open), 'Siri: Aufgabe angelegt, Eingabe und Dialog bleiben');
+    await S(p, () => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
+    await p.fill('#t-title', '');
+    await S(p, () => { window.__openAppLink('todoorganizer://new-task?text=Blumen%20gie%C3%9Fen%20Fr'); });
+    await p.waitForTimeout(400);
+    ok(await S(p, () => state.tasks.some(x => x.title === 'Blumen gießen' && x.dueDate === '2026-11-06')), 'Link mit Text legt Aufgabe an');
+    // Bewertung: zu früh → nein; nach 14 Tagen und 15 erledigten → einmal
+    ok(!(await S(p, () => Review.maybe())), 'zu früh: keine Bitte');
+    await S(p, () => { Backup.d.firstUse = Date.now() - 20 * 864e5; for (let i = 0; i < 15; i++) state.tasks.push({ id: 'r' + i, title: 'x', completed: true, completedAt: 1, prio: 'mittel', createdAt: 1 }); });
+    ok(await S(p, () => Review.maybe()) && await S(p, () => window.__log.review) === 1, 'danach einmal');
+    ok(!(await S(p, () => Review.maybe())), 'nicht zweimal in derselben Version');
+    ok(!p.errors.length, 'keine Fehler ' + p.errors.join(' | '));
     await ctx.close();
   }
 
