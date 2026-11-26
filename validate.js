@@ -68,6 +68,22 @@ for (const f of ['datenschutz.html', 'impressum.html']) {
   if (!t.includes('href="index.html">Zurück zur App<')) E(f + ': Knopf „Zurück zur App“ fehlt');
 }
 if (gibt('datenschutz.html') && !/App Store/.test(lies('datenschutz.html'))) E('Datenschutzerklärung erwähnt den In-App-Kauf nicht');
+// Englische Fassungen (seit Update 14): privacy.html, legal-notice.html
+for (const f of ['privacy.html', 'legal-notice.html']) {
+  if (!gibt(f)) { E(f + ' fehlt'); continue; }
+  const t = lies(f);
+  if (!t.includes('Oderstraße 13') || !t.includes('smaehlmann.appdev@gmail.com')) E(f + ': Anschrift oder E-Mail fehlt');
+  if (!t.includes('href="index.html">Back to the app<')) E(f + ': Knopf „Back to the app“ fehlt');
+  if (!/<html lang="en">/.test(t)) E(f + ': lang="en" fehlt');
+}
+if (gibt('privacy.html') && !/App Store/.test(lies('privacy.html'))) E('privacy.html erwähnt den In-App-Kauf nicht');
+if (gibt('privacy.html') && !/iCloud/.test(lies('privacy.html'))) E('privacy.html erwähnt den iCloud-Abgleich nicht');
+if (!html.includes('["datenschutz.html", "privacy.html"]')) E('App verlinkt auf Englisch nicht privacy.html');
+for (const w of ['ios.yml', 'android.yml']) {
+  const y = lies('.github/workflows/' + w);
+  if (!/privacy\.html legal-notice\.html/.test(y)) E(w + ': privacy.html/legal-notice.html werden nicht ins App-Paket kopiert');
+}
+if (!/privacy\.html/.test(lies('sw.js'))) E('sw.js: privacy.html fehlt im Offline-Cache');
 try {
   const { erwarteteDateien } = require('./make-legal-pages.js');
   const diff = Object.entries(erwarteteDateien())

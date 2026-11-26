@@ -86,14 +86,14 @@ Die Startseite zeigt die ganze Woche: Aufgaben, Termine aus deinen Kalendern und
 
 AUFGABEN, WIE DU SIE BRAUCHST
 • Eigene Kategorien mit freier Farbwahl, Prioritäten und Notizen
-• Fälligkeitsdatum mit Uhrzeit von–bis, etwa fürs Training
-• Erinnerung zur Fälligkeit oder vorab: 15 Minuten, eine Stunde, ein, zwei Tage oder eine Woche
+• Uhrzeit von–bis, etwa fürs Training
+• Erinnerung zur Fälligkeit oder vorab, von 15 Minuten bis eine Woche
 • Wiederholungen: täglich, werktags, wöchentlich, monatlich, jährlich oder frei („alle 3 Tage“), auf Wunsch ab Erledigung
 • Unterpunkte mit Fortschrittsbalken für größere Vorhaben
 • Fotos zu Aufgaben
-• Vorlagen für Wiederkehrendes wie Urlaub packen oder Wohnung putzen
-• Abhaken, Verschieben und Löschen lassen sich rückgängig machen
-• Ohne Schule wird der Stundenplan zum Wochenplan, etwa fürs Training
+• Vorlagen, etwa fürs Kofferpacken
+• Rückgängig für Abhaken, Verschieben und Löschen
+• Ohne Schule wird der Stundenplan zum Wochenplan
 
 KALENDER
 Alle Aufgaben im Monatsraster, mit den Terminen deiner Kalender auf dem Gerät – auch Google – und bis zu acht Kalender-Abos (Schule, Verein) in eigener Farbe.
@@ -102,26 +102,26 @@ GEWOHNHEITEN
 Joggen, Lesen, Wasser trinken: Wochenziel festlegen, Tage abhaken und die Serie wachsen sehen.
 
 EINKAUFSLISTEN
-Mehrere Listen, etwa für Supermarkt und Drogerie. Die App schlägt vor, was du oft kaufst. Im Laden abhaken, Erledigtes aufräumen, Liste teilen.
+Mehrere Listen, etwa für Supermarkt und Drogerie. Die App schlägt vor, was du oft kaufst. Im Laden abhaken, Liste teilen.
 
 ERINNERUNGEN
 Eine tägliche Übersicht zur gewünschten Uhrzeit und Erinnerungen zu jeder Aufgabe – auch bei geschlossener App. Direkt aus der Mitteilung verschieben oder abhaken.
 
-WIDGET UND SCHNELLZUGRIFF
-Dein Tag auf dem Home-Bildschirm. Lange aufs App-Symbol drücken: neue Aufgabe oder Vertretung.
+WIDGET UND SIRI
+Dein Tag auf dem Home-Bildschirm, neue Aufgaben per Siri, Schnellaktionen am App-Symbol und auf Wunsch die Zahl fälliger Aufgaben.
 
-SICHERUNG
-Jede Woche automatisch in die Dateien-App, dazu Sicherung von Hand, auf Wunsch verschlüsselt (AES-GCM).
+ICLOUD UND SICHERUNG
+iPhone und iPad bleiben über dein eigenes iCloud-Konto gleich. Jede Woche eine Sicherung in die Dateien-App, auf Wunsch verschlüsselt.
 
 PRIVAT VON ANFANG AN
 • Kein Konto, keine Registrierung
-• Kein Server: Deine Einträge verlassen das Gerät nur, wenn du selbst sie exportierst oder teilst
+• Kein Server des Anbieters: Deine Einträge verlassen das Gerät nur, wenn du sie exportierst, teilst oder den iCloud-Abgleich einschaltest
 • Keine Werbung, kein Tracking, keine Analyse
 
 TESTEN UND VOLLVERSION
-Die App ist kostenlos, 30 Tage lang mit allen Funktionen. Danach bleiben Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen, Unterpunkten und Notizen, Feiertage, Ferien und Sicherung frei. Kalender, Fotos, Vorlagen, Wochen- und Stundenplan mit allen Schul-Funktionen, Gewohnheiten, Einkaufslisten und Statistik gehören zur Vollversion: ein einmaliger Kauf, kein Abo, mit Familienfreigabe. Die Testphase endet von selbst, nichts wird berechnet. Deine Einträge bleiben immer gespeichert.
+Die App ist kostenlos, 30 Tage lang mit allen Funktionen. Danach bleiben Aufgaben mit Schnelleingabe, Uhrzeit, Erinnerungen, Wiederholungen, Unterpunkten und Notizen, Feiertage, Ferien und Sicherung frei. Kalender, Fotos, Vorlagen, Wochen- und Stundenplan mit allen Schul-Funktionen, Gewohnheiten, Einkaufslisten, iCloud-Abgleich und Statistik gehören zur Vollversion: ein einmaliger Kauf, kein Abo, mit Familienfreigabe. Die Testphase endet von selbst, nichts wird berechnet. Deine Einträge bleiben immer gespeichert.
 
-Für iPhone und iPad.
+Auf Deutsch und Englisch. Für iPhone und iPad.
 ```
 
 ### Schlüsselwörter (max. 100)
@@ -140,19 +140,21 @@ Bei der ersten Version im Store bleibt das Feld leer. Für TestFlight-Tester
 
 ### Hinweise für die Prüfung (App Review → Notizen)
 ```
-No account or login is required. All data is stored locally on the device; the app has no backend.
+No account or login is required. All data is stored locally on the device; the app has no backend of its own. Optional iCloud sync (full version, off by default) uses the user's private iCloud key-value storage; the developer has no access to it.
+
+The app is in German and English and follows the device language (to switch: Settings → "Sprache · Language"). Labels below are given in both languages.
 
 In-app purchases (both non-consumable):
 - de.maehlmann.todoorganizer.testphase – free (0.00) "30-day Trial". Starting it unlocks all features for 30 days from its purchase date (read from StoreKit 2 transaction history, no server). This follows guideline 3.1.1 for free trials of non-subscription apps.
 - de.maehlmann.todoorganizer.vollversion – "Full Version", one-time purchase, Family Sharing enabled.
 
-Where to find them: on first launch a dialog offers the trial. Afterwards: Einstellungen (Settings tab, gear icon) → card "Vollversion" at the top, with buttons "30 Tage kostenlos testen", "Vollversion kaufen" and "Käufe wiederherstellen" (restore).
+Where to find them: on first launch a dialog offers the trial. Afterwards: Settings / Einstellungen (gear icon) → card "Full version" / "Vollversion" at the top, with buttons "Try free for 30 days" / "30 Tage kostenlos testen", "Buy full version" / "Vollversion kaufen" and "Restore purchases" / "Käufe wiederherstellen".
 
 What stays free after the trial: tasks with quick entry, due times, reminders, recurrence, subtasks, notes, week view with public/school holidays and backup export/import. Calendar (incl. device calendar and ICS), photos, templates, week plan/timetable, habits, shopping lists, encrypted backup, .ics export and statistics require the full version. Locked areas show a lock and lead to the purchase card; no data is deleted.
 
-Permissions: calendar access is only requested when the user turns on "Gerätekalender anzeigen" in Settings (events are shown in the week view and never leave the device) or adds a task to the calendar. The Reminders permission strings exist only because the calendar plugin links EventKit; the app never reads or writes the Reminders app. Camera/photos are used only when the user adds a photo to a task.
+Permissions: calendar access is only requested when the user turns on the device calendar ("Gerätekalender anzeigen") in Settings (events are shown in the week view and never leave the device) or adds a task to the calendar. The Reminders permission strings exist only because the calendar plugin links EventKit; the app never reads or writes the Reminders app. Camera/photos are used only when the user adds a photo to a task.
 
-To test the end of the trial quickly: Settings → "Info, Datenschutz und Impressum" (on iPad: "Info" in the sidebar) → tap the line "Version 3.1" seven times. The trial then lasts 3 minutes instead of 30 days. Tapping seven times again switches back.
+To test the end of the trial quickly: Settings → "Info, privacy and legal notice" / "Info, Datenschutz und Impressum" (on iPad: "Info" in the sidebar) → tap the line "Version 3.1" seven times. The trial then lasts 3 minutes instead of 30 days. Tapping seven times again switches back.
 
 Network access happens only if the user enters their own ICS calendar subscription URLs in Settings (up to eight), and for StoreKit. The optional app icon badge count is computed on the device. School holiday dates are bundled in the app (OpenHolidays API data, ODbL); nothing is fetched.
 ```
@@ -195,8 +197,20 @@ Prüfungs-Screenshots: `iap/iap-testphase.png` (Begrüßung mit Testphase) und
 
 Die App ist jetzt zweisprachig. In App Store Connect bei der App oben rechts
 neben „Deutsch“ die Sprache **Englisch (UK)** und **Englisch (USA)** hinzufügen
-(beide mit denselben Texten) und dort einfügen. Screenshots dürfen zunächst die
-deutschen bleiben; englische lassen sich später nachreichen.
+(beide mit denselben Texten) und dort einfügen. Englische Screenshots und
+Vorschauvideos: `STORE_LANG=en node store/make-screenshots.js` bzw.
+`make-previews.js` (siehe „Medien“ unten).
+
+### Datenschutz-URL EN (Privacy Policy URL)
+In App Store Connect unter **App-Informationen**, Sprache Englisch oben rechts wählen:
+```
+https://simaehlmann-cloud.github.io/ToDo-Organizer/todo-organizer/privacy.html
+```
+
+### Support-URL EN (Versionsseite, Sprache Englisch)
+```
+https://simaehlmann-cloud.github.io/ToDo-Organizer/en/
+```
 
 ### Name EN (max. 30)
 ```
@@ -260,7 +274,7 @@ REMINDERS
 A daily summary at the time you choose and reminders for every task – even when the app is closed. Reschedule or check off right from the notification.
 
 WIDGET, SIRI AND SHORTCUTS
-Your day on the home screen. Long-press the app icon: new task or cover lesson. Optional number of due tasks on the app icon.
+Your day on the home screen. Add tasks with Siri or a shortcut. Long-press the app icon: new task or cover lesson. Optional number of due tasks on the app icon.
 
 IPHONE AND IPAD IN SYNC
 With iCloud sync your data stays the same on all your devices – via your own iCloud account, no third-party server.
@@ -270,18 +284,18 @@ Automatically to the Files app every week, plus manual backup, optionally encryp
 
 PRIVATE FROM THE START
 • No account, no sign-up
-• No server: your entries only leave the device when you export or share them yourself
+• No developer server: your entries only leave the device when you export or share them, or turn on iCloud sync
 • No ads, no tracking, no analytics
 
 TRY IT AND FULL VERSION
-The app is free, with all features for 30 days. Afterwards, tasks with quick entry, times, reminders, repeats, subtasks and notes, public and school holidays and backup stay free. Calendar, photos, templates, weekly plan and timetable with all school features, habits, shopping lists and statistics are part of the full version: a one-time purchase, no subscription, with Family Sharing. The trial ends by itself, nothing is charged. Your entries are always kept.
+The app is free, with all features for 30 days. Afterwards, tasks with quick entry, times, reminders, repeats, subtasks and notes, public and school holidays and backup stay free. Calendar, photos, templates, weekly plan and timetable with all school features, habits, shopping lists, iCloud sync and statistics are part of the full version: a one-time purchase, no subscription, with Family Sharing. The trial ends by itself, nothing is charged. Your entries are always kept.
 
 In English and German. For iPhone and iPad.
 ```
 
 ### Schlüsselwörter EN (max. 100)
 ```
-todo,tasks,timetable,homework,school,teacher,exam,reminder,shopping list,calendar,habits,holidays
+todo,tasks,timetable,homework,teacher,lesson,exam,reminder,shopping list,calendar,habits,holidays
 ```
 
 ### In-App-Käufe EN – Testphase Anzeigename (max. 35)
@@ -322,8 +336,14 @@ Größere iPhones (6,9") und kleinere iPads skaliert App Store Connect aus
 diesen Bildern; eigene Fassungen sind nicht nötig. Das Titelbild der
 Vorschau (Poster) ist standardmäßig Sekunde 5 – passt so.
 
+**Englisch (UK und USA):** gleiche Aufteilung aus `store/out/en/` – Bilder
+`screenshots/…/01…10.png`, Videos `…-1-school.mp4` (an erster Stelle) und
+`…-2-everyday.mp4`. Englische Beispieldaten: `store/demo-data-en.js`.
+
 Neu erzeugen nach Änderungen an der App:
 ```
 node store/make-screenshots.js
 node store/make-previews.js
+STORE_LANG=en node store/make-screenshots.js
+STORE_LANG=en node store/make-previews.js
 ```

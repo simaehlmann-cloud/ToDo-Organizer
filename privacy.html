@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Privacy Policy – ToDo Organizer</title>
+<meta name="theme-color" content="#2563eb">
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --text:#1f2937; --border:#2563eb; --muted:#6b7280; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16181d; --card:#23272f; --text:#e9ecf1; --border:#93b4f5; --muted:#a3abb8; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:calc(24px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
+    background:var(--bg); color:var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height:1.6;
+  }
+  main { max-width:760px; margin:0 auto; background:var(--card);
+         border:2px solid var(--border); border-radius:16px; padding:24px; }
+  h1 { font-size:clamp(24px,5vw,32px); margin:0 0 4px; }
+  h2 { font-size:clamp(18px,4vw,22px); margin:32px 0 8px; }
+  .stand { color:var(--muted); font-size:14px; margin:0 0 24px; }
+  ul { padding-left:20px; }
+  address { font-style:normal; }
+  a { color:var(--border); }
+  .links { margin-top:32px; display:flex; flex-wrap:wrap; gap:12px; }
+  .links a { display:inline-block; padding:12px 20px; background:var(--border);
+             color:#fff; border-radius:10px; text-decoration:none; font-weight:600; }
+  @media (prefers-color-scheme: dark) { .links a { color:#10203a; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy Policy</h1>
+<p class="stand">ToDo Organizer · Last updated: November 2026 · <a href="datenschutz.html" lang="de">Deutsche Fassung</a></p>
+<p>This is a translation of the German privacy policy. In case of doubt, the German version applies.</p>
+
+<h2>1. Controller</h2>
+<p>The controller within the meaning of Art. 4(7) GDPR is:</p>
+<address>
+Wisdompeak Apps<br>
+    Owner: Simon Mählmann<br>
+    Oderstraße 13<br>
+    28844 Weyhe<br>
+    Germany<br>
+Email: <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a>
+</address>
+<p>No data protection officer has been appointed, as the requirements of Art. 37 GDPR
+and Section 38 BDSG (German Federal Data Protection Act) are not met.</p>
+
+<h2>2. Principle: no data collection</h2>
+<p>
+ToDo Organizer does not process any personal data on the developer's servers.
+The developer does not operate a server for the app. There are no user accounts, no
+sign-up, no analytics or tracking services, no advertising and no sharing of data
+with third parties.
+</p>
+
+<h2>3. What is stored on the device</h2>
+<p>Everything you enter in the app stays on your device only. The app stores:</p>
+<ul>
+<li>your tasks with title, category, priority, due date and time, reminder, repeat,
+  subtasks, note and, where applicable, a subject and an email address you assigned a task to</li>
+<li>photos you add to a task (reduced in size, in the app's <em>IndexedDB</em> storage)</li>
+<li>categories, templates, habits with the days ticked off, weekly plan or timetable
+  (entries, rooms, times) and shopping lists with recently bought items as suggestions</li>
+<li>your settings, such as visible features, appearance (light/dark), language, state or region (for public and school holidays), A/B weeks, week days and reminder time</li>
+<li>cancellations, covers and duties you enter for individual lessons (with class, subject, room and note), regular break duties, notes on individual lessons and reminders “for the next lesson”</li>
+<li>where applicable, the addresses of your own calendar subscriptions (ICS, up to eight, with a name and colour of your choice) and the events last loaded from them</li>
+<li>whether the trial has started (with date) and whether the full version is unlocked</li>
+</ul>
+<p>
+The data is kept in the app's protected storage (<em>localStorage</em> and <em>IndexedDB</em>). It is never
+transferred to the developer. Uninstalling the app removes it completely.
+In the app, all data can be deleted under “Settings → Tidy up”.
+</p>
+<p>
+Please note: if you create tasks containing names or email addresses of other people,
+the app stores these details too – again only on your device.
+</p>
+
+<h2>4. Reminders</h2>
+<p>
+Reminders are scheduled with your device's operating system (local notifications). For this,
+the system asks for your permission once. No push service and no server is used;
+the title and category of due tasks only appear in the notification on your device.
+If you wish, the app icon shows the number of due tasks; this, too, is calculated on the device only.
+</p>
+
+<h3>Device calendar</h3>
+<p>
+If you tap “Connect device calendar” in Settings, iOS asks for your permission.
+The app then reads the events of the period shown from the calendars on your device in order to
+display them in the week view. The events are only used for display, are not permanently stored
+by the app and are not transferred. With “Add to calendar”, the app creates an event for a task
+at your request. The app does not read or change entries in the Reminders app.
+You can revoke the permission at any time in the iOS settings.
+</p>
+<h3>Widget</h3>
+<p>
+If you add the “Today” widget to your home screen, the app places a short summary of the
+next three days (titles and times of tasks, lessons and events) in a protected storage area
+that only the app and its widget can read. The data stays on the device.
+</p>
+<h3>Camera and photos</h3>
+<p>
+If you add a photo to a task, the app opens the iOS camera or photo picker.
+The app only receives the one photo you take or select, reduces its size and stores
+it on the device. Photos are not transferred; a backup file you export yourself contains them.
+</p>
+
+<h3>Public and school holidays</h3>
+<p>
+The app calculates public holidays itself. School holidays for Germany, Austria and Switzerland are included in the app
+(source: OpenHolidays API, licence ODbL). The app does not fetch anything from the internet for this; the selected
+state or region stays on your device.
+</p>
+
+<h3>Automatic backup</h3>
+<p>
+In the iPhone and iPad app, as long as the setting is turned on, the app saves a backup file once a week
+in its own Documents folder (visible in the Files app under
+“On My iPhone/iPad → ToDo Organizer”). The file stays on the device; it is part of the
+iOS device backup if you use it. The app does not send it anywhere.
+</p>
+
+<h2>5. Backup, export and sharing</h2>
+<p>
+A backup (JSON file, optionally encrypted with a password) and the export as a
+calendar file (.ics) are created on the device only and passed on via your device's share
+function. Where the file goes afterwards (e.g. to the Files app, to iCloud Drive
+or by email) is entirely up to you. Encryption is done on the device with AES-GCM;
+the password is not stored. When importing, the app only reads the one file you select.
+</p>
+<p>
+“Share list” and the email functions open the share menu or the email app set up on the device.
+Sending happens there and only when you trigger it.
+</p>
+
+<h2>6. Internet connections</h2>
+<p>
+The app only connects to the internet by itself in these cases:
+</p>
+<ul>
+<li><strong>Calendar subscriptions:</strong> if you enter the address of a calendar (ICS) in Settings,
+  the app fetches exactly this address to show the events – when adding it, at your
+  request and, when the app is opened, at most every six hours. As with any request, the operator of this calendar (e.g. Google)
+  technically learns your IP address and the time. Without an address entered,
+  this never happens.</li>
+<li><strong>iCloud sync (iPhone/iPad, only if turned on):</strong> the app's entries
+  (without photos and without loaded subscription events) are stored in the user's iCloud account at Apple
+  so that all of the user's devices have the same data. Transfer and storage are handled by Apple
+  under Apple's privacy policy; the developer of the app has no access to them. It can be turned off
+  in the app's settings; the data in iCloud can be deleted in the iOS settings under
+  iCloud → Manage Storage.</li>
+<li><strong>App Store:</strong> the trial and the full version are handled by Apple (see section 7).</li>
+</ul>
+<p>
+The optional “Google Calendar link” opens a pre-filled Google page in the browser at your request.
+The app itself does not access a Google account. The app contains no external
+analytics libraries, no fonts from third-party servers and no embedded content.
+</p>
+
+<h2>7. Trial and in-app purchase</h2>
+<p>
+The trial and the full version are handled entirely via Apple's App Store. The developer of this app
+does not receive any payment data. The app only learns from the App Store whether and since when the
+trial is running and whether the full version is unlocked for your account, and remembers this on the
+device so that it also works offline. Apple's privacy policy applies.
+</p>
+
+<h2>8. Download via an app store</h2>
+<p>
+When you download the app from an app store, its operator processes data independently
+(such as account, device and time of download). The developer of this app has no influence
+on this. The privacy policy of the respective operator applies.
+</p>
+
+<h2>9. Your rights</h2>
+<p>
+You have the rights of access, rectification, erasure, restriction of processing,
+data portability and objection under Art. 15 to 21 GDPR, as well as the right to lodge a complaint
+with a supervisory authority. As the developer does not store any personal data,
+requests for access or erasure addressed to the developer will generally come to nothing.
+You can delete all data yourself in the app at any time.
+</p>
+
+<h2>10. Changes to this policy</h2>
+<p>
+This policy will be updated whenever features of the app change in a way that is relevant
+to data protection. The current version is available in the app and on this page.
+</p>
+
+<h2>11. Contact</h2>
+<p>If you have any questions about data protection, please contact <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a>.</p>
+
+<div class="links">
+<a href="index.html">Back to the app</a>
+<a href="legal-notice.html">Legal notice</a>
+</div>
+</main>
+</body>
+</html>

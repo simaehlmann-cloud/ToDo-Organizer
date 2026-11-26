@@ -61,8 +61,8 @@ MutationObserver übersetzt Textknoten und placeholder/title/aria-label vor dem 
   nicht verbrauchte Wörter kommen im Titel englisch zurück. Abkürzungen (Sun, Sat …) nur groß
   und vor Zahl/Ende („Sun cream“ bleibt Titel).
 - Neue Nutzer auf englischem Gerät bekommen Kategorien, Vorlagen und Einkaufsliste englisch.
-- Bleibt deutsch: Siri-Sprachbefehle (Kurzbefehle-App geht), technische Angaben für Rückfragen,
-  Rechtstexte (Datenschutz/Impressum), Store-Bilder.
+- Bleibt deutsch: technische Angaben für Rückfragen. Siri-Sätze englisch über
+  `res/ios/app/en.lproj/AppShortcuts.strings`; Rechtstexte englisch seit Update 14 (s. u.).
 
 **iCloud-Abgleich** (iPhone ↔ iPad): `Sync`-Modul, Schlüssel-Wert-Speicher `v1.<Sammlung>` mit
 `{i,u,t,o}`; Zusammenführen je Eintrag (neuer `u` gewinnt), Löschmarken 120 Tage. Gerätebezogene
@@ -314,3 +314,23 @@ und 15 erledigten Aufgaben.
 - Warnung bei überfälligem Backup (`settings.lastExport`) und veraltetem
   ICS-Abruf (`settings.extCalLastSync`) – in MyToDo seit 1.27 vorhanden.
 - Teilen an den ToDo Organizer (Share Extension) gibt es auf iOS noch nicht.
+
+## Update 14: englische Store-Medien (26.11.2026)
+
+- `store/device.js`: `STORE_LANG=en` → Gerät en-GB, Beispieldaten `store/demo-data-en.js`,
+  Ausgabe nach `store/out/en/`, Datumsfelder als 24/11/2026. Texte in den Skripten mit `L(de, en)`.
+- Beim Ansehen der englischen Bilder gefunden und behoben: Platzhalter in Textfeldern wurden nie
+  übersetzt (der Übersetzer übersprang TEXTAREA samt Attributen – jetzt nur noch den Inhalt);
+  Kalender-Kopf „Mo Di Mi“ fest verdrahtet (jetzt `DAY_SHORT`); Plus/Minus-Zeitraum und Kacheln
+  („Schuljahr …“, „Plus (Std)“) deutsch; `deDate` schrieb immer 24.11.2026 (jetzt `LOC`);
+  „🔔 1 Std. vorher“ in der Aufgabenliste; Anführungszeichen „…“ in der Schnelleingabe-Vorschau.
+  Prüfungen dazu in `tests/i18n.test.js`, Abschnitt 5b. Deutsch bleibt unverändert.
+- Store-Texte: iCloud-Abgleich, Siri und Zahl am App-Symbol ergänzt; „Kein Server“ präzisiert
+  (iCloud ist Apples Dienst im Konto der Nutzer); Prüfnotizen nennen Englisch und iCloud.
+- Englische Rechtstexte: `privacy.html`, `legal-notice.html` (Übersetzung, im Zweifel gilt Deutsch).
+  Die App verlinkt sie auf Englisch statt `datenschutz.html`/`impressum.html` (gleich nach `I18N.start()`).
+  Beide Workflows kopieren sie nach `www/`, `sw.js` hält sie offline (Cache v5). `make-legal-pages.js`
+  erzeugt zusätzlich `docs/en/index.html` (englische Support-Seite, Bilder `docs/img/en/`).
+  Store-URLs Englisch: …/todo-organizer/privacy.html und …/en/. `validate.js` prüft alles.
+  Ändert sich die Datenschutzerklärung, beide Fassungen anpassen.
+- Sprachwahl mit Flaggen: 🌐 Automatisch · 🇩🇪 Deutsch · 🇬🇧 English (Einstellungen → Darstellung und Nutzung).

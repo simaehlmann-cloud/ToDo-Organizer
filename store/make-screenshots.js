@@ -9,11 +9,13 @@
    demo-data.js, gesetzt in einen Geräterahmen mit Überschrift. */
 const fs = require('fs');
 const path = require('path');
-const { chromium, DEVICES, openApp, germanInputs } = require('./device.js');
-const { TODAY_SCHOOL, SCHOOL } = require('./demo-data.js');
+const { chromium, DEVICES, openApp, germanInputs, L, DATA, OUT_ROOT } = require('./device.js');
+const { TODAY_SCHOOL, SCHOOL } = DATA;
 
-const OUT = path.join(__dirname, 'out', 'screenshots');
+// Englisch: STORE_LANG=en node store/make-screenshots.js → store/out/en/screenshots
+const OUT = path.join(OUT_ROOT, 'screenshots');
 const TMP = path.join(__dirname, 'out', 'tmp');
+const MATHE = L('Mathe', 'Maths');
 
 /* Reihenfolge = Reihenfolge im Store. Die ersten drei sieht man in der
    Suche ohne Antippen – sie müssen allein überzeugen. Deshalb vorn die
@@ -21,38 +23,39 @@ const TMP = path.join(__dirname, 'out', 'tmp');
    land: auf dem iPad quer aufgenommen (Wochenspalten). */
 const SCENES = [
   { id: '01-woche', data: 'school', land: true,
-    title: 'Unterricht und Alltag in einer Woche', sub: 'Stunden, Aufgaben, Termine und Aufsichten – nach Uhrzeit',
+    title: L('Unterricht und Alltag in einer Woche', 'Lessons and life in one week'), sub: L('Stunden, Aufgaben, Termine und Aufsichten – nach Uhrzeit', 'Lessons, tasks, events and duties – sorted by time'),
     go: async p => { await nav(p, 'week'); } },
-  { id: '02-stundenplan', data: 'school', title: 'Stundenplan mit A/B-Wochen', sub: 'Doppelstunden, Aufsichten, Ferien und Feiertage aller Länder',
+  { id: '02-stundenplan', data: 'school', title: L('Stundenplan mit A/B-Wochen', 'Timetable with A/B weeks'), sub: L('Doppelstunden, Aufsichten, Ferien und Feiertage aller Länder', 'Double lessons, duties, school and public holidays'),
     go: async p => { await nav(p, 'timetable'); await scrollTo(p, '#tt-grid', 18, true); } },
-  { id: '03-notizen', data: 'school', title: 'Notizen zu jeder Stunde', sub: 'Der Stundenverlauf je Klasse – nach Datum',
-    go: async p => { await nav(p, 'week'); await p.evaluate(() => openCourseDialog('Mathe|7b')); } },
-  { id: '04-stunden', data: 'school', title: 'Plus- und Minusstunden im Blick', sub: 'Vertretung, Ausfall und Aufsicht – als PDF für die Schulleitung',
+  { id: '03-notizen', data: 'school', title: L('Notizen zu jeder Stunde', 'Notes for every lesson'), sub: L('Der Stundenverlauf je Klasse – nach Datum', 'A lesson log for each class – by date'),
+    go: async p => { await nav(p, 'week'); await p.evaluate(c => openCourseDialog(c), MATHE + '|7b'); } },
+  { id: '04-stunden', data: 'school', title: L('Plus- und Minusstunden im Blick', 'Extra and missed lessons'), sub: L('Vertretung, Ausfall und Aufsicht – als PDF für die Schulleitung', 'Covers, cancellations and duties – as a PDF for school leaders'),
     go: async p => { await nav(p, 'timetable'); await scrollTo(p, '#card-subs', 18); } },
-  { id: '05-klassenarbeit', data: 'school', title: 'Klassenarbeit planen', sub: 'Vorbereiten, schreiben, zurückgeben – die Aufgaben legt die App an',
+  { id: '05-klassenarbeit', data: 'school', title: L('Klassenarbeit planen', 'Plan a test'), sub: L('Vorbereiten, schreiben, zurückgeben – die Aufgaben legt die App an', 'Prepare, write, hand back – the app creates the tasks'),
     go: async p => {
       await nav(p, 'tasks');
-      await p.evaluate(() => { openExamDialog('2026-12-10', 'Mathe'); document.getElementById('ex-title').value = '7b Prozentrechnung'; renderExamPreview(); document.activeElement.blur(); });
+      await p.evaluate(({ subj, title }) => { openExamDialog('2026-12-10', subj); document.getElementById('ex-title').value = title; renderExamPreview(); document.activeElement.blur(); },
+        { subj: MATHE, title: L('7b Prozentrechnung', '7b Percentages') });
       await germanInputs(p);
     } },
-  { id: '06-schnelleingabe', title: 'Schreib einfach, was zu tun ist', sub: 'Datum, Uhrzeit von–bis, Kategorie und Wiederholung erkennt die App',
+  { id: '06-schnelleingabe', title: L('Schreib einfach, was zu tun ist', 'Just type what needs doing'), sub: L('Datum, Uhrzeit von–bis, Kategorie und Wiederholung erkennt die App', 'Date, time from–to, category and repeat are recognised'),
     go: async p => {
       await nav(p, 'tasks');
-      await p.fill('#t-title', 'Fußballtraining Fr 18–19:30 #Sport');
+      await p.fill('#t-title', L('Fußballtraining Fr 18–19:30 #Sport', 'Football practice Fri 6–7:30pm #Sport'));
       await p.dispatchEvent('#t-title', 'input');
       await p.evaluate(() => document.activeElement && document.activeElement.blur());
       await p.waitForTimeout(120);
     } },
-  { id: '07-aufgabe', title: 'Alles zu einer Aufgabe', sub: 'Uhrzeit von–bis, Erinnerung vorab, Unterpunkte und Notizen',
+  { id: '07-aufgabe', title: L('Alles zu einer Aufgabe', 'Everything about a task'), sub: L('Uhrzeit von–bis, Erinnerung vorab, Unterpunkte und Notizen', 'Time from–to, early reminders, subtasks and notes'),
     go: async p => { await nav(p, 'tasks'); await p.evaluate(() => openTaskDialog('t01')); await germanInputs(p); } },
-  { id: '08-gewohnheiten', title: 'Gute Gewohnheiten', sub: 'Wochenziel setzen, abhaken, Serie halten',
+  { id: '08-gewohnheiten', title: L('Gute Gewohnheiten', 'Good habits'), sub: L('Wochenziel setzen, abhaken, Serie halten', 'Set a weekly goal, tick it off, keep your streak'),
     go: async p => { await nav(p, 'week'); await scrollTo(p, '#card-habits', 18); } },
-  { id: '09-einkauf', title: 'Einkaufslisten, die mitdenken', sub: 'Vorschläge, abhaken, teilen – auch im Dunkelmodus',
+  { id: '09-einkauf', title: L('Einkaufslisten, die mitdenken', 'Smart shopping lists'), sub: L('Vorschläge, abhaken, teilen – auch im Dunkelmodus', 'Suggestions, tick off, share – in dark mode too'),
     go: async p => {
       await p.evaluate(() => { state.settings.theme = 'dark'; applyTheme(); });
       await nav(p, 'shopping');
     } },
-  { id: '10-privat', title: 'Ohne Konto. Ohne Server.', sub: 'Deine Daten bleiben bei dir – mit verschlüsseltem Backup',
+  { id: '10-privat', title: L('Ohne Konto. Ohne Server.', 'No account. No server.'), sub: L('Deine Daten bleiben bei dir – mit verschlüsseltem Backup', 'Your data stays with you – with encrypted backup'),
     go: async p => {
       await p.evaluate(() => { state.settings.theme = 'light'; applyTheme(); });
       await nav(p, 'settings');

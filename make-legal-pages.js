@@ -19,6 +19,7 @@ const ORDNER = 'todo-organizer';
 function fuerWeb(html) {
   return html
     .replace(/href="index\.html">Zurück zur App</g, 'href="../">Zur Übersicht<')
+    .replace(/href="index\.html">Back to the app</g, 'href="../en/">Overview<')
     .replace(/<title>([^<]*)<\/title>/, '<title>$1</title>\n<meta name="robots" content="index, follow">');
 }
 
@@ -148,7 +149,111 @@ const START = `<!DOCTYPE html>
 </main>
 
 <footer class="wrap">
-  <a href="${ORDNER}/datenschutz.html">Datenschutz</a><a href="${ORDNER}/impressum.html">Impressum</a>
+  <a href="${ORDNER}/datenschutz.html">Datenschutz</a><a href="${ORDNER}/impressum.html">Impressum</a><a href="en/" lang="en">🇬🇧 English</a>
+  <span>ToDo Organizer · Wisdompeak Apps – Simon Mählmann</span>
+</footer>
+</body>
+</html>
+`;
+
+/* Englische Übersichtsseite (Support-URL der englischen Store-Lokalisierung):
+   gleiches Aussehen, eigener Text, Bilder aus docs/img/en/. */
+const STYLE = START.slice(START.indexOf('<style>'), START.indexOf('</style>') + 8);
+const START_EN = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToDo Organizer – Planner for school and life</title>
+<meta name="description" content="The private planner for school and everyday life: tasks, timetable with holidays, lesson notes, covers, calendar and shopping lists – no account, no server.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#e9ecf0">
+<link rel="icon" href="../img/icon.png">
+${STYLE}
+</head>
+<body>
+<header class="wrap">
+  <div class="brand"><img src="../img/icon.png" alt="" width="64" height="64"><strong style="font-size:20px">ToDo Organizer</strong></div>
+  <h1>The private planner for school and life</h1>
+  <p class="lead">Tasks, events and your timetable in one place – with school holidays, notes for every lesson and
+  reminders. No account, no ads, no server.</p>
+  <ul class="pills"><li>iPhone and iPad</li><li>One-time purchase, no subscription</li><li>Try everything for 30 days</li></ul>
+</header>
+
+<main class="wrap">
+  <div class="shots" aria-label="Screenshots">
+    <img src="../img/en/screen-01.jpg" alt="Week with lessons, tasks and events" loading="lazy" width="540" height="1174">
+    <img src="../img/en/screen-02.jpg" alt="Timetable with A/B weeks and double periods" loading="lazy" width="540" height="1174">
+    <img src="../img/en/screen-03.jpg" alt="Notes for every lesson" loading="lazy" width="540" height="1174">
+    <img src="../img/en/screen-04.jpg" alt="Extra and missed lessons" loading="lazy" width="540" height="1174">
+    <img src="../img/en/screen-06.jpg" alt="Quick entry" loading="lazy" width="540" height="1174">
+    <img src="../img/en/screen-09.jpg" alt="Shopping lists in dark mode" loading="lazy" width="540" height="1174">
+  </div>
+
+  <section>
+    <h2>A real lesson planner for teachers</h2>
+    <div class="grid">
+      <div class="card"><h3>Timetable with holidays</h3><p>School and public holidays for Germany, Austria and Switzerland are built in. A/B weeks, double periods and duties are included.</p></div>
+      <div class="card"><h3>Notes for every lesson</h3><p>Record what you covered and “note for the next lesson”. The lesson log for each class shows everything by date.</p></div>
+      <div class="card"><h3>X lessons left until …</h3><p>How many lessons are left until the test or the holidays? The app keeps count – cancellations included.</p></div>
+      <div class="card"><h3>Extra and missed lessons</h3><p>Log covers and cancellations in one tap, see the balance per school year, export a PDF for school leaders.</p></div>
+      <div class="card"><h3>Plan tests</h3><p>Prepare, write, hand back – the app creates the tasks. Homework “until the next lesson” of the class.</p></div>
+      <div class="card"><h3>No pupil data</h3><p>No names, no grades, no developer cloud. That keeps the app simple in terms of data protection, too.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>And for everyone else</h2>
+    <div class="grid">
+      <div class="card"><h3>Just start typing</h3><p>“Training Tue 6–7:30pm #Sport” – the app recognises date, time, category and repeat by itself. With Siri, too.</p></div>
+      <div class="card"><h3>Week and calendar</h3><p>Tasks, events from your calendars (Google too) and subscriptions from school or club in one view.</p></div>
+      <div class="card"><h3>Family, studies, club</h3><p>Suitable settings from the start: lectures, the children's appointments, training times and match days.</p></div>
+      <div class="card"><h3>Habits and shopping</h3><p>Weekly goals with streaks, shopping lists with suggestions – and a weekly review on Sundays.</p></div>
+      <div class="card"><h3>Widget and shortcuts</h3><p>Your day on the home screen, the number of due tasks on the icon, quick actions with a long press.</p></div>
+      <div class="card"><h3>iPhone and iPad in sync</h3><p>Sync via your own iCloud account – no third-party server.</p></div>
+    </div>
+  </section>
+
+  <section class="promise">
+    <h2>Your data stays with you</h2>
+    <p>No account, no ads, no analytics tools. Everything is stored on your device – and, if you like,
+    in your own iCloud account. Backups can be encrypted.</p>
+    <p><a href="../${ORDNER}/privacy.html">Read the privacy policy</a></p>
+  </section>
+
+  <section>
+    <h2>Help and FAQ</h2>
+    <details><summary>Where is my data stored?</summary>
+      <p>On your device. With iCloud sync turned on, also in your iCloud account at Apple. There is no developer server.
+      Back up regularly under Settings → Backup; the app reminds you and, if you like, creates a backup itself every week.</p></details>
+    <details><summary>How do I move to a new device?</summary>
+      <p>With iCloud sync: turn it on on both devices, done. Otherwise: export on the old device, bring the file to the new one
+      and import it there under Settings → Backup → Import.</p></details>
+    <details><summary>What happens after the trial?</summary>
+      <p>Tasks stay free – with quick entry, times, reminders, repeats, subtasks and notes, plus school and public holidays.
+      Calendar, timetable with all school features, habits, shopping lists, iCloud sync and statistics are unlocked by the full version –
+      a one-time purchase, no subscription, with Family Sharing. Your entries are always kept.</p></details>
+    <details><summary>How do I switch the language?</summary>
+      <p>The app follows your device language (German or English). To change it: Settings → “Sprache · Language”.</p></details>
+    <details><summary>How do holidays get into the app?</summary>
+      <p>Settings → Public and school holidays → choose your state or canton. The data for Germany, Austria and Switzerland
+      is included in the app (source: OpenHolidays API, licence ODbL) – nothing is fetched from the internet, no guarantee.</p></details>
+    <details><summary>How do I add my Google Calendar?</summary>
+      <p>Settings → Connect calendars → “Add Google Calendar”. The app guides you step by step through both ways:
+      via the device (recommended) or as a subscription with the secret iCal address.</p></details>
+    <details><summary>How do I use Siri?</summary>
+      <p>“Hey Siri, new task in ToDo Organizer” – Siri asks for the text; date and time are recognised.
+      “Hey Siri, what's on today in ToDo Organizer?” reads out your day. Both are also available in the Shortcuts app.</p></details>
+    <details><summary>I have already bought the full version.</summary>
+      <p>Settings → Full version → “Restore purchases”. This also works with Family Sharing.</p></details>
+    <details><summary>Reminders don't arrive or arrive late.</summary>
+      <p>iPhone/iPad: Settings → Notifications → ToDo Organizer → Allow Notifications.</p></details>
+    <p style="margin-top:14px">Questions, bugs, ideas: <a href="mailto:smaehlmann.appdev@gmail.com">smaehlmann.appdev@gmail.com</a></p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <a href="../${ORDNER}/privacy.html">Privacy</a><a href="../${ORDNER}/legal-notice.html">Legal notice</a><a href="../" lang="de">🇩🇪 Deutsch</a>
   <span>ToDo Organizer · Wisdompeak Apps – Simon Mählmann</span>
 </footer>
 </body>
@@ -158,9 +263,10 @@ const START = `<!DOCTYPE html>
 function erwarteteDateien() {
   const out = {
     [path.join(ZIEL, 'index.html')]: START,
+    [path.join(ZIEL, 'en', 'index.html')]: START_EN,
     [path.join(ZIEL, '.nojekyll')]: ''
   };
-  for (const f of ['datenschutz.html', 'impressum.html']) {
+  for (const f of ['datenschutz.html', 'impressum.html', 'privacy.html', 'legal-notice.html']) {
     out[path.join(ZIEL, ORDNER, f)] = fuerWeb(fs.readFileSync(f, 'utf8'));
   }
   return out;

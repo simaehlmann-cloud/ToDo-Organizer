@@ -706,7 +706,7 @@ html.h12 .dt3>div:first-child{grid-column:1/-1}
           <option value="everyday">Alltag und Beruf</option><option value="school">Schule</option><option value="teacher">Unterricht (Lehrkraft)</option>
           <option value="study">Studium</option><option value="family">Familie</option><option value="coach">Training und Verein</option></select></div>
         <div><label class="fld" for="set-lang" translate="no">Sprache · Language</label><select id="set-lang" translate="no">
-          <option value="auto">Automatisch · Automatic</option><option value="de">Deutsch</option><option value="en">English</option></select></div>
+          <option value="auto">🌐 Automatisch · Automatic</option><option value="de">🇩🇪 Deutsch</option><option value="en">🇬🇧 English</option></select></div>
       </div>
       <p class="hint" style="margin:10px 0 0">Bei Schule und Unterricht zeigt die App den Stundenplan mit Schulstunden und verknüpft Aufgaben mit Fächern; bei Studium, Familie und Verein einen Wochenplan mit Uhrzeiten.</p>
       <label style="display:flex;align-items:center;gap:9px;font-size:.9rem;cursor:pointer;margin-top:12px">
@@ -1990,6 +1990,8 @@ const I18N = (() => {
     "Sachsen-Anhalt": "Saxony-Anhalt",
     "Saisonplanung": "Season planning",
     "Saldo": "Balance",
+    "Plus (Std)": "Extra (lessons)",
+    "Minus (Std)": "Missed (lessons)",
     "Samstag": "Saturday",
     "Schiri bestätigen": "Confirm referee",
     "Schließen": "Close",
@@ -2394,11 +2396,14 @@ const I18N = (() => {
   // ---- DOM ----------------------------------------------------------------
   const ATTRS = ["placeholder", "title", "aria-label"];
   const written = new WeakMap();
-  const skip = n => {
+  // attr = true: es geht um die Attribute des Elements selbst. Ein Textfeld
+  // (TEXTAREA) bleibt dann übersetzbar – sein Platzhalter ja, sein Inhalt nie.
+  const skip = (n, attr) => {
     for (let e = n.nodeType === 1 ? n : n.parentElement; e; e = e.parentElement) {
       if (e.translate === false || e.getAttribute && e.getAttribute("translate") === "no") return true;
       const t = e.tagName;
-      if (t === "SCRIPT" || t === "STYLE" || t === "TEXTAREA" || e.isContentEditable) return true;
+      if (t === "SCRIPT" || t === "STYLE" || e.isContentEditable) return true;
+      if (t === "TEXTAREA" && !(attr && e === n)) return true;
     }
     return false;
   };
@@ -2426,13 +2431,17 @@ const I18N = (() => {
   }
   function walk(root) {
     if (root.nodeType === 3) { text(root); return; }
-    if (root.nodeType !== 1 || skip(root)) return;
+    if (root.nodeType !== 1) return;
+    if (root.tagName === "TEXTAREA") { if (!skip(root, true)) attrs(root); return; }
+    if (skip(root)) return;
     attrs(root);
     const w = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
       acceptNode: n => (n.nodeType === 1 && (n.getAttribute("translate") === "no" || n.tagName === "SCRIPT" || n.tagName === "STYLE" || n.tagName === "TEXTAREA"))
         ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
     });
     for (let n = w.nextNode(); n; n = w.nextNode()) n.nodeType === 3 ? text(n) : attrs(n);
+    // Platzhalter der Textfelder (der Baumlauf überspringt TEXTAREA samt Inhalt)
+    for (const t of root.querySelectorAll("textarea[placeholder]")) if (!skip(t, true)) attrs(t);
   }
   function start() {
     if (lang === "de") return;
@@ -2444,7 +2453,7 @@ const I18N = (() => {
       for (const m of list) {
         if (m.type === "childList") m.addedNodes.forEach(walk);
         else if (m.type === "characterData") text(m.target);
-        else if (m.type === "attributes" && !skip(m.target)) attrs(m.target);
+        else if (m.type === "attributes" && !skip(m.target, true)) attrs(m.target);
       }
     }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
     // Systemdialoge
@@ -2463,6 +2472,9 @@ const T = s => I18N.tr(s);
 const LOC = I18N.locale;
 /* ==I18N-END== */
 I18N.start();
+// Rechtstexte in der Sprache der App (privacy.html / legal-notice.html sind die englischen Fassungen)
+if (I18N.en) for (const [de, en] of [["datenschutz.html", "privacy.html"], ["impressum.html", "legal-notice.html"]])
+  document.querySelectorAll(`a[href="${de}"]`).forEach(a => a.setAttribute("href", en));
 
 /* ==CORE-BEGIN==
    Reine Logik ohne Oberfläche: Datum, Wiederholungen, Schnelleingabe,
@@ -2471,7 +2483,8 @@ I18N.start();
 const isoOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const todayISO = () => isoOf(new Date());
 const parseISO = iso => new Date(iso + "T12:00:00");
-const deDate = iso => parseISO(iso).toLocaleDateString("de-DE", { day:"2-digit", month:"2-digit", year:"numeric" });
+// Datum in der Schreibweise der App-Sprache (Deutsch 24.11.2026, Englisch 24/11/2026)
+const deDate = iso => parseISO(iso).toLocaleDateString(typeof LOC === "string" ? LOC : "de-DE", { day:"2-digit", month:"2-digit", year:"numeric" });
 const addDays = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDate() + n); return isoOf(d); };
 const dowOf = iso => ((parseISO(iso).getDay() + 6) % 7) + 1;          // 1 = Montag … 7 = Sonntag
 const mondayOf = iso => addDays(iso, 1 - dowOf(iso));
@@ -4345,7 +4358,7 @@ function renderQuickPreview() {
   if (p.catId) { const c = catById(p.catId); if (c) { const e = ul("span", "pv cat", "#" + c.name); e.style.background = c.color; box.append(e); } }
   if (p.prio) chip("❗ " + PRIO_LABEL[p.prio]);
   if (p.subject) chip("📚 " + p.subject);
-  chip("„" + p.title + "“");
+  chip(I18N.en ? "“" + p.title + "”" : "„" + p.title + "“");
   const off = el("button", null, "nicht erkennen");
   off.type = "button";
   off.onclick = () => { qaIgnore = true; renderQuickPreview(); $("t-title").focus(); };
@@ -4958,7 +4971,7 @@ function taskCard(t, today) {
     meta.append(el("span", overdue ? "over" : soon ? "soon" : null, lbl));
   }
   if (t.recurrence && t.recurrence !== "none") meta.append(el("span",null,"🔄 " + recLabel(t)));
-  if (!t.completed && t.dueDate && REMIND_SHORT[t.remind]) meta.append(el("span",null,"🔔 " + REMIND_SHORT[t.remind]));
+  if (!t.completed && t.dueDate && REMIND_SHORT[t.remind]) meta.append(el("span",null,"🔔 " + T(REMIND_SHORT[t.remind])));
   if (t.subject && feat("timetable")) {
     const nx = nextLessonFor(t.subject);
     meta.append(ul("span",null,"📚 " + t.subject + (nx ? " · " + T("nächste Stunde") + " " + nx : "")));
@@ -5580,7 +5593,7 @@ function renderCalendar() {
   if (!feat("calendar")) return;
   const grid = $("cal-grid"); grid.replaceChildren();
   $("cal-month").textContent = calCursor.toLocaleDateString(LOC, { month:"long", year:"numeric" });
-  ["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(d => grid.append(el("div","cal-d",d)));
+  DAY_SHORT.slice(1).forEach(d => grid.append(el("div","cal-d",d)));
 
   const first = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
   const start = new Date(first);
@@ -6597,13 +6610,17 @@ $("sb-del").onclick = () => {
   toast("Gelöscht.", () => restore(snap));
 };
 
+/* Anzeigename des Zeitraums in der Sprache der App (Monat: Monatsname je Sprache) */
+function subPerLabel(per) {
+  return subPeriod === "month" && per.from ? parseISO(per.from).toLocaleDateString(LOC, { month: "long", year: "numeric" }) : T(per.label);
+}
 function renderSubs() {
   const card = $("card-subs"); if (!card) return;
   card.hidden = !isTeacherPlan();
   if (card.hidden) return;
   document.querySelectorAll("#sub-period button").forEach(b => b.classList.toggle("on", b.dataset.p === subPeriod));
   const per = schoolPeriod(subPeriod, todayISO());
-  $("sub-period-label").textContent = per.label + (per.from ? ` (${deDate(per.from)} – ${deDate(per.to)})` : "");
+  $("sub-period-label").textContent = subPerLabel(per) + (per.from ? ` (${deDate(per.from)} – ${deDate(per.to)})` : "");
   const list = state.subLog.filter(e => (!per.from || e.date >= per.from) && (!per.to || e.date <= per.to))
     .sort((a, b) => b.date.localeCompare(a.date) || (b.slot ?? -1) - (a.slot ?? -1));
   const sum = subSummary(list);
@@ -6638,7 +6655,7 @@ $("sub-share").onclick = async () => {
   const s = subSummary(list);
   const lines = list.map(e => `${deDate(e.date)} · ${T(slotLabel(e.slot, e.hours))} · ${subTitle(e)}`
     + (e.type === "aufsicht" ? " (" + T("Aufsicht") + ")" : ` · ${e.type === "plus" ? "+" : "−"}${e.hours}`) + (e.note ? ` – ${e.note}` : ""));
-  const text = T(`Mehr- und Minderstunden – ${per.label}`) + "\n"
+  const text = T("Mehr- und Minderstunden") + " – " + subPerLabel(per) + "\n"
     + T(`Plus: ${s.plus} Std · Minus: ${s.minus} Std · Saldo: ${s.saldo > 0 ? "+" : ""}${s.saldo} Std · Aufsichten: ${s.aufsicht}`) + "\n\n" + lines.join("\n");
   shareText(T("Mehr- und Minderstunden"), text);
 };
@@ -6659,7 +6676,7 @@ $("sub-pdf").onclick = () => {
   const s = subSummary(list);
   const sign = n => (n > 0 ? "+" : n < 0 ? "−" : "±") + Math.abs(n);
   const pdf = buildTablePdf({
-    title: T("Mehr- und Minderstunden – " + per.label),
+    title: T("Mehr- und Minderstunden") + " – " + subPerLabel(per),
     sub: [name, per.from ? deDate(per.from) + " – " + deDate(per.to) : ""].filter(Boolean).join(" · "),
     summary: T(`Plus ${s.plus} Std · Minus ${s.minus} Std · Saldo ${sign(s.saldo)} Std · Aufsichten ${s.aufsicht}`),
     cols: [{ label: T("Datum"), w: 62 }, { label: T("Stunde"), w: 54 }, { label: T("Art"), w: 62 }, { label: T("Klasse"), w: 44 },
@@ -6670,7 +6687,7 @@ $("sub-pdf").onclick = () => {
       e.type === "aufsicht" ? "(" + e.hours + ")" : sign(subValue(e)), e.note || ""]),
     footer: T("Erstellt am " + deDate(todayISO()) + " mit ToDo Organizer · Aufsichten in Klammern, ohne Wertung")
   });
-  downloadBytes(T("Mehr- und Minderstunden").replace(/[\s-]+/g, "-") + "-" + T(per.label).replace(/[^\wäöüÄÖÜß.-]+/g, "-") + ".pdf", pdf, "application/pdf");
+  downloadBytes(T("Mehr- und Minderstunden").replace(/[\s-]+/g, "-") + "-" + subPerLabel(per).replace(/[^\wäöüÄÖÜß.-]+/g, "-") + ".pdf", pdf, "application/pdf");
 };
 
 /* ---------- Klassenarbeit / Klausur planen ---------- */

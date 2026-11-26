@@ -71,11 +71,14 @@ const I18N = (() => {
   // ---- DOM ----------------------------------------------------------------
   const ATTRS = ["placeholder", "title", "aria-label"];
   const written = new WeakMap();
-  const skip = n => {
+  // attr = true: es geht um die Attribute des Elements selbst. Ein Textfeld
+  // (TEXTAREA) bleibt dann übersetzbar – sein Platzhalter ja, sein Inhalt nie.
+  const skip = (n, attr) => {
     for (let e = n.nodeType === 1 ? n : n.parentElement; e; e = e.parentElement) {
       if (e.translate === false || e.getAttribute && e.getAttribute("translate") === "no") return true;
       const t = e.tagName;
-      if (t === "SCRIPT" || t === "STYLE" || t === "TEXTAREA" || e.isContentEditable) return true;
+      if (t === "SCRIPT" || t === "STYLE" || e.isContentEditable) return true;
+      if (t === "TEXTAREA" && !(attr && e === n)) return true;
     }
     return false;
   };
@@ -103,13 +106,17 @@ const I18N = (() => {
   }
   function walk(root) {
     if (root.nodeType === 3) { text(root); return; }
-    if (root.nodeType !== 1 || skip(root)) return;
+    if (root.nodeType !== 1) return;
+    if (root.tagName === "TEXTAREA") { if (!skip(root, true)) attrs(root); return; }
+    if (skip(root)) return;
     attrs(root);
     const w = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
       acceptNode: n => (n.nodeType === 1 && (n.getAttribute("translate") === "no" || n.tagName === "SCRIPT" || n.tagName === "STYLE" || n.tagName === "TEXTAREA"))
         ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
     });
     for (let n = w.nextNode(); n; n = w.nextNode()) n.nodeType === 3 ? text(n) : attrs(n);
+    // Platzhalter der Textfelder (der Baumlauf überspringt TEXTAREA samt Inhalt)
+    for (const t of root.querySelectorAll("textarea[placeholder]")) if (!skip(t, true)) attrs(t);
   }
   function start() {
     if (lang === "de") return;
@@ -121,7 +128,7 @@ const I18N = (() => {
       for (const m of list) {
         if (m.type === "childList") m.addedNodes.forEach(walk);
         else if (m.type === "characterData") text(m.target);
-        else if (m.type === "attributes" && !skip(m.target)) attrs(m.target);
+        else if (m.type === "attributes" && !skip(m.target, true)) attrs(m.target);
       }
     }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
     // Systemdialoge

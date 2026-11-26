@@ -300,6 +300,41 @@ const grab = p => p.evaluate(() => {
     await ctx.close();
   }
 
+  console.log('5b · Nachträge (Store-Bilder, 26.11.)');
+  {
+    const { ctx, p } = await open(browser, { state: DEMO.SCHOOL, now: '2026-11-17T09:00:00', locale: 'en-GB' });
+    ok(await S(p, () => $('sb-note').placeholder) === 'e.g. fractions worksheet, entered in the class register', 'Platzhalter in Textfeldern übersetzt (Vertretung)');
+    ok(await S(p, () => { switchTo('calendar'); return [...document.querySelectorAll('#cal-grid .cal-d')].map(x => x.textContent).join(' '); }) === 'Mon Tue Wed Thu Fri Sat Sun', 'Kalender: Wochentage englisch');
+    const subs = await S(p, () => { switchTo('timetable'); return [$('sub-period-label').textContent, ...[...document.querySelectorAll('#sub-tiles .l')].map(x => x.textContent)]; });
+    ok(subs[0] === 'School year 2026/27 (01/08/2026 – 31/07/2027)', 'Zeitraum Plus/Minus englisch: ' + subs[0]);
+    ok(subs.includes('Extra (lessons)') && subs.includes('Missed (lessons)'), 'Kacheln Plus/Minus englisch: ' + subs.slice(1).join(', '));
+    const month = await S(p, () => { document.querySelector('#sub-period [data-p=month]').click(); return $('sub-period-label').textContent; });
+    ok(month.startsWith('November 2026 (01/11/2026'), 'Monat englisch: ' + month);
+    const half = await S(p, () => { document.querySelector('#sub-period [data-p=half]').click(); return $('sub-period-label').textContent; });
+    ok(half.startsWith('Term 1 2026/27 (01/08/2026'), 'Halbjahr englisch: ' + half);
+    await S(p, () => { switchTo('tasks'); $('t-title').value = 'Football practice Fri 6pm'; $('t-title').dispatchEvent(new Event('input')); });
+    const chip = await S(p, () => [...$('qa-preview').children].map(x => x.textContent).join(' | '));
+    ok(chip.includes('“Football practice”') && !chip.includes('„'), 'Titel in der Vorschau mit englischen Anführungszeichen: ' + chip);
+    const links = await S(p, () => [...document.querySelectorAll('.legal-links a')].map(a => a.getAttribute('href')).join(' '));
+    ok(links === 'privacy.html legal-notice.html', 'Rechtstexte auf Englisch verlinkt: ' + links);
+    const langs = await S(p, () => [...$('set-lang').options].map(o => o.textContent).join(' | '));
+    ok(langs === '🌐 Automatisch · Automatic | 🇩🇪 Deutsch | 🇬🇧 English', 'Sprachwahl mit Flaggen: ' + langs);
+    ok(!p.errors.length, 'keine Fehler' + (p.errors.length ? ': ' + p.errors.join(' | ') : ''));
+    await ctx.close();
+  }
+  {
+    // Deutsch unverändert
+    const { ctx, p } = await open(browser, { state: DEMO.SCHOOL, now: '2026-11-17T09:00:00', locale: 'de-DE' });
+    const subs = await S(p, () => { switchTo('timetable'); return [$('sub-period-label').textContent, $('sb-note').placeholder,
+      [...document.querySelectorAll('#cal-grid .cal-d')].length]; });
+    ok(subs[0] === 'Schuljahr 2026/27 (01.08.2026 – 31.07.2027)' && subs[1].startsWith('z. B. Arbeitsblatt'), 'Deutsch unverändert: ' + subs.slice(0, 2).join(' · '));
+    const cal = await S(p, () => { switchTo('calendar'); return [...document.querySelectorAll('#cal-grid .cal-d')].map(x => x.textContent).join(' '); });
+    ok(cal === 'Mo Di Mi Do Fr Sa So', 'Kalender deutsch: ' + cal);
+    const links = await S(p, () => [...document.querySelectorAll('.legal-links a')].map(a => a.getAttribute('href')).join(' '));
+    ok(links === 'datenschutz.html impressum.html', 'Rechtstexte auf Deutsch verlinkt: ' + links);
+    await ctx.close();
+  }
+
   console.log('6 · Deutsche Reste in der englischen Oberfläche');
   const list = [...found].filter(([s]) => !/^(Mo|Di|Mi|Do|Fr|Sa|So)$/.test(s) || true);
   if (LIST) list.forEach(([s, w]) => console.log('    [' + w + '] ' + JSON.stringify(s)));

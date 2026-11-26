@@ -9,7 +9,16 @@ let chromium;
 try { ({ chromium } = require('playwright')); }
 catch { ({ chromium } = require('/opt/npm-tools/node_modules/playwright')); }
 
-const { TODAY, STATE } = require('./demo-data.js');
+/* Sprache der Aufnahmen: STORE_LANG=en node store/make-screenshots.js
+   (bzw. make-previews.js) erzeugt die englische Fassung mit englischen
+   Beispieldaten nach store/out/en/. Ohne Angabe: Deutsch nach store/out/. */
+const LANG = process.env.STORE_LANG === 'en' ? 'en' : 'de';
+const LOCALE = LANG === 'en' ? 'en-GB' : 'de-DE';
+const DATA = require(LANG === 'en' ? './demo-data-en.js' : './demo-data.js');
+const OUT_ROOT = path.join(__dirname, 'out', LANG === 'en' ? 'en' : '');
+/* Text je Sprache: L('Deutsch', 'English') */
+const L = (de, en) => LANG === 'en' ? en : de;
+const { TODAY, STATE } = DATA;
 const APP = 'file://' + path.resolve(__dirname, '..', 'index.html');
 
 /* Logische Bildschirmgröße (Punkte) und Ränder wie auf dem echten Gerät.
@@ -69,13 +78,13 @@ async function openApp(browser, dev, opts = {}) {
   const ctx = await browser.newContext({
     viewport: opts.viewport || dev.viewport,
     deviceScaleFactor: opts.scale || dev.scale,
-    hasTouch: true, isMobile: !dev.wide, locale: 'de-DE', timezoneId: 'Europe/Berlin'
+    hasTouch: true, isMobile: !dev.wide, locale: LOCALE, timezoneId: 'Europe/Berlin'
   });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(opts.today || TODAY));
-  await page.addInitScript(state => {
-    try { localStorage.setItem('studiez-pro-v2', JSON.stringify(state)); } catch {}
-  }, opts.state || STATE);
+  await page.addInitScript(({ state, lang }) => {
+    try { localStorage.setItem('studiez-pro-v2', JSON.stringify(state)); localStorage.setItem('todo-lang', lang); } catch {}
+  }, { state: opts.state || STATE, lang: LANG });
   for (const [fn, arg] of (opts.init || [])) await page.addInitScript(fn, arg);
   await page.goto(APP);
   await page.addStyleTag({ content: chromeCss(dev) });
@@ -88,24 +97,26 @@ async function openApp(browser, dev, opts = {}) {
     // Startansicht ohne Animation
     document.querySelectorAll('.view').forEach(v => v.style.animation = 'none');
   }, { icons: ICONS(dev.wide), wide: dev.wide,
-       day: new Date(opts.today || TODAY).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '') });
+       day: new Date(opts.today || TODAY).toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '') });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(150);
   return { ctx, page };
 }
 
 /* Chromium zeigt Datums- und Zeitfelder im US-Format, iOS auf einem
-   deutschen Gerät nicht. Für die Aufnahme werden sie zu Textfeldern mit
-   deutscher Schreibweise (nur Anzeige, die App-Daten bleiben unberührt). */
+   deutschen (bzw. britischen) Gerät nicht. Für die Aufnahme werden sie zu
+   Textfeldern in der Schreibweise des Landes (nur Anzeige, die App-Daten
+   bleiben unberührt). Deutsch 10.12.2026, Englisch (UK) 10/12/2026. */
+const DATE_SEP = LANG === 'en' ? '/' : '.';
 async function germanInputs(page) {
-  await page.evaluate(() => {
+  await page.evaluate(sep => {
     for (const i of document.querySelectorAll('input[type=date],input[type=time]')) {
       if (!i.offsetParent) continue;
       const v = i.value;
       i.type = 'text';
-      i.value = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.split('-').reverse().join('.') : v;
+      i.value = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.split('-').reverse().join(sep) : v;
     }
-  });
+  }, DATE_SEP);
 }
 
-module.exports = { chromium, DEVICES, openApp, germanInputs };
+module.exports = { chromium, DEVICES, openApp, germanInputs, LANG, L, DATA, OUT_ROOT, DATE_SEP };

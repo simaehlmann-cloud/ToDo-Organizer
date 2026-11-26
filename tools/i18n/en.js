@@ -660,6 +660,8 @@ module.exports = {
   "Sachsen-Anhalt": "Saxony-Anhalt",
   "Saisonplanung": "Season planning",
   "Saldo": "Balance",
+  "Plus (Std)": "Extra (lessons)",
+  "Minus (Std)": "Missed (lessons)",
   "Samstag": "Saturday",
   "Schiri bestätigen": "Confirm referee",
   "Schließen": "Close",

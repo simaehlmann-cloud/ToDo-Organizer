@@ -17,10 +17,11 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { chromium, DEVICES, openApp, germanInputs } = require('./device.js');
-const { TODAY_SCHOOL, SCHOOL } = require('./demo-data.js');
+const { chromium, DEVICES, openApp, L, DATA, OUT_ROOT, DATE_SEP } = require('./device.js');
+const { TODAY_SCHOOL, SCHOOL } = DATA;
 
-const OUT = path.join(__dirname, 'out', 'previews');
+// Englisch: STORE_LANG=en node store/make-previews.js → store/out/en/previews
+const OUT = path.join(OUT_ROOT, 'previews');
 const TMP = path.join(__dirname, 'out', 'tmp');
 const MAX_SEC = 29.5;   // Apple: höchstens 30 s
 
@@ -48,7 +49,7 @@ function overlayCss(dev) {
 
 async function prepare(page, dev) {
   await page.addStyleTag({ content: overlayCss(dev) });
-  await page.evaluate(() => {
+  await page.evaluate(sep => {
     const c = document.createElement('div'); c.id = 'pv-cap'; c.popover = 'manual'; document.body.append(c);
     c.showPopover();
     // Nach dem Öffnen eines Dialogs wieder nach oben holen (Top-Layer-Reihenfolge)
@@ -74,7 +75,7 @@ async function prepare(page, dev) {
       for (const i of document.querySelectorAll('#dlg-task input[type=date],#dlg-task input[type=time]')) {
         const date = i.type === 'date';
         i.dataset.iso = i.value; i.dataset.typ = i.type; i.type = 'text';
-        i.value = date && i.value ? i.value.split('-').reverse().join('.') : i.value;
+        i.value = date && i.value ? i.value.split('-').reverse().join(sep) : i.value;
       }
     };
     // … und vor dem Speichern zurück, damit die Daten stimmen
@@ -84,7 +85,7 @@ async function prepare(page, dev) {
       openSub(...a);
       const i = document.getElementById('sb-date');
       i.dataset.iso = i.value; i.dataset.typ = 'date'; i.type = 'text';
-      i.value = i.value.split('-').reverse().join('.');
+      i.value = i.value.split('-').reverse().join(sep);
     };
     window.pvRestoreDates = () => {
       for (const i of document.querySelectorAll('dialog input[data-iso]')) {
@@ -93,7 +94,7 @@ async function prepare(page, dev) {
     };
     document.getElementById('e-save').addEventListener('pointerdown', () => window.pvRestoreDates(), true);
     document.getElementById('sb-save').addEventListener('pointerdown', () => window.pvRestoreDates(), true);
-  });
+  }, DATE_SEP);
 }
 
 const cap = (p, t) => p.evaluate(t => pvCaption(t), t);
@@ -122,27 +123,27 @@ async function schoolScript(p, dev) {
   const off = dev.wide ? 30 : dev.status + 70;
   const today = () => p.locator('#wk-days .week-day.today');
 
-  await cap(p, 'Dein Unterricht auf einen Blick');
+  await cap(p, L('Dein Unterricht auf einen Blick', 'Your lessons at a glance'));
   await wait(p, 1500);
   if (!dev.wide) { await smoothTo(p, '#wk-days .week-day.today', off + 20); await wait(p, 700); }
 
   // Stunde antippen: Notiz und Hausaufgabe
-  await cap(p, 'Notizen zu jeder Stunde');
-  await tap(p, today().locator('.wd-lesson', { hasText: 'Mathe · 7b' }));
+  await cap(p, L('Notizen zu jeder Stunde', 'Notes for every lesson'));
+  await tap(p, today().locator('.wd-lesson', { hasText: L('Mathe · 7b', 'Maths · 7b') }));
   await p.evaluate(() => pvPromote());
   await wait(p, 500);
   await tap(p, p.locator('#ld-note'));
-  await p.keyboard.type('Prozente als Brüche – Einstieg mit Rabatt-Plakaten', { delay: 28 });
+  await p.keyboard.type(L('Prozente als Brüche – Einstieg mit Rabatt-Plakaten', 'Percentages as fractions – started with sale posters'), { delay: 28 });
   await wait(p, 400);
-  await cap(p, 'Hausaufgabe bis zur nächsten Stunde');
+  await cap(p, L('Hausaufgabe bis zur nächsten Stunde', 'Homework until the next lesson'));
   await tap(p, p.locator('#ld-hw'));
-  await p.keyboard.type('S. 56 Nr. 4', { delay: 45 });
+  await p.keyboard.type(L('S. 56 Nr. 4', 'p. 56 ex. 4'), { delay: 45 });
   await tap(p, p.locator('#ld-hw-add'));
   await p.locator('#ld-hw').blur();
   await wait(p, 1500);
 
   // Stundenverlauf der Klasse
-  await cap(p, 'Der Stundenverlauf je Klasse');
+  await cap(p, L('Der Stundenverlauf je Klasse', 'A lesson log for each class'));
   await tap(p, p.locator('#ld-history'));
   await p.evaluate(() => pvPromote());
   await wait(p, 2300);
@@ -150,25 +151,25 @@ async function schoolScript(p, dev) {
   await wait(p, 300);
 
   // Vertretung mit einem Tipp
-  await cap(p, 'Vertretung eintragen – mit einem Tipp');
+  await cap(p, L('Vertretung eintragen – mit einem Tipp', 'Log a cover lesson – in one tap'));
   await tap(p, today().locator('.wd-add'));
   await p.evaluate(() => pvPromote());
   await wait(p, 400);
   await tap(p, p.locator('#sb-klass'));
   await p.keyboard.type('6a', { delay: 60 });
   await tap(p, p.locator('#sb-subject'));
-  await p.keyboard.type('Deutsch', { delay: 50 });
+  await p.keyboard.type(L('Deutsch', 'History'), { delay: 50 });
   await tap(p, p.locator('#sb-save'));
   await wait(p, 900);
 
   // Übersicht Plus/Minus
-  await cap(p, 'Plus- und Minusstunden im Blick');
+  await cap(p, L('Plus- und Minusstunden im Blick', 'Extra and missed lessons'));
   await tap(p, nav('timetable'));
   await wait(p, 400);
   await smoothTo(p, '#card-subs', off);
   await wait(p, 3200);
 
-  await cap(p, 'Ohne Konto · ohne Server · ohne Abo');
+  await cap(p, L('Ohne Konto · ohne Server · ohne Abo', 'No account · no server · no subscription'));
   await tap(p, nav('week'));
   await wait(p, 2200);
 }
@@ -179,48 +180,48 @@ async function everydayScript(p, dev) {
   const off = dev.wide ? 30 : dev.status + 70;   // Abstand unter der Einblendung
 
   // 1 · Woche
-  await cap(p, 'Deine Woche auf einen Blick');
+  await cap(p, L('Deine Woche auf einen Blick', 'Your week at a glance'));
   await wait(p, 1200);
   await smooth(p, dev.wide ? 300 : 560);
   await wait(p, 1400);
 
   // 2 · Schnelleingabe in Alltagssprache
-  await cap(p, 'Schreib einfach, was zu tun ist');
+  await cap(p, L('Schreib einfach, was zu tun ist', 'Just type what needs doing'));
   await tap(p, nav('tasks'));
   await wait(p, 500);
   await tap(p, p.locator('#t-title'));
-  await p.keyboard.type('Laufen Sa 8–9:30 #Sport', { delay: 45 });
+  await p.keyboard.type(L('Laufen Sa 8–9:30 #Sport', 'Run Sat 8–9:30am #Sport'), { delay: 45 });
   await wait(p, 800);
   await tap(p, p.locator('#btn-add-task'));
   await p.locator('#t-title').blur();
   await wait(p, 900);
 
   // 4 · Uhrzeit, Erinnerung, Unterpunkte
-  await cap(p, 'Uhrzeit, Erinnerung und Unterpunkte');
+  await cap(p, L('Uhrzeit, Erinnerung und Unterpunkte', 'Times, reminders and subtasks'));
   await smoothTo(p, '#task-list', off);
   await wait(p, 300);
-  await smoothTo(p, '#task-list .task', off, 'Präsentation fertigstellen');
+  await smoothTo(p, '#task-list .task', off, L('Präsentation fertigstellen', 'Finish presentation'));
   await wait(p, 600);
-  await tap(p, p.locator('#task-list .task', { hasText: 'Präsentation fertigstellen' }).locator('.title'));
+  await tap(p, p.locator('#task-list .task', { hasText: L('Präsentation fertigstellen', 'Finish presentation') }).locator('.title'));
   await p.evaluate(() => pvPromote());
   await wait(p, 1000);
-  await tap(p, p.locator('#e-subs .sub-edit', { hasText: 'Beispiele ergänzen' }).locator('input[type=checkbox]'));
+  await tap(p, p.locator('#e-subs .sub-edit', { hasText: L('Beispiele ergänzen', 'Add examples') }).locator('input[type=checkbox]'));
   await wait(p, 700);
   await tap(p, p.locator('#e-save'));
   await wait(p, 700);
 
   // 5 · Gewohnheiten
-  await cap(p, 'Gewohnheiten abhaken');
+  await cap(p, L('Gewohnheiten abhaken', 'Tick off your habits'));
   await tap(p, nav('week'));
   await wait(p, 500);
   await smooth(p, 0);
   await wait(p, 500);
-  await tap(p, p.locator('#card-habits .habit', { hasText: 'Lesen' }).locator('.hday.today'));
+  await tap(p, p.locator('#card-habits .habit', { hasText: L('Lesen', 'Reading') }).locator('.hday.today'));
   await wait(p, 450);
   await wait(p, 900);
 
   // 6 · Kalender
-  await cap(p, 'Mit deinen Kalenderterminen');
+  await cap(p, L('Mit deinen Kalenderterminen', 'With your calendar events'));
   await tap(p, nav('calendar'));
   await wait(p, 700);
   await tap(p, p.locator('#cal-grid .cal-c:not(.out)').filter({ has: p.locator('.n', { hasText: /^4$/ }) }));
@@ -229,31 +230,31 @@ async function everydayScript(p, dev) {
   await wait(p, 1200);
 
   // 8 · Einkauf
-  await cap(p, 'Einkaufslisten mit Vorschlägen');
+  await cap(p, L('Einkaufslisten mit Vorschlägen', 'Shopping lists with suggestions'));
   await tap(p, nav('shopping'));
   await wait(p, 450);
   await tap(p, p.locator('#s-item'));
-  await p.keyboard.type('Kaffee', { delay: 60 });
+  await p.keyboard.type(L('Kaffee', 'Coffee'), { delay: 60 });
   await tap(p, p.locator('#btn-add-item'));
   await p.locator('#s-item').blur();
   await wait(p, 400);
-  await tap(p, p.locator('#shop-list .row', { hasText: 'Milch' }).locator('input'));
+  await tap(p, p.locator('#shop-list .row', { hasText: L('Milch', 'Milk') }).locator('input'));
   await wait(p, 350);
-  await tap(p, p.locator('#shop-list .row', { hasText: 'Vollkornbrot' }).locator('input'));
+  await tap(p, p.locator('#shop-list .row', { hasText: L('Vollkornbrot', 'Wholemeal bread') }).locator('input'));
   await wait(p, 900);
 
   // 9 · Dunkel und Abschluss
-  await cap(p, 'Hell oder dunkel');
+  await cap(p, L('Hell oder dunkel', 'Light or dark'));
   await tap(p, nav('week'));
   await p.evaluate(() => { state.settings.theme = 'dark'; applyTheme(); });
   await wait(p, 1400);
-  await cap(p, 'Ohne Konto · ohne Server · ohne Abo');
+  await cap(p, L('Ohne Konto · ohne Server · ohne Abo', 'No account · no server · no subscription'));
   await wait(p, 2000);
 }
 
 const VIDEOS = {
-  schule: { suffix: '1-schule', script: schoolScript, opts: { state: SCHOOL, today: TODAY_SCHOOL } },
-  alltag: { suffix: '2-alltag', script: everydayScript, opts: {} }
+  schule: { suffix: L('1-schule', '1-school'), script: schoolScript, opts: { state: SCHOOL, today: TODAY_SCHOOL } },
+  alltag: { suffix: L('2-alltag', '2-everyday'), script: everydayScript, opts: {} }
 };
 
 async function record(browser, key, which) {
