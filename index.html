@@ -224,6 +224,10 @@ dialog .ft{display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;backg
 .brand h1{margin:0;font-size:1.85rem;line-height:1.05;letter-spacing:-.032em;font-weight:800}
 .brand .w1{background:linear-gradient(100deg,#2563eb,#7c3aed);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#2563eb}
 .brand .w2{font-weight:300;color:var(--text);letter-spacing:-.012em}
+.lang-flag{margin-left:auto;align-self:center;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;
+  background:var(--card);color:var(--text);border:1px solid var(--card-line);border-radius:999px;padding:6px 11px 6px 9px;
+  font:600 .8rem/1 inherit;cursor:pointer;box-shadow:0 1px 3px rgba(15,23,42,.08)}
+.lang-flag .f{font-size:1.2rem;line-height:1}
 .brand-sub{font-size:.79rem;color:var(--muted);margin-top:3px;letter-spacing:.055em;text-transform:uppercase;font-weight:600}
 @media(max-width:760px){
   .brand{gap:11px;margin-bottom:16px}
@@ -503,6 +507,8 @@ html.h12 .dt3>div:first-child{grid-column:1/-1}
         <h1><span class="w1">ToDo</span> <span class="w2">Organizer</span></h1>
         <p class="brand-sub" id="brand-sub"></p>
       </div>
+      <!-- Sprachwechsel auf der Startseite: zeigt die jeweils andere Sprache -->
+      <button class="lang-flag" id="lang-flag" type="button" translate="no"><span class="f" aria-hidden="true">🇬🇧</span><span class="l">EN</span></button>
     </header>
     <div class="card bk-banner" id="bk-banner" hidden>
       <div class="t"><strong>Zeit für eine Sicherung</strong><span id="bk-banner-text"></span></div>
@@ -8063,6 +8069,15 @@ if (darkMQ) (darkMQ.addEventListener ? darkMQ.addEventListener("change", applyTh
 $("set-theme").onchange = e => { state.settings.theme = e.target.value; save(); applyTheme(); };
 // Sprache: pro Gerät (nicht in den Daten, nicht in iCloud); neu laden, damit alles in der neuen Sprache steht
 $("set-lang").onchange = e => { save(); I18N.set(e.target.value); location.reload(); };
+// Flagge auf der Startseite: wechselt zwischen Deutsch und Englisch (wie „Sprache · Language“ in den Einstellungen)
+{
+  const b = $("lang-flag"), to = I18N.en ? "de" : "en";
+  b.querySelector(".f").textContent = to === "en" ? "🇬🇧" : "🇩🇪";
+  b.querySelector(".l").textContent = to === "en" ? "EN" : "DE";
+  b.setAttribute("aria-label", to === "en" ? "Switch to English" : "Auf Deutsch umstellen");
+  b.title = b.getAttribute("aria-label");
+  b.onclick = () => { save(); I18N.set(to); location.reload(); };
+}
 $("set-review").onchange = e => { state.settings.weekReview = e.target.checked; state.settings.reviewHidden = ""; save(); renderReview(); };
 
 /* ---------- Einstieg: Wofür nutzt du die App? ---------- */

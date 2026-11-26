@@ -32,7 +32,8 @@ const UMLAUT = /[äöüÄÖÜß]/;
 const ALLOW = [/Mählmann/, /^(Baden-Württemberg|Schleswig-Holstein|Brandenburg|Bremen|Hamburg|Berlin|Saarland|Burgenland|Salzburg|Vorarlberg|Aargau|Bern|Glarus|Jura|Nidwalden|Obwalden|Schaffhausen|Solothurn|Schwyz|Thurgau|Uri|Zug|St\. Gallen|Basel-Stadt|Basel-Landschaft)$/];
 // Deutsche Zweige im Quelltext (if (I18N.en) … else …), Technik-Angaben für Rückfragen, Konsole
 const SCRIPT_DE_OK = [/^Guten Tag,/, /^Hallo,/, /^(Auf Android ist|Hier unten|Danach in den Einstellungen|iPhone-Einstellungen|Zurück in der App)/,
-  /^Feiertage 3, Schulferien/, /^Einkaufslisten, verschlüsselte Sicherung/, /^es wird nichts berechnet/, /NICHT gefunden|^nicht gefunden$/, /^Kalender-Abo:$/];
+  /^Feiertage 3, Schulferien/, /^Einkaufslisten, verschlüsselte Sicherung/, /^es wird nichts berechnet/, /NICHT gefunden|^nicht gefunden$/, /^Kalender-Abo:$/,
+  /^Auf Deutsch umstellen$/];   // Flagge: Beschriftung bewusst in der Zielsprache
 const looksGerman = s => {
   if (ALLOW.some(r => r.test(s))) return false;
   return UMLAUT.test(s) || DE_WORDS.test(s);
@@ -332,6 +333,15 @@ const grab = p => p.evaluate(() => {
     ok(cal === 'Mo Di Mi Do Fr Sa So', 'Kalender deutsch: ' + cal);
     const links = await S(p, () => [...document.querySelectorAll('.legal-links a')].map(a => a.getAttribute('href')).join(' '));
     ok(links === 'datenschutz.html impressum.html', 'Rechtstexte auf Deutsch verlinkt: ' + links);
+    // Flagge auf der Startseite
+    await S(p, () => switchTo('week'));
+    ok(await p.textContent('#lang-flag') === '🇬🇧EN' && await p.isVisible('#lang-flag'), 'Startseite: Flagge 🇬🇧 EN sichtbar (deutsches Gerät)');
+    await Promise.all([p.waitForEvent('load'), p.click('#lang-flag')]); await p.waitForFunction(() => typeof state === 'object' && document.getElementById('lang-flag'));
+    ok(await S(p, () => I18N.lang) === 'en' && await S(p, () => localStorage.getItem('todo-lang')) === 'en', 'Flagge stellt auf Englisch um');
+    ok(await p.textContent('#lang-flag') === '🇩🇪DE', 'danach Flagge 🇩🇪 DE');
+    await Promise.all([p.waitForEvent('load'), p.click('#lang-flag')]); await p.waitForFunction(() => typeof state === 'object' && document.getElementById('lang-flag'));
+    ok(await S(p, () => I18N.lang) === 'de', 'und zurück auf Deutsch');
+    ok(await S(p, () => state.lessons.length) === 14, 'Daten bleiben beim Umschalten erhalten');
     await ctx.close();
   }
 

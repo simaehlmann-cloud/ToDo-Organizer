@@ -334,3 +334,12 @@ und 15 erledigten Aufgaben.
   Store-URLs Englisch: …/todo-organizer/privacy.html und …/en/. `validate.js` prüft alles.
   Ändert sich die Datenschutzerklärung, beide Fassungen anpassen.
 - Sprachwahl mit Flaggen: 🌐 Automatisch · 🇩🇪 Deutsch · 🇬🇧 English (Einstellungen → Darstellung und Nutzung).
+- Flagge auf der Startseite (Kopf der Woche, `#lang-flag`): zeigt die jeweils andere Sprache
+  (🇬🇧 EN bzw. 🇩🇪 DE), Tippen stellt um und lädt neu – wie „Sprache · Language“ in den Einstellungen.
+
+## Update 15/16: YouTube-Video (26.11.2026)
+
+- `store/make-youtube.js`: Querformat-Werbevideo (1920 × 1080, ca. 59 s) aus vier echten Aufnahmen
+  (iPad quer / iPhone), Bühne mit Einblendungen, Überblendungen, eigene Musik (104 bpm), dazu
+  Vorschaubild 1280 × 720. Texte für YouTube in `store/YOUTUBE.md`. `node store/make-youtube.js thumb`
+  erzeugt nur das Vorschaubild.
