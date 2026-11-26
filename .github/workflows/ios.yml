@@ -207,7 +207,7 @@ jobs:
           set -e
           rm -rf www && mkdir -p www
           # Nur die tatsächlichen App-Dateien – was hier liegt, landet im Store.
-          cp index.html manifest.json sw.js datenschutz.html impressum.html www/
+          cp index.html manifest.json sw.js datenschutz.html impressum.html privacy.html legal-notice.html www/
           cp -R icons www/
           node tools/make-purchase-js.js www/purchase.js
           # Kaufmodul so laden, wie die App es tut (Brücke ohne registerPlugin)
